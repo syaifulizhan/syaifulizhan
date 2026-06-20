@@ -1,0 +1,13 @@
+# Cloudflare Workers — Static Assets (Fasa 1: laman statik)
+# Deploy command projek ini: `npx wrangler versions upload`
+# wrangler akan jalankan [build] dulu (jana out/), kemudian muat naik aset.
+
+name = "syaifulizhan"
+compatibility_date = "2025-06-01"
+
+[build]
+command = "npm run build"
+
+[assets]
+directory = "./out"
+not_found_handling = "404-page"
