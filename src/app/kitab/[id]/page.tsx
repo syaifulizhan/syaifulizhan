@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { Isnad } from "@/components/Isnad";
-import { getBook, getBookHadiths, getIsnadFor } from "@/lib/hadis";
+import { BilingualToggle } from "@/components/BilingualToggle";
+import { getBook, getBookHadiths, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,8 @@ export default async function KitabPage({ params }: { params: Promise<{ id: stri
   if (!book) notFound();
 
   const hadiths = await getBookHadiths(bid, 80);
-  const isnads = await getIsnadFor(hadiths.map((h) => h.id));
+  const ids = hadiths.map((h) => h.id);
+  const [isnads, trs] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids)]);
 
   return (
     <>
@@ -38,6 +40,7 @@ export default async function KitabPage({ params }: { params: Promise<{ id: stri
             <article className="hcard" key={h.id}>
               {h.chapter_ar && <div className="hchap ar">{h.chapter_ar}</div>}
               <div className="hmatn ar">{h.matn_ar}</div>
+              <BilingualToggle tr={trs.get(h.id)} />
               <Isnad nodes={isnads.get(h.id) ?? []} />
             </article>
           ))}

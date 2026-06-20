@@ -13,7 +13,8 @@
     "corpus:migrate": "node --env-file=.env.local scripts/migrate-corpus.mjs",
     "scrape:narrators": "node --env-file=.env.local scripts/scrape-narrators.mjs",
     "scrape:hadith": "node --env-file=.env.local scripts/scrape-hadith.mjs",
-    "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs"
+    "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs",
+    "corpus:translate": "node --env-file=.env.local scripts/translate.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
