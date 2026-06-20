@@ -1,13 +1,18 @@
-# Cloudflare Workers — Static Assets (Fasa 1: laman statik)
-# Deploy command projek ini: `npx wrangler versions upload`
-# wrangler akan jalankan [build] dulu (jana out/), kemudian muat naik aset.
+# Cloudflare Worker — Dewan Izhan (Next.js 16 SSR via @opennextjs/cloudflare).
+# Build : npm run cf:build   →  jana .open-next/
+# Deploy: npm run cf:deploy  (perlu `wrangler login` dahulu)
+# Pratonton tempatan: npm run cf:preview
 
-name = "syaifulizhan"
-compatibility_date = "2025-06-01"
-
-[build]
-command = "npm run build"
+name = "dewan-izhan"
+main = ".open-next/worker.js"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
-directory = "./out"
-not_found_handling = "404-page"
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# Var awam (di-inline masa build oleh Next): set dalam .env.local.
+# Rahsia runtime (set via `wrangler secret put <NAMA>`):
+#   TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, SUPABASE_SECRET_KEY, ADMIN_PASSWORD
+# (NEXT_PUBLIC_* di-inline masa build, tak perlu secret.)

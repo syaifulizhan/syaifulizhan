@@ -16,6 +16,9 @@
     "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs",
     "corpus:translate": "node --env-file=.env.local scripts/translate.mjs",
     "glossary:sync": "node --env-file=.env.local scripts/glossary-sync.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare deploy",
     "supabase:migrate": "node --env-file=.env.local scripts/migrate-supabase.mjs"
   },
   "dependencies": {
@@ -28,6 +31,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
