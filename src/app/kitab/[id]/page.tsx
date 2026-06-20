@@ -4,6 +4,7 @@ import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { Isnad } from "@/components/Isnad";
 import { BilingualToggle } from "@/components/BilingualToggle";
+import { SuggestForm } from "@/components/SuggestForm";
 import { getBook, getBookHadiths, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,7 @@ export default async function KitabPage({ params }: { params: Promise<{ id: stri
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />
               <Isnad nodes={isnads.get(h.id) ?? []} />
+              <SuggestForm entityType="hadith" entityId={h.id} field="matn" currentText={h.matn_ar} />
             </article>
           ))}
           {!hadiths.length && (
