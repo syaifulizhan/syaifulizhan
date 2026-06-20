@@ -1,7 +1,8 @@
 -- ============================================================
--- Platform Hadis & Sanad — Skema Fasa A (Neon / PostgreSQL)
+-- Platform Hadis & Sanad — Skema Fasa A (Supabase / PostgreSQL)
 -- Lihat docs/hadith-platform.md untuk konteks & keputusan.
--- Jalankan: psql "$DATABASE_URL" -f db/schema.sql
+-- Jalankan: psql "$DATABASE_URL" -f db/schema.sql   (atau Supabase SQL Editor)
+-- Selepas ini: tambah skema 'hadith' ke Exposed schemas (Settings → API).
 -- ============================================================
 
 create schema if not exists hadith;
@@ -85,3 +86,24 @@ create index if not exists idx_translations_search_trgm on translations using gi
 -- Terjemahan bio perawi guna jadual `translations` yang sama
 -- (entity_type='narrator').
 -- ============================================================
+
+-- ── SUPABASE: akses baca-awam (data hadis = ilmu awam) ───────
+-- Beri akses SELECT kepada peranan anon/authenticated, dan hidupkan
+-- RLS dengan polisi baca-sahaja. Tulisan hanya via service_role
+-- (importer) yang memintas RLS.
+grant usage on schema hadith to anon, authenticated;
+grant select on all tables in schema hadith to anon, authenticated;
+alter default privileges in schema hadith
+  grant select on tables to anon, authenticated;
+
+alter table collections   enable row level security;
+alter table hadiths       enable row level security;
+alter table gradings      enable row level security;
+alter table translations  enable row level security;
+
+create policy "public read" on collections  for select using (true);
+create policy "public read" on hadiths       for select using (true);
+create policy "public read" on gradings      for select using (true);
+-- Terjemahan: hanya yang disahkan dipapar awam; draf belum-sah tersembunyi.
+create policy "public read verified" on translations
+  for select using (is_verified = true);
