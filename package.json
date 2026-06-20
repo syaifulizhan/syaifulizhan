@@ -9,9 +9,16 @@
     "lint": "eslint",
     "db:fetch": "bash scripts/fetch-sources.sh",
     "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
-    "db:import": "node --env-file=.env.local scripts/import-hadith.mjs"
+    "db:import": "node --env-file=.env.local scripts/import-hadith.mjs",
+    "corpus:migrate": "node --env-file=.env.local scripts/migrate-corpus.mjs",
+    "scrape:narrators": "node --env-file=.env.local scripts/scrape-narrators.mjs",
+    "scrape:hadith": "node --env-file=.env.local scripts/scrape-hadith.mjs",
+    "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@libsql/client": "^0.17.4",
+    "cheerio": "^1.2.0",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"

@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Fasa 1 — laman statik. Menjana folder `out/` HTML/CSS/JS tulen
-  // yang dihidang terus oleh Cloudflare Pages tanpa adapter/edge runtime.
-  output: "export",
-  // Static export tidak menyokong Image Optimization server-side.
+  // Fasa 2 — zon hadis dinamik (SSR). `output: 'export'` dibuang supaya route
+  // dinamik (/perawi/[id], /hadis, /api/*) & pembacaan korpus Turso berfungsi.
+  // Deploy Cloudflare via @opennextjs/cloudflare (dipasang masa fasa deploy).
   images: { unoptimized: true },
-  // Trailing slash supaya routing kemas di Cloudflare Pages.
   trailingSlash: true,
+  // libsql ada binari native — jangan bundle (server component baca korpus).
+  serverExternalPackages: ["@libsql/client", "libsql"],
 };
 
 export default nextConfig;
