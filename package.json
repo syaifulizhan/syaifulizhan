@@ -14,11 +14,13 @@
     "scrape:narrators": "node --env-file=.env.local scripts/scrape-narrators.mjs",
     "scrape:hadith": "node --env-file=.env.local scripts/scrape-hadith.mjs",
     "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs",
-    "corpus:translate": "node --env-file=.env.local scripts/translate.mjs"
+    "corpus:translate": "node --env-file=.env.local scripts/translate.mjs",
+    "supabase:migrate": "node --env-file=.env.local scripts/migrate-supabase.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
     "@libsql/client": "^0.17.4",
+    "@supabase/supabase-js": "^2.108.2",
     "cheerio": "^1.2.0",
     "next": "16.2.9",
     "react": "19.2.4",

@@ -1063,6 +1063,28 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hnode.unl { color: var(--muted); border-style: dashed; }
 .hsep { color: var(--gold); font-size: 0.9rem; opacity: 0.65; }
 
+/* cadang pembetulan */
+.suggest { margin-top: 14px; }
+.suggest-toggle { font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.04em; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; }
+.suggest-toggle:hover { color: var(--gold-soft); }
+.suggest-done { font-size: 0.85rem; color: var(--gold-soft); margin-top: 10px; }
+.suggest-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-width: 520px; }
+.suggest-form textarea, .suggest-form input { font-family: var(--sans); font-size: 0.9rem; padding: 9px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-dark); color: var(--paper); }
+.suggest-form textarea:focus, .suggest-form input:focus { outline: none; border-color: var(--gold); }
+.suggest-form button { align-self: flex-start; }
+
+/* admin */
+.adm-card { border: 1px solid var(--line-dark); background: rgba(30, 26, 42, 0.42); padding: 18px 20px; margin-bottom: 14px; }
+.adm-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.adm-tag { font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--line-dark); padding: 3px 9px; }
+.adm-date { font-size: 0.72rem; color: var(--muted); margin-inline-start: auto; }
+.adm-block { margin-bottom: 10px; }
+.adm-lbl { font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.adm-text { font-family: var(--arabic); direction: rtl; font-size: 1.2rem; color: var(--paper); line-height: 1.7; }
+.adm-reason { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+.adm-actions { display: flex; gap: 10px; margin-top: 14px; }
+.adm-actions .btn { padding: 8px 20px; }
+
 /* toggle dwibahasa */
 .btoggle { margin: 14px 0 18px; }
 .btoggle-row { display: inline-flex; border: 1px solid var(--line-dark); margin-bottom: 10px; }
