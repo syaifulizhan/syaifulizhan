@@ -25,13 +25,34 @@ futuristik, mesra pengguna — untuk penjelajahan hadis, sanad, dan biografi per
 ## 4. Keputusan terkumpul
 | Perkara | Keputusan |
 |---|---|
-| Pangkalan data | **Neon** (Postgres serverless), region Singapore. Pemacu `@neondatabase/serverless` (HTTP) untuk Cloudflare Workers |
-| App | Next.js 16 → naik taraf **SSR/ISR via `@opennextjs/cloudflare`** (perlu untuk skala + SEO setiap hadis/perawi = URL boleh-index) |
-| Sumber teras | **AhmedBaset/hadith-json** (Arab+Inggeris selari, 17 kitab, 50,884 hadis) + **ceefour/sanad-hadith** (darjat & isnad, 9 kitab) |
-| Perawi/rijal (Fasa B) | Itqan (115k), Sanadset 650K, Hawramani (135k) |
-| Cara dapat data | Dump GitHub dahulu (bukan scrape laman 403) |
+| Pangkalan data | **Supabase** (Postgres terurus), region Singapore (Southeast Asia). Akses: `supabase-js` (HTTP, sesuai Workers) + pooler untuk migrasi/import |
+| App | Next.js 16 → **SSR/ISR via `@opennextjs/cloudflare`** untuk SEO (setiap hadis/perawi = URL boleh-index). Supabase juga benarkan query client-side (RLS) bila perlu |
+| Teks hadis AR+EN | **AhmedBaset/hadith-json** (17 kitab, 50,884 hadis) |
+| Darjat & isnad | **ceefour/sanad-hadith** (9 kitab, Postgres-ready) |
+| Perawi/rijal | **Itqan** (~115k perawi) — utama |
+| Graf sanad / keluasan | **Sanadset 650K** (Mendeley — 650,986 rantaian, 926 kitab) |
+| Perawi tambahan | Hawramani (135k) — pilihan, perlu scrape |
+| Terjemahan BM | Draf AI (deep research) → disahkan pasukan (`is_verified`) |
 
-## 5. Model dwibahasa kandungan (penting)
+## 5. Pengesahan sumber data (recon — disahkan)
+| Keperluan | Sumber | Status |
+|---|---|---|
+| Teks hadis AR+EN (kanonik) | AhmedBaset (GitHub) | ✅ ada |
+| Darjat + isnad (9 kitab) | ceefour (GitHub, TSV Postgres) | ✅ ada |
+| Perawi 100k+ | Itqan: `kaggle_rawis.csv`, `arsanad_narrators.csv`, `external_narrators_db.json` | ✅ ada (dah clone) |
+| Graf sanad (926 kitab, 650k) | Sanadset 650K (Mendeley) | ✅ ada (muat turun) |
+| Perawi tambahan 135k | Hawramani | ⚠️ laman sahaja, tiada dump/API |
+
+**Nota jujur tentang skala 753k:** angka tepat 753,192 ialah dataset islam-db
+sendiri. Dari sumber terbuka kita capai **~650k+ rantaian merentas 926 kitab**
+(skala setara/lebih luas) **tanpa scrape**. Padanan tepat 1:1 dengan islam-db
+(ID & halaman sama) hanya boleh jika kita ambil data islam-db sendiri.
+
+**Kerja utama = integrasi:** sumber berbeza ada ID/skema/ejaan nama berbeza.
+Mencantum perawi yang sama merentas Itqan/Sanadset (entity resolution) dan
+memadan hadis antara sumber ialah cabaran kejuruteraan data terbesar projek ini.
+
+## 6. Model dwibahasa kandungan (penting)
 Dua lapisan bahasa yang **berbeza**:
 - **UI** (nav, label, ayat kita) — tukar penuh ikut bahasa (i18n sedia ada).
 - **Kandungan kitab** (matn hadis, nanti bio perawi) — **Arab sentiasa teras**,
@@ -43,22 +64,29 @@ Dua lapisan bahasa yang **berbeza**:
 | BM | Teks Arab **+** terjemahan Melayu |
 | EN | Teks Arab **+** terjemahan Inggeris |
 
-- **Bukan auto-terjemah.** Terjemahan = data tersimpan + disahkan (lihat jadual `translations`).
-- **BM:** draf AI (deep research, teliti) ditanda `is_verified=false`, kemudian
-  **disahkan pasukan** → `is_verified=true`. Menyokong tujuan silang-semak & kesan
-  kesalahan makna.
-- **EN:** dari AhmedBaset (terjemahan piawai) — boleh terus dianggap rujukan.
+- **Bukan auto-terjemah.** Terjemahan = data tersimpan + disahkan (`translations`).
+- **BM:** draf AI ditanda `is_verified=false` → disahkan pasukan → `is_verified=true`.
+- **EN:** dari AhmedBaset (terjemahan piawai) — rujukan.
 
-## 6. Pipeline ingestion (ringkas)
-1. Import AhmedBaset → `hadiths.arabic_text` + `translations(lang='en')`.
-2. Import ceefour → `gradings` + sahkan isnad untuk 9 kitab bertindih (padan ikut `collection` + nombor).
-3. Jana draf BM (deep research) → `translations(lang='ms', is_verified=false)`.
-4. Carian Arab: simpan lajur ternormal (buang tashkeel) + indeks trigram/FTS.
+## 7. Pipeline ingestion (berperingkat)
+1. **Fasa A:** AhmedBaset → `hadiths.arabic_text` + `translations(en)`; ceefour → `gradings`.
+2. **Fasa B:** Itqan → `narrators` + `narrator grades`; Sanadset → `narration_links` (graf sanad); padan perawi (entity resolution).
+3. **Fasa C:** draf BM → `translations(ms, is_verified=false)`; pasukan sahkan.
+4. Carian Arab: lajur ternormal (buang tashkeel) + indeks trigram/FTS.
 
-## 7. Cabaran diketahui
-- **Carian Arab:** perlu normalisasi tashkeel/hamzah; FTS Postgres `simple` + `pg_trgm`.
-- **Padanan ID** antara AhmedBaset & ceefour (skema penomboran berbeza).
-- **Saiz Neon:** 9–17 kitab muat; korpus penuh + perawi nanti besar → mungkin pelan berbayar.
+## 8. Supabase — setup
+1. supabase.com → **New project** → pilih region **Southeast Asia (Singapore)**, set DB password.
+2. Ambil dari **Settings**:
+   - **API:** Project URL, `anon` key, `service_role` key.
+   - **Database:** connection string (guna **pooler/Transaction** untuk serverless; **direct** untuk import pukal/COPY).
+3. Jalankan `db/schema.sql` (SQL Editor atau `psql`).
+4. **Exposed schemas:** tambah `hadith` (Settings → API) supaya PostgREST/`supabase-js` nampak.
+5. **Secrets:** connection string & `service_role` disimpan dalam `.env.local` (di-gitignore) — **jangan commit**.
 
-## 8. Status
-⏳ Menunggu **connection string Neon** untuk jalankan skema (`db/schema.sql`) + importer.
+**⚠️ Saiz/tier:** Supabase Free = **500MB DB**. Korpus penuh (teks 753k + perawi +
+graf) akan lebihi ini (anggaran beberapa GB) → perlu **Supabase Pro (8GB)**.
+Subset awal (kanonik 9 kitab) muat dalam Free untuk prototaip.
+
+## 9. Status
+⏳ Menunggu **Supabase project URL + connection string/keys** untuk jalankan skema
+(`db/schema.sql`) + importer.
