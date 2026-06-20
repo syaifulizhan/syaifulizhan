@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Dīwān Izhan — Design Tokens (Tailwind v4 @theme)
+   Setiap token boleh dipakai sebagai utility (cth: bg-midnight,
+   text-gold) dan juga sebagai CSS variable (var(--color-gold)).
+   ============================================================ */
+@theme {
+  /* Latar / midnight */
+  --color-midnight: #16131f;
+  --color-midnight2: #1e1a2a;
+  --color-midnight3: #272237;
+
+  /* Aksen emas */
+  --color-gold: #c7a338;
+  --color-gold-soft: #d9bf6c;
+
+  /* Aksen sekunder */
+  --color-lapis: #3a5894;
+  --color-rubric: #9e3b2e;
+
+  /* Vellum (seksyen Ilmu) */
+  --color-vellum: #f4ecdc;
+  --color-vellum2: #ede3cf;
+
+  /* Teks */
+  --color-ink: #211d15;
+  --color-ink-soft: #5b5347;
+  --color-paper: #e9e0cf;
+  --color-muted: #a89e8b;
+
+  /* Keluarga font */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-arabic: "Amiri", serif;
+}
+
+/* Garisan halus (bukan token Tailwind — guna terus sebagai var) */
+:root {
+  --line-dark: rgba(199, 163, 56, 0.22);
+  --line-light: rgba(33, 29, 21, 0.13);
+}
+
+/* ============================================================
+   Base styles
+   ============================================================ */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-midnight);
+  color: var(--color-paper);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Estetika kodeks klasik — tiada sudut bulat pada elemen utama */
+:where(h1, h2, h3) {
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+:lang(ar),
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-midnight);
+}
