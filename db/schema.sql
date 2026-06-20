@@ -101,9 +101,13 @@ alter table hadiths       enable row level security;
 alter table gradings      enable row level security;
 alter table translations  enable row level security;
 
-create policy "public read" on collections  for select using (true);
-create policy "public read" on hadiths       for select using (true);
-create policy "public read" on gradings      for select using (true);
+drop policy if exists "public read" on collections;
+create policy "public read" on collections for select using (true);
+drop policy if exists "public read" on hadiths;
+create policy "public read" on hadiths for select using (true);
+drop policy if exists "public read" on gradings;
+create policy "public read" on gradings for select using (true);
 -- Terjemahan: hanya yang disahkan dipapar awam; draf belum-sah tersembunyi.
+drop policy if exists "public read verified" on translations;
 create policy "public read verified" on translations
   for select using (is_verified = true);
