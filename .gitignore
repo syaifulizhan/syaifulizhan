@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Data sumber (besar) — jangan commit
 /data/
+
+# OpenNext (output build Cloudflare)
+/.open-next/
