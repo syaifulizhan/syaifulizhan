@@ -4,9 +4,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://syaifulizhan.my"),
-  title: "Dīwān Izhan · Ilmu Riwayah & Teknologi",
+  title: "Dewan Izhan · Ilmu Riwayah & Teknologi",
   description:
-    "Hadith dibawa dengan sanad, takhrij dan darjatnya — telus, teliti, dalam bahasa kita. Platform ilmu riwayah dan perkhidmatan digital oleh Muhammad Syaiful Izhan.",
+    "Hadis dibawa dengan sanad, takhrij dan darjatnya — telus, teliti, dalam bahasa kita. Platform ilmu riwayah dan perkhidmatan digital oleh Muhammad Syaiful Izhan.",
   keywords: [
     "hadith",
     "riwayah",
@@ -17,10 +17,10 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Muhammad Syaiful Izhan bin Shahruddin" }],
   openGraph: {
-    title: "Dīwān Izhan",
+    title: "Dewan Izhan",
     description: "Ilmu riwayah yang boleh disemak — dalam bahasa kita.",
     url: "https://syaifulizhan.my",
-    siteName: "Dīwān Izhan",
+    siteName: "Dewan Izhan",
     locale: "ms_MY",
     type: "website",
   },

@@ -19,7 +19,7 @@ export default function Footer() {
       <div className="wrap">
         <div className="foot-in">
           <div className="foot-brand">
-            <b>۞ Dīwān Izhan</b>
+            <b>۞ Dewan Izhan</b>
             <div className="foot-ar">دِيوَان الإِذهَان</div>
             <p>{T.footP[lang]}</p>
           </div>
