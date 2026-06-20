@@ -1062,3 +1062,14 @@ html[lang="ar"] .foot-brand p {
 a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hnode.unl { color: var(--muted); border-style: dashed; }
 .hsep { color: var(--gold); font-size: 0.9rem; opacity: 0.65; }
+
+/* toggle dwibahasa */
+.btoggle { margin: 14px 0 18px; }
+.btoggle-row { display: inline-flex; border: 1px solid var(--line-dark); margin-bottom: 10px; }
+.btoggle-btn { font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.04em; padding: 6px 13px; cursor: pointer; background: none; border: none; color: var(--muted); border-right: 1px solid var(--line-dark); transition: all 0.16s; }
+.btoggle-btn:last-child { border-right: none; }
+.btoggle-btn:hover { color: var(--paper); }
+.btoggle-btn.active { background: var(--gold); color: var(--midnight); font-weight: 600; }
+.btoggle-tr { font-family: var(--display); font-size: 1.12rem; color: var(--gold-soft); line-height: 1.55; }
+.btoggle-empty { font-size: 0.86rem; color: var(--muted); font-style: italic; }
+.btoggle-flag { display: inline-block; margin-inline-start: 10px; font-family: var(--sans); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rubric); border: 1px solid var(--rubric); padding: 2px 7px; vertical-align: middle; font-style: normal; }

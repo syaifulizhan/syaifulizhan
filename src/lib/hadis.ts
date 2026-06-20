@@ -61,6 +61,27 @@ export async function searchHadith(q: string, limit = 30): Promise<(Hadith & { b
   return r.rows as unknown as (Hadith & { book: string | null })[];
 }
 
+export interface Tr { ms: string | null; en: string | null; ms_verified: boolean; en_verified: boolean }
+
+/** Terjemahan AI/manual utk banyak hadis. Map: hadith_id → {ms,en,...}. */
+export async function getTranslationsFor(hadithIds: number[]): Promise<Map<number, Tr>> {
+  const map = new Map<number, Tr>();
+  if (!hadithIds.length) return map;
+  const ph = hadithIds.map(() => "?").join(",");
+  const r = await corpus.execute({
+    sql: `SELECT entity_id, lang, text, is_verified FROM translations
+           WHERE entity_type='hadith' AND entity_id IN (${ph}) AND lang IN ('ms','en')`,
+    args: hadithIds,
+  });
+  for (const row of r.rows as unknown as { entity_id: number; lang: string; text: string; is_verified: number }[]) {
+    const t = map.get(row.entity_id) ?? { ms: null, en: null, ms_verified: false, en_verified: false };
+    if (row.lang === "ms") { t.ms = row.text; t.ms_verified = !!row.is_verified; }
+    else if (row.lang === "en") { t.en = row.text; t.en_verified = !!row.is_verified; }
+    map.set(row.entity_id, t);
+  }
+  return map;
+}
+
 export async function hadithCount(): Promise<number> {
   const r = await corpus.execute("SELECT count(*) c FROM hadiths");
   return Number(r.rows[0].c);
