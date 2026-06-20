@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LangProvider } from "@/components/LangProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,12 +40,17 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        {/* Guna <link> (bukan next/font) supaya build static tidak bergantung
+            pada muat turun font masa build — lebih tahan untuk Cloudflare. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body>
+        <LangProvider>{children}</LangProvider>
+      </body>
     </html>
   );
 }
