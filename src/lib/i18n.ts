@@ -18,6 +18,8 @@ export const T = {
   navIlmu: { bm: "Ilmu", en: "Knowledge", ar: "العِلم" },
   navTentang: { bm: "Tentang", en: "About", ar: "عَن" },
   navKhidmat: { bm: "Khidmat", en: "Services", ar: "الخِدمات" },
+  navPerawi: { bm: "Perawi", en: "Narrators", ar: "الرُّواة" },
+  navHadis: { bm: "Hadis", en: "Hadith", ar: "الحديث" },
 
   heroH1: {
     bm: "Ilmu yang <em>boleh disemak</em>",
@@ -30,7 +32,7 @@ export const T = {
     ar: "الرِّواية · التَّخريج · الحُكم",
   },
   heroThesis: {
-    bm: "Hadith dibawa dengan <b>sanad</b>, takhrij dan darjatnya — telus, teliti, dalam <b>bahasa kita</b>.",
+    bm: "Hadis dibawa dengan <b>sanad</b>, takhrij dan darjatnya — telus, teliti, dalam <b>bahasa kita</b>.",
     en: "Every hadith carried with its <b>isnād</b>, takhrīj and ruling — transparent, rigorous, <b>in your language</b>.",
     ar: "كلُّ حديثٍ بسنده وتخريجه وحكمه — بيانٌ للأذهان، في كلِّ لغة.",
   },
@@ -83,7 +85,7 @@ export const T = {
     en: "Interconnected content — transparent methodology, not just an archive.",
     ar: "محتوى مترابط بمنهجية واضحة، لا مجرَّد أرشيف.",
   },
-  card1H3: { bm: "Hadith", en: "Hadith", ar: "الحديث" },
+  card1H3: { bm: "Hadis", en: "Hadith", ar: "الحديث" },
   card1P: {
     bm: "Matan, sanad dan hukum — disusun untuk dirujuk semula, bukan sekadar dibaca sekali lalu.",
     en: "Matn, isnād and ruling — structured for reference, not just casual reading.",

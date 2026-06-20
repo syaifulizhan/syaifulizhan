@@ -1,6 +1,23 @@
 "use server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+/** Login admin ringkas (kata laluan tunggal). */
+export async function adminLogin(formData: FormData) {
+  const pw = String(formData.get("password") || "");
+  if (pw && pw === process.env.ADMIN_PASSWORD) {
+    (await cookies()).set("diz_admin", pw, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 8,
+    });
+    redirect("/admin/cadangan");
+  }
+  redirect("/admin/login?e=1");
+}
 
 /** Pengguna hantar cadangan pembetulan (status 'pending'). */
 export async function submitSuggestion(formData: FormData) {

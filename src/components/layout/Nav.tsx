@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLang } from "@/components/LangProvider";
 import { T } from "@/lib/i18n";
 import type { Lang } from "@/lib/types";
@@ -16,29 +17,32 @@ export default function Nav() {
   return (
     <header className="nav">
       <div className="wrap nav-in">
-        <a className="brand" href="#beranda">
+        <Link className="brand" href="/">
           <span className="brand-star">۞</span>
           <span>
             <span className="brand-main">
-              Dīwān <em>Izhan</em>
+              Dewan <em>Izhan</em>
             </span>
             <span className="brand-sub"> {T.brandSub[lang]}</span>
           </span>
-        </a>
+        </Link>
         <div className="nav-right">
           <nav>
             <ul>
               <li>
-                <a href="#sanad">{T.navSanad[lang]}</a>
+                <Link href="/perawi">{T.navPerawi[lang]}</Link>
               </li>
               <li>
-                <a href="#ilmu">{T.navIlmu[lang]}</a>
+                <Link href="/hadis">{T.navHadis[lang]}</Link>
               </li>
               <li>
-                <a href="#tentang">{T.navTentang[lang]}</a>
+                <a href="/#ilmu">{T.navIlmu[lang]}</a>
               </li>
               <li>
-                <a href="#khidmat">{T.navKhidmat[lang]}</a>
+                <a href="/#tentang">{T.navTentang[lang]}</a>
+              </li>
+              <li>
+                <a href="/#khidmat">{T.navKhidmat[lang]}</a>
               </li>
             </ul>
           </nav>
