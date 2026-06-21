@@ -11,6 +11,13 @@ const HANDLES = [
   "Threads · @syaifulizhan",
 ];
 
+// "Kawan baik" — rujukan terjemahan istilah untuk pengguna crosscheck.
+const REFS = [
+  { label: "Dewan Bahasa & Pustaka", url: "https://prpm.dbp.gov.my" },
+  { label: "Kamus Arab–Melayu", url: "https://www.almaany.com/ms/dict/ar-ms/" },
+  { label: "Kamus Melayu–Inggeris", url: "https://prpm.dbp.gov.my" },
+];
+
 export default function Footer() {
   const { lang } = useLang();
 
@@ -27,6 +34,14 @@ export default function Footer() {
             {HANDLES.map((h) => (
               <a key={h} href="#">
                 {h}
+              </a>
+            ))}
+          </div>
+          <div className="handles">
+            <span className="foot-reflabel">Rujukan</span>
+            {REFS.map((r) => (
+              <a key={r.label} href={r.url} target="_blank" rel="noopener noreferrer">
+                {r.label}
               </a>
             ))}
           </div>
