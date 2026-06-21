@@ -98,55 +98,11 @@ h3 {
   direction: rtl;
 }
 
-/* RTL override bila bahasa Arab aktif */
-html[lang="ar"] body {
-  direction: rtl;
-}
-html[lang="ar"] .chain {
-  direction: ltr;
-}
-html[lang="ar"] nav ul {
-  flex-direction: row-reverse;
-}
-html[lang="ar"] .about-grid {
-  direction: rtl;
-}
-html[lang="ar"] .trinity {
-  border-left: none;
-  border-right: 1px solid var(--line-dark);
-}
-html[lang="ar"] .pillar {
-  padding: 20px 26px 20px 0;
-}
-html[lang="ar"] .pillar::before {
-  left: auto;
-  right: -11px;
-}
-html[lang="ar"] .matn {
-  border-left: none;
-  border-right: 2px solid var(--gold);
-  padding: 6px 22px 6px 0;
-}
-html[lang="ar"] .node {
-  padding: 11px 42px 11px 0;
-}
-html[lang="ar"] .node::before {
-  left: auto;
-  right: 13px;
-}
-html[lang="ar"] .node .marker {
-  left: auto;
-  right: 7px;
-}
-html[lang="ar"] .brand {
-  flex-direction: row-reverse;
-}
-html[lang="ar"] .foot-in {
-  flex-direction: row-reverse;
-}
-html[lang="ar"] .card .num {
-  text-align: right;
-}
+/* Arah teks ikut KANDUNGAN, bukan toggle bahasa: layout sentiasa LTR.
+   Teks Arab → kanan (kelas .ar / dir rtl pada elemen). Teks Rumi → kiri (lalai).
+   Blok mirror-layout lama dibuang supaya seragam pada semua halaman.
+   Elemen teks Arab guna .ar; teks boleh-tukar-bahasa guna dir="auto". */
+[dir="auto"] { unicode-bidi: plaintext; }
 
 /* ── LANG SWITCHER ── */
 .lang-sw {
@@ -454,9 +410,6 @@ html[lang="ar"] .sec-head p {
   grid-template-columns: 1.08fr 1fr;
   gap: 44px;
   align-items: start;
-}
-html[lang="ar"] .sanad-grid {
-  direction: rtl;
 }
 .chips {
   display: flex;
