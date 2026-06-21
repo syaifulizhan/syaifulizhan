@@ -37,6 +37,12 @@ export default async function Glosari() {
                   <span className="glos-ar ar">{t.term_ar}</span>
                   {t.translit && <span className="glos-tr">{t.translit}</span>}
                 </div>
+                {t.def_ar && (
+                  <p className="glos-line">
+                    <span className="glos-lang">ع</span>
+                    <span className="glos-def ar" style={{ direction: "rtl", color: "var(--paper)" }}>{t.def_ar}</span>
+                  </p>
+                )}
                 {(t.term_ms || t.def_ms) && (
                   <p className="glos-line">
                     <span className="glos-lang">BM</span>

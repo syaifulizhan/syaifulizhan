@@ -19,7 +19,7 @@ end = int(sys.argv[2]) if len(sys.argv) > 2 else n
 end = min(end, n)
 
 for i in range(start, end):
-    pix = doc[i].get_pixmap(dpi=150)  # 150 DPI cukup utk OCR teks imbasan
+    pix = doc[i].get_pixmap(dpi=220)  # 220 DPI — teks Arab kecil lebih jelas utk vision OCR
     pix.save(f"{OUT}/page-{i+1:04d}.png")
 
 print(f"✓ Render halaman {start+1}..{end} daripada {n} → {OUT}/")
