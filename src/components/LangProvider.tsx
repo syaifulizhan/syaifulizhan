@@ -24,7 +24,9 @@ export function LangProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const html = document.documentElement;
     html.setAttribute("lang", HTML_LANG[lang]);
-    html.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+    // Layout sentiasa LTR. Arah teks ikut KANDUNGAN (Arab=rtl via .ar, Rumi=ltr) —
+    // bukan ikut toggle bahasa. Seragam pada semua halaman.
+    html.setAttribute("dir", "ltr");
   }, [lang]);
 
   return <Ctx.Provider value={{ lang, setLang }}>{children}</Ctx.Provider>;
