@@ -24,6 +24,13 @@ async function* readJsonl(file) {
   }
 }
 
+// Baca fail utama + fail recovered (dari retry-failed) sekali.
+async function* readMany(files) {
+  for (const f of files) if (existsSync(f)) yield* readJsonl(f);
+}
+const NARRATORS_FILES = [NARRATORS, "data/islamdb/narrators.recovered.jsonl"];
+const HADITH_FILES = [HADITH, "data/islamdb/hadith.recovered.jsonl"];
+
 async function buildNarrators() {
   if (!existsSync(NARRATORS)) {
     console.log(`(tiada ${NARRATORS} — langkau perawi)`);
@@ -40,7 +47,7 @@ async function buildNarrators() {
   let nN = 0, nG = 0;
   let batch = [];
   const flush = async () => { if (batch.length) { await db.batch(batch, "write"); batch = []; } };
-  for await (const n of readJsonl(NARRATORS)) {
+  for await (const n of readMany(NARRATORS_FILES)) {
     batch.push({
       sql: `INSERT INTO narrators
               (id,name_ar,name_search,shuhra,kunya,nisba,rutbah,profession,regions,mawla,death_year,death_place,bio_ar,scraped_at)
@@ -91,7 +98,7 @@ async function buildNarrators() {
   console.log("→ Pas 2: bina tepi graf (padan nama unik)…");
   let edges = 0, ambiguous = 0, unmatched = 0;
   batch = [];
-  for await (const n of readJsonl(NARRATORS)) {
+  for await (const n of readMany(NARRATORS_FILES)) {
     const add = (teacherId, studentId) => {
       if (teacherId && studentId && teacherId !== studentId) {
         batch.push({ sql: `INSERT OR IGNORE INTO narrator_relations (teacher_id,student_id) VALUES (?,?)`, args: [teacherId, studentId] });
@@ -134,7 +141,7 @@ async function buildHadiths() {
   let batch = [];
   const flush = async () => { if (batch.length) { await db.batch(batch, "write"); batch = []; } };
 
-  for await (const r of readJsonl(HADITH)) {
+  for await (const r of readMany(HADITH_FILES)) {
     if (r.type === "book") {
       batch.push({ sql: `INSERT INTO books (id,title_ar) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET title_ar=excluded.title_ar`, args: [r.id, r.title] });
       nBook++;

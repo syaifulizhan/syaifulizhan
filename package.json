@@ -13,6 +13,7 @@
     "corpus:migrate": "node --env-file=.env.local scripts/migrate-corpus.mjs",
     "scrape:narrators": "node --env-file=.env.local scripts/scrape-narrators.mjs",
     "scrape:hadith": "node --env-file=.env.local scripts/scrape-hadith.mjs",
+    "scrape:retry": "node scripts/retry-failed.mjs",
     "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs",
     "corpus:translate": "node --env-file=.env.local scripts/translate.mjs",
     "glossary:sync": "node --env-file=.env.local scripts/glossary-sync.mjs",
