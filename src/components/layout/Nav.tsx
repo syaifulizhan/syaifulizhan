@@ -36,6 +36,9 @@ export default function Nav() {
                 <Link href="/hadis">{T.navHadis[lang]}</Link>
               </li>
               <li>
+                <Link href="/glosari">{T.navGlosari[lang]}</Link>
+              </li>
+              <li>
                 <a href="/#ilmu">{T.navIlmu[lang]}</a>
               </li>
               <li>

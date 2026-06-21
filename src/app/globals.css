@@ -1110,6 +1110,17 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .pgn-b.active { background: var(--gold); color: var(--midnight); border-color: var(--gold); font-weight: 600; }
 .pgn-e { display: inline-flex; align-items: center; padding: 0 6px; color: var(--muted); }
 
+/* ── GLOSARI ── */
+.glos-letter { font-family: var(--arabic); direction: rtl; font-size: 1.8rem; color: var(--gold); border-bottom: 1px solid var(--line-dark); padding-bottom: 6px; margin: 28px 0 14px; }
+.glos-card { border: 1px solid var(--line-dark); background: rgba(30, 26, 42, 0.42); padding: 16px 18px; margin-bottom: 10px; }
+.glos-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.glos-ar { font-family: var(--arabic); direction: rtl; font-size: 1.6rem; color: var(--paper); }
+.glos-tr { font-family: var(--display); font-style: italic; font-size: 1.05rem; color: var(--gold-soft); }
+.glos-line { font-size: 0.92rem; color: var(--muted); line-height: 1.6; margin-top: 3px; }
+.glos-lang { display: inline-block; font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.1em; color: var(--gold); border: 1px solid var(--line-dark); padding: 1px 6px; margin-inline-end: 8px; vertical-align: middle; }
+.glos-term { color: var(--paper); font-weight: 600; }
+.glos-def { color: var(--muted); }
+
 /* toggle dwibahasa */
 .btoggle { margin: 14px 0 18px; }
 .btoggle-row { display: inline-flex; border: 1px solid var(--line-dark); margin-bottom: 10px; }
