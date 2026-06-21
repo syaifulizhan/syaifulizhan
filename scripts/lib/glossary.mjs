@@ -134,6 +134,50 @@ export const GLOSSARY_DATA = [
   { ar: "نزول الإسناد", tr: "nuzūl al-isnād", ms: "nuzul al-isnad", en: "low chain", dar: "كثرة عدد رجال الإسناد، خلاف العلو.", dms: "Banyak bilangan perawi sanad — lawan kepada uluw.", den: "A chain with more narrators — the opposite of ʿuluww." },
   { ar: "رجال", tr: "rijāl", ms: "rijal (ilmu perawi)", en: "narrator biographies", dar: "علم تراجم رواة الحديث وأحوالهم.", dms: "Ilmu biografi dan keadaan para perawi hadis.", den: "The science of hadith narrators' biographies and conditions." },
   { ar: "تحمل وأداء", tr: "taḥammul wa adāʾ", ms: "tahammul & ada'", en: "receiving & conveying", dar: "أخذ الحديث وكيفية روايته بعدُ.", dms: "Cara menerima hadis dan cara menyampaikannya semula.", den: "The reception of hadith and the manner of its later conveyance." },
+
+  // ── Jenis & keadaan hadis (lanjutan) ──
+  { ar: "مستفيض", tr: "mustafīḍ", ms: "mustafid", en: "widespread", dar: "ما زاد رواته على ثلاثة، قريب من المشهور.", dms: "Hadis yang perawinya lebih tiga, hampir dengan masyhur.", den: "A hadith with more than three narrators, near to mashhūr." },
+  { ar: "محفوظ", tr: "maḥfūẓ", ms: "mahfuz", en: "preserved", dar: "رواية الثقة الراجحة مقابل الشاذ.", dms: "Riwayat perawi thiqah yang lebih kuat, lawan kepada syaz.", den: "The stronger report of a reliable narrator, opposite of shādh." },
+  { ar: "معروف", tr: "maʿrūf", ms: "ma'ruf", en: "recognised", dar: "رواية الثقة الراجحة مقابل المنكر.", dms: "Riwayat perawi thiqah yang lebih kuat, lawan kepada munkar.", den: "The stronger report of a reliable narrator, opposite of munkar." },
+  { ar: "مردود", tr: "mardūd", ms: "mardud", en: "rejected", dar: "ما لم يترجح صدق المخبر به.", dms: "Hadis yang tidak terbukti benar penyampaiannya; ditolak.", den: "A report whose truthfulness is not established; rejected." },
+  { ar: "متفق عليه", tr: "muttafaq ʿalayh", ms: "muttafaq 'alaih", en: "agreed upon", dar: "ما اتفق على إخراجه البخاري ومسلم.", dms: "Hadis yang disepakati riwayatnya oleh al-Bukhari dan Muslim.", den: "A hadith reported by both al-Bukhārī and Muslim." },
+  { ar: "حسن صحيح", tr: "ḥasan ṣaḥīḥ", ms: "hasan sahih", en: "good–authentic", dar: "وصف للترمذي يجمع بين الحسن والصحة بطرق.", dms: "Istilah al-Tirmidhi yang menghimpunkan hasan dan sahih melalui beberapa jalan.", den: "Al-Tirmidhī's term combining ḥasan and ṣaḥīḥ via multiple chains." },
+  { ar: "صحيفة", tr: "ṣaḥīfah", ms: "sahifah", en: "early manuscript", dar: "ما كُتب من الأحاديث في الصدر الأول.", dms: "Lembaran hadis yang ditulis pada zaman awal Islam.", den: "An early written page of hadiths from the first generations." },
+
+  // ── Sanad: keadaan & istilah ──
+  { ar: "معنعن", tr: "muʿanʿan", ms: "mu'an'an", en: "‘from’-form chain", dar: "الإسناد المروي بصيغة (عن).", dms: "Sanad yang diriwayatkan dengan lafaz “عن (daripada)”.", den: "A chain transmitted with the wording ʿan (‘from’)." },
+  { ar: "مرسل خفي", tr: "mursal khafī", ms: "mursal khafi", en: "hidden mursal", dar: "رواية عمّن عاصره ولم يسمع منه بصيغة محتملة.", dms: "Riwayat dari orang sezaman yang tidak didengarinya, dengan lafaz yang mengelirukan.", den: "Narrating from a contemporary one did not hear, using ambiguous wording." },
+  { ar: "سابق ولاحق", tr: "sābiq wa lāḥiq", ms: "sabiq & lahiq", en: "earlier & later", dar: "اشتراك راويين عن شيخ تباعد ما بين وفاتيهما.", dms: "Dua perawi berkongsi seorang guru, namun jarak wafat mereka jauh.", den: "Two narrators sharing a teacher whose deaths are far apart." },
+  { ar: "مهمل", tr: "muhmal", ms: "muhmal", en: "undistinguished name", dar: "أن يروي عن راويين متفقي الاسم دون تمييز.", dms: "Meriwayatkan daripada dua perawi yang sama nama tanpa membezakannya.", den: "Narrating from two narrators of the same name without distinguishing them." },
+  { ar: "مؤتلف ومختلف", tr: "muʾtalif wa mukhtalif", ms: "mu'talif & mukhtalif", en: "similar in script, different in sound", dar: "أسماء تتفق خطّاً وتختلف نطقاً.", dms: "Nama yang sama tulisan tetapi berbeza sebutan.", den: "Names identical in writing but different in pronunciation." },
+  { ar: "متفق ومفترق", tr: "muttafiq wa muftariq", ms: "muttafiq & muftariq", en: "same name, different persons", dar: "أسماء تتفق لفظاً وخطّاً لأشخاص مختلفين.", dms: "Nama yang sama lafaz dan tulisan tetapi merujuk individu berlainan.", den: "Identical names (in sound and script) belonging to different persons." },
+  { ar: "عوالي", tr: "ʿawālī", ms: "awali", en: "high-chain hadiths", dar: "الأحاديث التي قلّ عدد رجال إسنادها.", dms: "Hadis-hadis yang sedikit bilangan perawi sanadnya.", den: "Hadiths whose chains have few narrators." },
+
+  // ── Perawi: keadaan ──
+  { ar: "اختلاط", tr: "ikhtilāṭ", ms: "ikhtilat", en: "memory deterioration", dar: "فساد العقل أو الحفظ في آخر عمر الراوي.", dms: "Kerosakan akal atau hafalan perawi di akhir umurnya.", den: "Deterioration of a narrator's mind or memory late in life." },
+  { ar: "مختلط", tr: "mukhtaliṭ", ms: "mukhtalit", en: "one who became confused", dar: "الراوي الذي طرأ عليه الاختلاط.", dms: "Perawi yang mengalami ikhtilat (kekeliruan hafalan).", den: "A narrator afflicted by ikhtilāṭ." },
+  { ar: "مبتدع", tr: "mubtadiʿ", ms: "mubtadi'", en: "innovator", dar: "من اعتقد ما أُحدث في الدين على خلاف المعروف.", dms: "Perawi yang berpegang dengan bid'ah dalam agama.", den: "A narrator holding a religious innovation." },
+  { ar: "متقن", tr: "mutqin", ms: "mutqin", en: "exacting", dar: "الحافظ المحكم لما يرويه.", dms: "Perawi yang sangat teliti dan mantap riwayatnya.", den: "A narrator highly meticulous and firm in what he relates." },
+
+  // ── Martabat jarh wa ta'dil (lanjutan) ──
+  { ar: "وضاع", tr: "waḍḍāʿ", ms: "wadda'", en: "habitual fabricator", dar: "كثير الوضع للحديث.", dms: "Perawi yang banyak memalsukan hadis (martabat terburuk).", den: "One who frequently fabricates hadith (the worst rank)." },
+  { ar: "كذاب", tr: "kadhdhāb", ms: "kazzab", en: "liar", dar: "من يكذب في حديث الناس أو في الحديث.", dms: "Perawi pendusta — martabat amat lemah.", den: "A lying narrator — a severely weak rank." },
+  { ar: "متروك الحديث", tr: "matrūk al-ḥadīth", ms: "matruk al-hadith", en: "abandoned narrator", dar: "من اتُّفق على ترك حديثه لتهمة.", dms: "Perawi yang disepakati ditinggalkan hadisnya kerana tuduhan.", den: "A narrator whose hadith is agreed to be abandoned due to accusation." },
+  { ar: "منكر الحديث", tr: "munkar al-ḥadīth", ms: "munkar al-hadith", en: "of denounced hadith", dar: "من تكثر المناكير في روايته.", dms: "Perawi yang banyak munkar dalam riwayatnya.", den: "A narrator whose narration abounds in denounced reports." },
+  { ar: "لا بأس به", tr: "lā baʾsa bih", ms: "la ba'sa bih", en: "no harm in him", dar: "لفظ توثيق فيه لين، قريب من الصدوق.", dms: "Lafaz ta'dil yang ringan, hampir dengan saduq.", den: "A mild validation, close to ṣadūq." },
+  { ar: "فيه نظر", tr: "fīhi naẓar", ms: "fihi nazar", en: "in him is a query", dar: "لفظ جرح يدل على ضعف عند البخاري غالباً.", dms: "Lafaz jarh yang menunjukkan kelemahan (terutama pada al-Bukhari).", den: "A criticism indicating weakness (especially with al-Bukhārī)." },
+  { ar: "سكتوا عنه", tr: "sakatū ʿanhu", ms: "sakatu 'anhu", en: "they were silent about him", dar: "لفظ جرح شديد عند البخاري.", dms: "Lafaz jarh yang berat di sisi al-Bukhari.", den: "A strong criticism in al-Bukhārī's usage." },
+  { ar: "واه", tr: "wāhin", ms: "wahin (rapuh)", en: "frail", dar: "شديد الضعف.", dms: "Perawi/hadis yang amat lemah.", den: "Severely weak in narrator or report." },
+  { ar: "صدوق يهم", tr: "ṣadūq yahim", ms: "saduq yahim", en: "truthful but errs", dar: "صادق يقع منه الوهم أحياناً.", dms: "Perawi jujur tetapi kadangkala tersilap (wahm).", den: "A truthful narrator who occasionally errs." },
+
+  // ── Ilmu & istilah am ──
+  { ar: "مصطلح الحديث", tr: "muṣṭalaḥ al-ḥadīth", ms: "mustalah al-hadith", en: "hadith terminology science", dar: "علم بأصول وقواعد يُعرف بها أحوال السند والمتن.", dms: "Ilmu kaedah untuk mengetahui keadaan sanad dan matan.", den: "The science of principles for assessing chain and text." },
+  { ar: "علل الحديث", tr: "ʿilal al-ḥadīth", ms: "ilal al-hadith", en: "science of hidden defects", dar: "علم بالأسباب الخفية القادحة في الحديث.", dms: "Ilmu tentang sebab tersembunyi yang mencacatkan hadis.", den: "The science of subtle defects that flaw a hadith." },
+  { ar: "غريب الحديث", tr: "gharīb al-ḥadīth", ms: "gharib al-hadith", en: "rare wording science", dar: "علم بشرح ما غمض من ألفاظ المتون.", dms: "Ilmu menerangkan lafaz matan hadis yang sukar difahami.", den: "The science explaining obscure words in hadith texts." },
+  { ar: "أسباب ورود الحديث", tr: "asbāb wurūd al-ḥadīth", ms: "asbab wurud al-hadith", en: "occasions of a hadith", dar: "ما وُجد الحديث متحدثاً عنه عند وروده.", dms: "Sebab atau peristiwa yang melatari sesebuah hadis diucapkan.", den: "The circumstances prompting a hadith's utterance." },
+  { ar: "مذاكرة", tr: "mudhākarah", ms: "muzakarah", en: "scholarly review", dar: "تدارس الحديث بين الطلبة لضبطه.", dms: "Saling mengulang kaji hadis sesama penuntut untuk mengukuhkannya.", den: "Mutual review of hadiths among students to master them." },
+  { ar: "رحلة", tr: "riḥlah", ms: "rihlah (rihlah ilmu)", en: "scholarly travel", dar: "السفر في طلب الحديث وعلوّ الإسناد.", dms: "Perjalanan menuntut hadis dan mencari sanad tinggi.", den: "Travelling in pursuit of hadith and higher chains." },
+  { ar: "ثبت (فهرس)", tr: "thabat (fihris)", ms: "thabat (senarai riwayat)", en: "transmission index", dar: "كتاب يجمع شيوخ المحدّث ومروياته.", dms: "Kitab yang menghimpunkan guru dan riwayat seseorang ahli hadis.", den: "A work listing a traditionist's teachers and narrations." },
 ];
 
 export const GLOSSARY = Object.fromEntries(GLOSSARY_DATA.map((g) => [g.ar, g.ms]));
