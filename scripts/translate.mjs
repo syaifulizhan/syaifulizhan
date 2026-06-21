@@ -1,9 +1,8 @@
 // Enjin terjemahan provider-agnostic: matn hadis → BM + English.
-// Provider: ollama (lokal, tanpa had — UTAMA) | gemini | groq. Resumable.
+// Provider: ollama (lokal — UTAMA) | gemini | groq. Resumable.
 //   Anggaran : node --env-file=.env.local scripts/translate.mjs --dry-run
-//   Ollama   : node --env-file=.env.local scripts/translate.mjs --provider=ollama --model=aya:8b
-//   Gemini   : node --env-file=.env.local scripts/translate.mjs --provider=gemini --limit=20
-//   Penuh    : node --env-file=.env.local scripts/translate.mjs            (ms+en, ollama)
+//   Uji      : node --env-file=.env.local scripts/translate.mjs --provider=ollama --model=aya:8b --lang=ms --limit=3
+//   Penuh    : node --env-file=.env.local scripts/translate.mjs
 import { createClient } from "@libsql/client";
 
 const db = createClient({
@@ -24,51 +23,100 @@ const MODEL = String(args.model ?? DEFAULT_MODEL[PROVIDER] ?? "aya:8b");
 const LIMIT = args.limit ? Number(args.limit) : 1e9;
 const CONC = Number(args.concurrency ?? (PROVIDER === "ollama" ? 2 : 4));
 const DRY = !!args.dryRun || !!args["dry-run"];
+const VERIFY = !(args.noVerify || args["no-verify"]); // crosscheck AI-ke-AI (lalai ON)
 
-const LANG_NAME = { ms: "Bahasa Melayu baku", en: "English" };
+// ── Prompt ketat + few-shot ─────────────────────────────────────────────────
+const SYSTEM = {
+  ms: `Anda penterjemah hadis pakar Arab→Bahasa Melayu. Terjemah teks hadis (sanad + matan) ke Bahasa Melayu BAKU (ejaan Dewan Bahasa dan Pustaka, Malaysia) — BUKAN Bahasa Indonesia.
+PERATURAN KETAT:
+1. Output HANYA terjemahan. JANGAN tulis "Terjemahan:", mukadimah, nota, atau komentar.
+2. Kekalkan makna TEPAT. Jangan tokok tambah atau tafsir.
+3. Sanad guna "menceritakan kepadaku/kami", "daripada"; Nabi → "baginda bersabda"; "صلى الله عليه وسلم" → "SAW".
+4. Nama perawi: transliterasi Melayu standard (cth عبد الله → Abdullah, جابر بن زيد → Jabir bin Zaid).
+5. Istilah: مؤمن=mukmin (orang beriman), كافر=kafir, نية=niat, عمل=amalan.`,
+  en: `You are an expert Arabic→English hadith translator. Translate the hadith text (chain + content) into clear, accurate ENGLISH ONLY.
+STRICT RULES:
+1. Output ONLY the English translation. NO preamble, "Translation:", notes, or commentary.
+2. Preserve the meaning EXACTLY. Do not add interpretation.
+3. Chain: "narrated to me/us", "from"; Prophet → "he said"; "صلى الله عليه وسلم" → "(peace be upon him)".
+4. Narrator names: standard transliteration (عبد الله → Abdullah, جابر بن زيد → Jabir ibn Zayd).
+5. Never output Malay or untranslated Arabic prose — English only.`,
+};
 
-// Hook glosari: kelak diisi dari Kamus Istilah Hadis (istilah_ar → istilah_ms).
-function glossaryHint(/* lang */) {
-  return ""; // TODO: suntik istilah teknikal dari glosari kamus
+const EX_AR =
+  'حَدَّثَنِي أَبُو عُبَيْدَةَ ، عَنْ جَابِرِ بْنِ زَيْدٍ ، عَنْ عَبْدِ اللَّهِ بْنِ عَبَّاسٍ ، عَنِ النَّبِيِّ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ ، قَالَ : " نِيَّةُ الْمُؤْمِنِ خَيْرٌ مِنْ عَمَلِهِ "';
+const EX = {
+  ms: 'Abu Ubaidah menceritakan kepadaku, daripada Jabir bin Zaid, daripada Abdullah bin Abbas, daripada Nabi SAW, baginda bersabda: "Niat orang mukmin lebih baik daripada amalannya."',
+  en: 'Abu Ubaidah narrated to me, from Jabir ibn Zayd, from Abdullah ibn Abbas, from the Prophet (peace be upon him), who said: "The intention of the believer is better than his deed."',
+};
+
+function buildMessages(lang, matn) {
+  return [
+    { role: "system", content: SYSTEM[lang] },
+    { role: "user", content: EX_AR },
+    { role: "assistant", content: EX[lang] },
+    { role: "user", content: matn },
+  ];
 }
 
-const system = (lang) =>
-  `Anda penterjemah hadis pakar. Terjemah TEKS HADIS Arab (termasuk sanad/isnad) ke ${LANG_NAME[lang]}.
-Peraturan:
-- Kekalkan makna TEPAT. Jangan tambah tafsiran, komentar, atau nota.
-- Guna istilah Islam standard${lang === "ms" ? " dan ejaan rasmi Dewan Bahasa dan Pustaka (DBP)" : ""}.
-- "صلى الله عليه وسلم" → ${lang === "ms" ? "“selawat dan salam ke atasnya”" : "“peace be upon him”"}; nama perawi kekal transliterasi.
-- Output: TERJEMAHAN SAHAJA, tiada teks lain.${glossaryHint(lang)}`;
+// ── Peringkat verifikasi AI-ke-AI (pengkritik tegas) ────────────────────────
+const VERIFY_SYSTEM = {
+  ms: `Anda PENYEMAK terjemahan hadis yang TEGAS & TELITI. Diberi teks Arab asal dan terjemahan Bahasa Melayu cadangan, semak ketepatan makna:
+- NEGASI: pastikan tidak terbalik (cth فأعي = "aku faham", BUKAN "tidak faham").
+- KATA KERJA: pastikan betul (cth علّموا = "ajarkan", BUKAN "pelajari").
+- NAMA PERAWI: JANGAN benarkan nama yang direka/ditambah yang tiada dalam teks Arab.
+- KELENGKAPAN: jangan ada bahagian tertinggal.
+- BAHASA: Melayu baku DBP (bukan Indonesia: guna "loceng" bukan "lonceng", "lelaki" bukan "pria", "kamu" bukan "kalian").
+Jika terjemahan TEPAT sepenuhnya, ulang ia sebagaimana adanya. Jika ada SEBARANG kesalahan, output versi BETUL.
+Output HANYA terjemahan Bahasa Melayu akhir — tiada komentar, tiada penjelasan.`,
+  en: `You are a STRICT, meticulous hadith translation REVIEWER. Given the original Arabic and a proposed English translation, verify meaning accuracy:
+- NEGATION: ensure not flipped (e.g. فأعي = "I understand", NOT "I do not understand").
+- VERBS: ensure correct (e.g. علّموا = "teach", NOT "learn").
+- NARRATOR NAMES: do NOT allow invented/added names absent from the Arabic.
+- COMPLETENESS: nothing omitted.
+If the translation is fully accurate, repeat it as-is. If there is ANY error, output the corrected version.
+Output ONLY the final English translation — no commentary, no explanation.`,
+};
+function buildVerifyMessages(lang, matn, draft) {
+  return [
+    { role: "system", content: VERIFY_SYSTEM[lang] },
+    { role: "user", content: `ARAB:\n${matn}\n\nTERJEMAHAN:\n${draft}` },
+  ];
+}
 
-// ── Providers ──────────────────────────────────────────────────────────────
-async function callOllama(sys, user) {
+// ── Providers (terima array messages) ───────────────────────────────────────
+async function callOllama(messages) {
   const res = await fetch("http://localhost:11434/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: sys }, { role: "user", content: user }], stream: false }),
+    body: JSON.stringify({ model: MODEL, messages, stream: false, options: { temperature: 0.2 } }),
   });
   if (!res.ok) throw new Error(`ollama HTTP ${res.status}`);
   return (await res.json()).message?.content?.trim();
 }
-async function callGemini(sys, user) {
+async function callGemini(messages) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY tiada");
+  const sys = messages.find((m) => m.role === "system")?.content;
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ parts: [{ text: user }] }] }),
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: { temperature: 0.2 } }),
   });
   const j = await res.json();
   if (!res.ok) throw new Error(`gemini ${j.error?.message || res.status}`);
   return j.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 }
-async function callGroq(sys, user) {
+async function callGroq(messages) {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY tiada");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, messages: [{ role: "system", content: sys }, { role: "user", content: user }] }),
+    body: JSON.stringify({ model: MODEL, messages, temperature: 0.2 }),
   });
   const j = await res.json();
   if (!res.ok) throw new Error(`groq ${j.error?.message || res.status}`);
@@ -76,6 +124,15 @@ async function callGroq(sys, user) {
 }
 const CALL = { ollama: callOllama, gemini: callGemini, groq: callGroq }[PROVIDER];
 if (!CALL) { console.error(`✗ provider tak dikenali: ${PROVIDER}`); process.exit(1); }
+
+// Buang pendahuluan biasa jika model degil
+function clean(text) {
+  if (!text) return text;
+  return text
+    .replace(/^\s*(terjemahan|translation|here is.*?:|berikut.*?:)\s*[:\-]?\s*/i, "")
+    .replace(/^["“]|["”]$/g, "")
+    .trim();
+}
 
 async function rowsNeeding(lang) {
   const r = await db.execute({
@@ -91,16 +148,14 @@ async function rowsNeeding(lang) {
 async function healthCheck() {
   if (PROVIDER !== "ollama") return;
   try {
-    const res = await fetch("http://localhost:11434/api/tags");
-    const j = await res.json();
+    const j = await (await fetch("http://localhost:11434/api/tags")).json();
     const models = (j.models || []).map((m) => m.name);
     if (!models.some((m) => m.startsWith(MODEL.split(":")[0]))) {
       console.error(`✗ Model '${MODEL}' belum di-pull. Jalankan: ollama pull ${MODEL}`);
-      console.error(`  Model sedia ada: ${models.join(", ") || "(tiada)"}`);
       process.exit(1);
     }
   } catch {
-    console.error("✗ Ollama tak berjalan di localhost:11434. Pasang & jalankan Ollama (ollama.com), kemudian: ollama pull " + MODEL);
+    console.error("✗ Ollama tak berjalan di :11434. Buka app Ollama + ollama pull " + MODEL);
     process.exit(1);
   }
 }
@@ -109,10 +164,8 @@ async function healthCheck() {
 if (DRY) {
   for (const lang of LANGS) {
     const rows = await rowsNeeding(lang);
-    const chars = rows.reduce((s, r) => s + ((r.matn_ar || "").length), 0);
-    console.log(`[${lang}] ${rows.length} hadis perlu terjemah · ~${Math.round(chars / 3).toLocaleString()} tok input · provider ${PROVIDER}/${MODEL}`);
+    console.log(`[${lang}] ${rows.length} hadis perlu terjemah · provider ${PROVIDER}/${MODEL}`);
   }
-  console.log("\n(dry-run — tiada panggilan.)");
   db.close();
 } else {
   await healthCheck();
@@ -124,13 +177,17 @@ if (DRY) {
       while (idx < rows.length) {
         const r = rows[idx++];
         try {
-          const text = await CALL(system(lang), r.matn_ar);
+          let text = clean(await CALL(buildMessages(lang, r.matn_ar)));
+          if (text && VERIFY) {
+            const checked = clean(await CALL(buildVerifyMessages(lang, r.matn_ar, text)));
+            if (checked) text = checked;
+          }
           if (text) {
             await db.execute({
               sql: `INSERT INTO translations (entity_type,entity_id,lang,text,source,model,is_verified,created_at)
                     VALUES ('hadith',?,?,?,'ai',?,0,datetime('now'))
                     ON CONFLICT(entity_type,entity_id,lang,source) DO UPDATE SET text=excluded.text, model=excluded.model`,
-              args: [r.id, lang, text, `${PROVIDER}:${MODEL}`],
+              args: [r.id, lang, text, `${PROVIDER}:${MODEL}${VERIFY ? "+v" : ""}`],
             });
             done++;
           }
