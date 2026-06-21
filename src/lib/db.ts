@@ -1,22 +1,28 @@
 import { createClient, type Client } from "@libsql/client";
 
 /**
- * Klien korpus Turso/libSQL.
+ * Klien korpus Turso/libSQL — dicipta LAZY (masa request), bukan module-load.
+ * Sebab: @opennextjs/cloudflare isi env Worker (TURSO_*) hanya semasa request,
+ * jadi membaca process.env di module-load beri URL kosong → URL_INVALID.
  *
- * Dev tempatan : TURSO_DATABASE_URL = file:./data/corpus.db  (tiada token)
- * Produksi     : TURSO_DATABASE_URL = libsql://<db>.turso.io + TURSO_AUTH_TOKEN
- *
- * Korpus ini baca-sahaja dari sudut app (scrape/import dibuat oleh skrip Node).
+ * Dev tempatan : TURSO_DATABASE_URL = file:./data/corpus.db
+ * Produksi     : libsql://<db>.turso.io + TURSO_AUTH_TOKEN (Cloudflare secret)
  */
-const url = process.env.TURSO_DATABASE_URL ?? "file:./data/corpus.db";
-const authToken = process.env.TURSO_AUTH_TOKEN;
+let _client: Client | undefined;
 
-declare global {
-  // elak cipta banyak klien semasa HMR dev
-  var __corpus__: Client | undefined;
+function client(): Client {
+  if (!_client) {
+    const url = process.env.TURSO_DATABASE_URL || "file:./data/corpus.db";
+    _client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
+  }
+  return _client;
 }
 
-export const corpus: Client =
-  globalThis.__corpus__ ?? createClient({ url, authToken });
-
-if (process.env.NODE_ENV !== "production") globalThis.__corpus__ = corpus;
+// Proxy supaya `corpus.execute(...)` kekal berfungsi, tapi klien dicipta pada guna pertama.
+export const corpus = new Proxy({} as Client, {
+  get(_t, prop) {
+    const c = client();
+    const v = Reflect.get(c as object, prop);
+    return typeof v === "function" ? v.bind(c) : v;
+  },
+});
