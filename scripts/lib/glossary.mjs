@@ -77,6 +77,63 @@ export const GLOSSARY_DATA = [
   { ar: "معلق", tr: "muʿallaq", ms: "mu'allaq", en: "suspended", dar: "ما حُذف من مبدأ إسناده راوٍ فأكثر.", dms: "Hadis yang digugurkan seorang perawi atau lebih dari awal sanad.", den: "A hadith with one or more narrators dropped from the start of the chain." },
   // ── و ──
   { ar: "وضع", tr: "waḍʿ", ms: "wadh' (pemalsuan)", en: "fabrication", dar: "اختلاق الحديث ونسبته كذباً.", dms: "Perbuatan mereka-reka hadis palsu.", den: "The act of fabricating false hadith." },
+
+  // ── Jenis & darjat hadis (tambahan) ──
+  { ar: "حديث قدسي", tr: "ḥadīth qudsī", ms: "hadis qudsi", en: "sacred hadith", dar: "ما يرويه النبي ﷺ عن ربه بلفظه.", dms: "Hadis yang Nabi SAW sampaikan maknanya daripada Allah dengan lafaz baginda.", den: "A hadith the Prophet ﷺ relates from his Lord in his own wording." },
+  { ar: "صحيح لذاته", tr: "ṣaḥīḥ li-dhātihi", ms: "sahih li-dzatih", en: "authentic in itself", dar: "الصحيح المستوفي للشروط بذاته.", dms: "Hadis sahih yang memenuhi semua syarat dengan sendirinya.", den: "A hadith meeting all conditions of authenticity by itself." },
+  { ar: "صحيح لغيره", tr: "ṣaḥīḥ li-ghayrihi", ms: "sahih li-ghairih", en: "authentic by support", dar: "الحسن لذاته إذا تعددت طرقه فارتقى.", dms: "Hadis hasan yang naik ke darjat sahih kerana banyak jalan.", den: "A ḥasan hadith elevated to ṣaḥīḥ by multiple chains." },
+  { ar: "حسن لغيره", tr: "ḥasan li-ghayrihi", ms: "hasan li-ghairih", en: "good by support", dar: "الضعيف إذا تعددت طرقه وانجبر.", dms: "Hadis daif yang naik ke hasan kerana sokongan jalan lain.", den: "A weak hadith raised to ḥasan by corroborating chains." },
+  { ar: "معلل", tr: "muʿallal", ms: "mu'allal", en: "defective", dar: "ما فيه علة قادحة خفية.", dms: "Hadis yang mengandungi illat (kecacatan tersembunyi).", den: "A hadith containing a subtle, damaging defect." },
+  { ar: "مضطرب", tr: "muḍṭarib", ms: "mudtarib", en: "shaky", dar: "ما رُوي على أوجه مختلفة متساوية متعذّرة الترجيح.", dms: "Hadis yang diriwayatkan dengan beberapa bentuk berbeza yang sama kuat.", den: "A hadith narrated in differing, equally-weighted forms that cannot be reconciled." },
+  { ar: "مقلوب", tr: "maqlūb", ms: "maqlub", en: "inverted", dar: "ما أُبدل فيه شيء بآخر في السند أو المتن.", dms: "Hadis yang ditukar ganti sesuatu padanya, pada sanad atau matan.", den: "A hadith in which something is swapped, in chain or text." },
+  { ar: "مدرج", tr: "mudraj", ms: "mudraj", en: "interpolated", dar: "ما أُدخل في متنه أو سنده ما ليس منه.", dms: "Hadis yang dimasukkan padanya kata-kata yang bukan sebahagiannya.", den: "A hadith into which words not originally part of it are inserted." },
+  { ar: "مصحف", tr: "muṣaḥḥaf", ms: "musahhaf", en: "misread (dots)", dar: "ما غُيّر فيه بتغيير النقط مع بقاء الصورة.", dms: "Hadis yang berubah kerana salah titik huruf.", den: "A hadith altered by misplacing the diacritical dots." },
+  { ar: "محرف", tr: "muḥarraf", ms: "muharraf", en: "altered (vowels)", dar: "ما غُيّر فيه بتغيير الشكل (الحركات).", dms: "Hadis yang berubah kerana salah baris/harakat.", den: "A hadith altered by changing the vowel marks." },
+  { ar: "مبهم", tr: "mubham", ms: "mubham", en: "unnamed narrator", dar: "ما فيه راوٍ لم يُسمَّ.", dms: "Hadis yang ada padanya perawi yang tidak dinamakan.", den: "A hadith containing an unnamed narrator." },
+  { ar: "مسلسل", tr: "musalsal", ms: "musalsal", en: "chained (uniform)", dar: "ما تتابع رجال إسناده على صفة أو حالة واحدة.", dms: "Hadis yang perawinya berturut atas satu sifat atau keadaan yang sama.", den: "A hadith whose narrators share one uniform attribute or manner." },
+  { ar: "مختلف الحديث", tr: "mukhtalaf al-ḥadīth", ms: "mukhtalaf al-hadith", en: "apparently conflicting hadith", dar: "حديثان صحيحان ظاهرهما التعارض ويمكن الجمع.", dms: "Dua hadis sahih yang zahirnya bercanggah namun boleh dihimpunkan.", den: "Two authentic hadiths apparently conflicting but reconcilable." },
+  { ar: "ناسخ ومنسوخ", tr: "nāsikh wa mansūkh", ms: "nasikh & mansukh", en: "abrogating & abrogated", dar: "رفع حكم شرعي متقدم بدليل متأخر.", dms: "Hukum terkemudian yang membatalkan hukum terdahulu.", den: "A later ruling abrogating an earlier one." },
+
+  // ── Cara menerima & menyampaikan (tahammul wa ada') ──
+  { ar: "سماع", tr: "samāʿ", ms: "sama' (mendengar)", en: "audition", dar: "أن يقرأ الشيخ ويسمع الطالب.", dms: "Guru membaca dan murid mendengar — cara penerimaan tertinggi.", den: "The teacher recites and the student listens — the highest mode of reception." },
+  { ar: "عرض", tr: "ʿarḍ", ms: "ardh (qira'ah)", en: "presentation/reading", dar: "أن يقرأ الطالب على الشيخ والشيخ يسمع.", dms: "Murid membaca kepada guru dan guru mendengar/mengiyakan.", den: "The student reads to the teacher who listens and approves." },
+  { ar: "إجازة", tr: "ijāzah", ms: "ijazah", en: "licence to transmit", dar: "إذن الشيخ للطالب بالرواية عنه.", dms: "Keizinan guru kepada murid untuk meriwayatkan daripadanya.", den: "The teacher's permission for the student to transmit from him." },
+  { ar: "مناولة", tr: "munāwalah", ms: "munawalah", en: "handing over", dar: "أن يناول الشيخ الطالب كتابه ويأذن بروايته.", dms: "Guru menyerahkan kitabnya kepada murid serta mengizinkan meriwayatkannya.", den: "The teacher hands his book to the student, licensing its transmission." },
+  { ar: "مكاتبة", tr: "mukātabah", ms: "mukatabah", en: "written transmission", dar: "أن يكتب الشيخ الحديث لطالب غائب أو حاضر.", dms: "Guru menulis hadis untuk murid (hadir atau jauh).", den: "The teacher writes the hadith for a student, present or absent." },
+  { ar: "وجادة", tr: "wijādah", ms: "wijadah", en: "found writing", dar: "أن يجد الطالب حديثاً بخط راوٍ لم يلقه.", dms: "Murid menemui hadis dengan tulisan perawi yang tidak ditemuinya.", den: "Finding a hadith in the handwriting of a narrator one did not meet." },
+
+  // ── Jenis kitab hadis ──
+  { ar: "المسند (كتاب)", tr: "al-musnad", ms: "musnad (jenis kitab)", en: "musnad collection", dar: "كتاب رُتّبت أحاديثه على أسماء الصحابة.", dms: "Kitab yang menyusun hadis mengikut nama Sahabat.", den: "A collection arranging hadiths by Companions' names." },
+  { ar: "سنن", tr: "sunan", ms: "sunan", en: "sunan collection", dar: "كتاب رُتّب على أبواب الفقه مرفوعاً.", dms: "Kitab yang menyusun hadis hukum mengikut bab fiqh.", den: "A collection arranged by jurisprudential chapters of marfūʿ hadiths." },
+  { ar: "جامع", tr: "jāmiʿ", ms: "jami'", en: "comprehensive collection", dar: "كتاب يجمع أبواب الدين كلها.", dms: "Kitab yang menghimpun kesemua bab agama.", den: "A collection encompassing all chapters of the religion." },
+  { ar: "مصنف", tr: "muṣannaf", ms: "musannaf", en: "musannaf", dar: "كتاب رُتّب على الأبواب يجمع المرفوع والموقوف والمقطوع.", dms: "Kitab tersusun ikut bab, menghimpun marfu', mauquf dan maqtu'.", den: "A chapter-arranged work mixing marfūʿ, mawqūf and maqṭūʿ." },
+  { ar: "معجم", tr: "muʿjam", ms: "mu'jam", en: "mu'jam", dar: "كتاب رُتّب على شيوخ المؤلف غالباً.", dms: "Kitab yang biasanya disusun mengikut nama guru pengarang.", den: "A work usually arranged by the author's teachers." },
+  { ar: "مستدرك", tr: "mustadrak", ms: "mustadrak", en: "supplement", dar: "ما استُدرك على كتاب بما فاته على شرطه.", dms: "Kitab yang menambah hadis yang tertinggal dari kitab lain atas syaratnya.", den: "A work adding hadiths a prior book omitted, on its conditions." },
+  { ar: "مستخرج", tr: "mustakhraj", ms: "mustakhraj", en: "extraction work", dar: "أن يأتي المصنف بأحاديث كتابٍ بأسانيد نفسه.", dms: "Kitab yang membawa hadis kitab lain dengan sanad pengarangnya sendiri.", den: "A work re-narrating another book's hadiths via the author's own chains." },
+  { ar: "موطأ", tr: "muwaṭṭaʾ", ms: "muwatta'", en: "muwatta'", dar: "كتاب جمع المرفوع والموقوف والآثار على الأبواب.", dms: "Kitab yang menghimpun marfu', mauquf dan athar mengikut bab.", den: "A work compiling marfūʿ, mawqūf and reports by chapters." },
+  { ar: "أطراف", tr: "aṭrāf", ms: "atraf", en: " atraf index", dar: "كتاب يذكر طرف الحديث الدالّ عليه مع أسانيده.", dms: "Kitab yang menyebut pangkal hadis sahaja beserta sanad-sanadnya.", den: "A work citing only the opening of each hadith with its chains." },
+
+  // ── Kategori perawi (tambahan) ──
+  { ar: "مخضرم", tr: "mukhaḍram", ms: "mukhadram", en: "lived across two eras", dar: "من أدرك الجاهلية والإسلام ولم يلقَ النبي ﷺ.", dms: "Orang yang hidup di zaman jahiliah dan Islam tetapi tidak bertemu Nabi SAW.", den: "One who lived in the pre-Islamic and Islamic eras but did not meet the Prophet ﷺ." },
+  { ar: "أتباع التابعين", tr: "atbāʿ al-tābiʿīn", ms: "atba' al-tabiin", en: "followers of the Successors", dar: "من لقي التابعي مؤمناً ومات على الإسلام.", dms: "Orang yang bertemu Tabiin dalam keadaan beriman dan mati sebagai Muslim.", den: "One who met a Successor as a believer and died a Muslim." },
+  { ar: "أقران", tr: "aqrān", ms: "aqran (seangkatan)", en: "peers", dar: "المتقاربون في السنّ والإسناد.", dms: "Perawi yang hampir sama umur dan tingkatan sanad.", den: "Narrators close in age and level of transmission." },
+  { ar: "مدبج", tr: "mudabbaj", ms: "mudabbaj", en: "mutual peer narration", dar: "رواية القرينين كلٍّ عن الآخر.", dms: "Dua perawi seangkatan yang saling meriwayatkan antara satu sama lain.", den: "Two peers each narrating from the other." },
+
+  // ── Jarh wa ta'dil (martabat tambahan) ──
+  { ar: "إمام", tr: "imām", ms: "imam", en: "leading authority", dar: "العالم المتبوع المرجع في الفنّ.", dms: "Ulama rujukan yang diikuti dalam bidangnya.", den: "A followed, authoritative scholar in the field." },
+  { ar: "حجة", tr: "ḥujjah", ms: "hujjah", en: "authoritative proof", dar: "الثقة الضابط الذي يُحتجّ به.", dms: "Perawi thiqah lagi dabit yang dijadikan hujah.", den: "A reliable, precise narrator taken as proof." },
+  { ar: "صالح الحديث", tr: "ṣāliḥ al-ḥadīth", ms: "salih al-hadith", en: "fit for consideration", dar: "من يُكتب حديثه للاعتبار.", dms: "Perawi yang hadisnya ditulis untuk dipertimbangkan (i'tibar).", den: "One whose hadith is recorded for corroborative consideration." },
+  { ar: "متهم بالكذب", tr: "muttaham bi-l-kadhib", ms: "dituduh berdusta", en: "accused of lying", dar: "من اتُّهم بالكذب في الحديث.", dms: "Perawi yang dituduh berdusta dalam hadis (martabat sangat lemah).", den: "A narrator accused of lying in hadith (a very weak rank)." },
+  { ar: "ضعيف جدا", tr: "ḍaʿīf jiddan", ms: "daif jiddan (sangat lemah)", en: "very weak", dar: "شديد الضعف لا ينجبر بمثله.", dms: "Hadis yang amat lemah, tidak dapat dikuatkan oleh yang seumpamanya.", den: "Severely weak, not strengthened by similar reports." },
+  { ar: "لين الحديث", tr: "layyin al-ḥadīth", ms: "layyin al-hadith", en: "soft (slightly weak)", dar: "ضعف يسير في الراوي لا يُسقط حديثه بالكلية.", dms: "Kelemahan ringan pada perawi yang tidak menggugurkan hadisnya sepenuhnya.", den: "A slight weakness in a narrator that does not wholly drop his hadith." },
+
+  // ── Lain-lain asas ──
+  { ar: "اعتبار", tr: "iʿtibār", ms: "i'tibar", en: "comparative examination", dar: "تتبّع طرق الحديث لمعرفة المتابعات والشواهد.", dms: "Menyelidik jalan-jalan hadis untuk mengetahui mutaba'ah dan syahid.", den: "Surveying a hadith's chains to find corroborants and witnesses." },
+  { ar: "متابعة", tr: "mutābaʿah", ms: "mutaba'ah", en: "corroboration", dar: "موافقة راوٍ لآخر في روايته.", dms: "Persamaan seorang perawi dengan perawi lain dalam riwayatnya.", den: "One narrator's agreement with another in transmission." },
+  { ar: "علو الإسناد", tr: "ʿuluww al-isnād", ms: "uluw al-isnad", en: "high chain", dar: "قلّة عدد رجال الإسناد إلى النبي ﷺ.", dms: "Sedikit bilangan perawi sanad sehingga ke Nabi SAW (lebih utama).", den: "A chain with fewer narrators up to the Prophet ﷺ (more prized)." },
+  { ar: "نزول الإسناد", tr: "nuzūl al-isnād", ms: "nuzul al-isnad", en: "low chain", dar: "كثرة عدد رجال الإسناد، خلاف العلو.", dms: "Banyak bilangan perawi sanad — lawan kepada uluw.", den: "A chain with more narrators — the opposite of ʿuluww." },
+  { ar: "رجال", tr: "rijāl", ms: "rijal (ilmu perawi)", en: "narrator biographies", dar: "علم تراجم رواة الحديث وأحوالهم.", dms: "Ilmu biografi dan keadaan para perawi hadis.", den: "The science of hadith narrators' biographies and conditions." },
+  { ar: "تحمل وأداء", tr: "taḥammul wa adāʾ", ms: "tahammul & ada'", en: "receiving & conveying", dar: "أخذ الحديث وكيفية روايته بعدُ.", dms: "Cara menerima hadis dan cara menyampaikannya semula.", den: "The reception of hadith and the manner of its later conveyance." },
 ];
 
 export const GLOSSARY = Object.fromEntries(GLOSSARY_DATA.map((g) => [g.ar, g.ms]));
