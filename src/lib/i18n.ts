@@ -20,6 +20,7 @@ export const T = {
   navKhidmat: { bm: "Khidmat", en: "Services", ar: "الخِدمات" },
   navPerawi: { bm: "Perawi", en: "Narrators", ar: "الرُّواة" },
   navHadis: { bm: "Hadis", en: "Hadith", ar: "الحديث" },
+  navGlosari: { bm: "Glosari", en: "Glossary", ar: "المُصطلحات" },
 
   heroH1: {
     bm: "Ilmu yang <em>boleh disemak</em>",
