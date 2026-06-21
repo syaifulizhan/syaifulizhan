@@ -5,18 +5,31 @@ import Footer from "@/components/layout/Footer";
 import { Isnad } from "@/components/Isnad";
 import { BilingualToggle } from "@/components/BilingualToggle";
 import { SuggestForm } from "@/components/SuggestForm";
-import { getBook, getBookHadiths, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
+import { Pagination } from "@/components/Pagination";
+import { getBook, getBookHadiths, getBookHadithCount, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
 
 export const dynamic = "force-dynamic";
+const PER_PAGE = 20;
 
-export default async function KitabPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function KitabPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { id } = await params;
+  const { page: pageStr } = await searchParams;
   const bid = Number(id);
   if (!Number.isInteger(bid)) notFound();
   const book = await getBook(bid);
   if (!book) notFound();
 
-  const hadiths = await getBookHadiths(bid, 80);
+  const total = await getBookHadithCount(bid);
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const page = Math.min(Math.max(1, Number(pageStr) || 1), totalPages);
+
+  const hadiths = await getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE);
   const ids = hadiths.map((h) => h.id);
   const [isnads, trs] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids)]);
 
@@ -32,7 +45,8 @@ export default async function KitabPage({ params }: { params: Promise<{ id: stri
         <header className="phead">
           <div className="pname ar">{book.title_ar}</div>
           <div className="pbadges">
-            <span className="pbadge">{hadiths.length} hadis dipapar</span>
+            <span className="pbadge">{total.toLocaleString("ms-MY")} hadis</span>
+            <span className="pbadge">Halaman {page} / {totalPages}</span>
           </div>
         </header>
 
@@ -47,9 +61,11 @@ export default async function KitabPage({ params }: { params: Promise<{ id: stri
             </article>
           ))}
           {!hadiths.length && (
-            <p className="pempty">Belum ada hadis untuk kitab ini (scrape hadis belum sampai sini).</p>
+            <p className="pempty">Belum ada hadis untuk kitab ini.</p>
           )}
         </div>
+
+        <Pagination page={page} totalPages={totalPages} basePath={`/kitab/${bid}`} />
       </main>
       <Footer />
     </>

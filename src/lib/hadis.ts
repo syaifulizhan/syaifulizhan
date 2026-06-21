@@ -20,13 +20,30 @@ export async function getBook(id: number): Promise<{ id: number; title_ar: strin
   return (r.rows[0] as unknown as { id: number; title_ar: string }) ?? null;
 }
 
-export async function getBookHadiths(bookId: number, limit = 80): Promise<Hadith[]> {
+export async function getBookHadiths(bookId: number, limit = 20, offset = 0): Promise<Hadith[]> {
   const r = await corpus.execute({
     sql: `SELECT id, book_id, chapter_ar, number, matn_ar FROM hadiths
-           WHERE book_id = ? ORDER BY chapter_ref, number LIMIT ?`,
-    args: [bookId, limit],
+           WHERE book_id = ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`,
+    args: [bookId, limit, offset],
   });
   return r.rows as unknown as Hadith[];
+}
+
+export async function getBookHadithCount(bookId: number): Promise<number> {
+  const r = await corpus.execute({ sql: "SELECT count(*) c FROM hadiths WHERE book_id = ?", args: [bookId] });
+  return Number(r.rows[0].c);
+}
+
+export async function searchBooks(q: string, limit = 30): Promise<(Book & { title_en: string | null })[]> {
+  if (!q.trim()) return [];
+  const r = await corpus.execute({
+    sql: `SELECT b.id, b.title_ar, b.title_en, count(h.id) n
+            FROM books b LEFT JOIN hadiths h ON h.book_id = b.id
+           WHERE b.title_ar LIKE '%' || ? || '%' OR b.title_en LIKE '%' || ? || '%'
+           GROUP BY b.id ORDER BY n DESC LIMIT ?`,
+    args: [q.trim(), q.trim(), limit],
+  });
+  return r.rows as unknown as (Book & { title_en: string | null })[];
 }
 
 /** Isnad untuk banyak hadis sekaligus (elak N+1). Map: hadith_id → nodes terurut. */
