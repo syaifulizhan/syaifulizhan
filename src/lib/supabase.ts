@@ -1,11 +1,26 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Klien Supabase admin (service/secret key) — SERVER SAHAJA.
- * Guna utk simpan cadangan & papan admin (bypass RLS). Jangan import dari komponen klien.
+ * Klien Supabase admin (service/secret key) — SERVER SAHAJA, dicipta LAZY.
+ * Env Cloudflare (SUPABASE_SECRET_KEY) hanya tersedia masa request, bukan module-load.
  */
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!,
-  { auth: { persistSession: false, autoRefreshToken: false } }
-);
+let _client: SupabaseClient | undefined;
+
+function client(): SupabaseClient {
+  if (!_client) {
+    _client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SECRET_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+  }
+  return _client;
+}
+
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_t, prop) {
+    const c = client();
+    const v = Reflect.get(c as object, prop);
+    return typeof v === "function" ? v.bind(c) : v;
+  },
+});
