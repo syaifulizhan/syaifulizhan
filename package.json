@@ -15,6 +15,7 @@
     "scrape:hadith": "node --env-file=.env.local scripts/scrape-hadith.mjs",
     "scrape:retry": "node scripts/retry-failed.mjs",
     "corpus:build": "node --env-file=.env.local scripts/build-sqlite.mjs",
+    "import:ahmedbaset": "node scripts/import-ahmedbaset.mjs",
     "corpus:translate": "node --env-file=.env.local scripts/translate.mjs",
     "glossary:sync": "node --env-file=.env.local scripts/glossary-sync.mjs",
     "cf:build": "opennextjs-cloudflare build",

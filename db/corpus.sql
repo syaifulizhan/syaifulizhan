@@ -22,9 +22,12 @@ CREATE TABLE IF NOT EXISTS authors (
 );
 
 CREATE TABLE IF NOT EXISTS books (
-  id            INTEGER PRIMARY KEY,    -- id islam-db
+  id            INTEGER PRIMARY KEY,    -- id islam-db (AhmedBaset offset 900000+)
   title_ar      TEXT NOT NULL,
+  title_en      TEXT,                   -- AhmedBaset bagi tajuk EN
+  author_ar     TEXT,
   slug          TEXT,
+  source        TEXT DEFAULT 'islamdb', -- 'islamdb' | 'ahmedbaset'
   author_id     INTEGER REFERENCES authors(id),
   topic_id      INTEGER REFERENCES topics(id),
   total_hadith  INTEGER,
