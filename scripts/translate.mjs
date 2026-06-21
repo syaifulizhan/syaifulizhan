@@ -4,6 +4,7 @@
 //   Uji      : node --env-file=.env.local scripts/translate.mjs --provider=ollama --model=aya:8b --lang=ms --limit=3
 //   Penuh    : node --env-file=.env.local scripts/translate.mjs
 import { createClient } from "@libsql/client";
+import { glossaryFor } from "./lib/glossary.mjs";
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL ?? "file:./data/corpus.db",
@@ -50,9 +51,23 @@ const EX = {
   en: 'Abu Ubaidah narrated to me, from Jabir ibn Zayd, from Abdullah ibn Abbas, from the Prophet (peace be upon him), who said: "The intention of the believer is better than his deed."',
 };
 
-function buildMessages(lang, matn) {
+// Prompt BM dari English sahih (lebih tepat & laju dari Arab klasik).
+const SYSTEM_EN_MS = `Anda penterjemah hadis pakar English→Bahasa Melayu. Diberi terjemahan English yang SAHIH bagi sebuah hadis (dan teks Arab asal sebagai rujukan), hasilkan terjemahan Bahasa Melayu BAKU (ejaan DBP, BUKAN Bahasa Indonesia).
+PERATURAN KETAT:
+1. Output HANYA terjemahan BM. Tiada mukadimah/nota/komentar.
+2. Ikut makna English (ia sahih); guna Arab cuma untuk semak nama/istilah.
+3. "(peace be upon him)" → "SAW"; "Narrated X:" → "X menceritakan:"; "Allah's Messenger" → "Rasulullah SAW".
+4. Nama perawi: transliterasi Melayu standard.`;
+
+function buildMessages(lang, matn, en) {
+  if (lang === "ms" && en) {
+    return [
+      { role: "system", content: SYSTEM_EN_MS + glossaryFor(matn) },
+      { role: "user", content: `English (sahih):\n${en}\n\nArab (rujukan sahaja):\n${matn}` },
+    ];
+  }
   return [
-    { role: "system", content: SYSTEM[lang] },
+    { role: "system", content: SYSTEM[lang] + glossaryFor(matn) },
     { role: "user", content: EX_AR },
     { role: "assistant", content: EX[lang] },
     { role: "user", content: matn },
@@ -135,8 +150,13 @@ function clean(text) {
 }
 
 async function rowsNeeding(lang) {
+  // utk BM: bawa sekali terjemahan English sahih (kalau ada) → BM ikut dari situ
+  const enCol =
+    lang === "ms"
+      ? `(SELECT t2.text FROM translations t2 WHERE t2.entity_type='hadith' AND t2.entity_id=h.id AND t2.lang='en' LIMIT 1)`
+      : "NULL";
   const r = await db.execute({
-    sql: `SELECT h.id, h.matn_ar FROM hadiths h
+    sql: `SELECT h.id, h.matn_ar, ${enCol} en FROM hadiths h
            WHERE NOT EXISTS (SELECT 1 FROM translations t
              WHERE t.entity_type='hadith' AND t.entity_id=h.id AND t.lang=?)
            LIMIT ?`,
@@ -176,9 +196,10 @@ if (DRY) {
     const worker = async () => {
       while (idx < rows.length) {
         const r = rows[idx++];
+        const fromEn = lang === "ms" && r.en; // BM ikut English sahih → tepat, skip verify (laju)
         try {
-          let text = clean(await CALL(buildMessages(lang, r.matn_ar)));
-          if (text && VERIFY) {
+          let text = clean(await CALL(buildMessages(lang, r.matn_ar, r.en)));
+          if (text && VERIFY && !fromEn) {
             const checked = clean(await CALL(buildVerifyMessages(lang, r.matn_ar, text)));
             if (checked) text = checked;
           }
