@@ -28,7 +28,7 @@ let n = 0;
 for (const g of GLOSSARY_DATA) {
   const norm = normalizeArabic(g.ar);
   await db.execute({
-    sql: `INSERT INTO glossary (term_ar,huruf,term_search,translit,term_ms,term_en,def_ar,def_ms,def_en)
+    sql: `INSERT OR IGNORE INTO glossary (term_ar,huruf,term_search,translit,term_ms,term_en,def_ar,def_ms,def_en)
           VALUES (?,?,?,?,?,?,?,?,?)`,
     args: [g.ar, norm[0] ?? "", norm, g.tr, g.ms, g.en, g.dar ?? null, g.dms, g.den],
   });
