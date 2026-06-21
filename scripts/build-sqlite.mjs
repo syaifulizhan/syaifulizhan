@@ -29,7 +29,7 @@ async function* readMany(files) {
   for (const f of files) if (existsSync(f)) yield* readJsonl(f);
 }
 const NARRATORS_FILES = [NARRATORS, "data/islamdb/narrators.recovered.jsonl"];
-const HADITH_FILES = [HADITH, "data/islamdb/hadith.recovered.jsonl"];
+const HADITH_FILES = [HADITH, "data/islamdb/hadith.recovered.jsonl", "data/islamdb/ahmedbaset.jsonl"];
 
 async function buildNarrators() {
   if (!existsSync(NARRATORS)) {
@@ -135,18 +135,23 @@ async function buildHadiths() {
   );
   await db.execute("DELETE FROM hadiths");
   await db.execute("DELETE FROM hadith_narrators");
+  await db.execute("DELETE FROM translations WHERE source='AhmedBaset'"); // di-derive semula tiap build (kekalkan source='ai')
 
-  let hid = 0, nH = 0, nLink = 0, nEdge = 0, nBook = 0;
+  let hid = 0, nH = 0, nLink = 0, nEdge = 0, nBook = 0, nEnTr = 0;
   const seen = new Set();
   let batch = [];
   const flush = async () => { if (batch.length) { await db.batch(batch, "write"); batch = []; } };
 
   for await (const r of readMany(HADITH_FILES)) {
     if (r.type === "book") {
-      batch.push({ sql: `INSERT INTO books (id,title_ar) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET title_ar=excluded.title_ar`, args: [r.id, r.title] });
+      batch.push({
+        sql: `INSERT INTO books (id,title_ar,title_en,author_ar,source) VALUES (?,?,?,?,?)
+              ON CONFLICT(id) DO UPDATE SET title_ar=excluded.title_ar, title_en=excluded.title_en, author_ar=excluded.author_ar, source=excluded.source`,
+        args: [r.id, r.title, r.title_en ?? null, r.author_ar ?? null, r.source ?? "islamdb"],
+      });
       nBook++;
     } else if (r.type === "hadith") {
-      const src = `${r.book}:${r.chapter}:${r.seq}`;
+      const src = r.src_ref ?? `${r.book}:${r.chapter}:${r.seq}`;
       if (seen.has(src)) continue; // dedupe re-scrape
       seen.add(src);
       const id = ++hid;
@@ -156,6 +161,16 @@ async function buildHadiths() {
         args: [id, src, r.book, r.chapter, r.chapter_ar ?? null, r.seq, r.matn_ar, normalizeArabic(r.matn_ar || "")],
       });
       nH++;
+      // Terjemahan EN sahih AhmedBaset (jika ada)
+      if (r.en) {
+        batch.push({
+          sql: `INSERT INTO translations (entity_type,entity_id,lang,text,source,is_verified,created_at)
+                VALUES ('hadith',?,'en',?,'AhmedBaset',1,datetime('now'))
+                ON CONFLICT(entity_type,entity_id,lang,source) DO UPDATE SET text=excluded.text`,
+          args: [id, r.en],
+        });
+        nEnTr++;
+      }
       const chain = r.chain || [];
       for (let i = 0; i < chain.length; i++) {
         batch.push({ sql: `INSERT INTO hadith_narrators (hadith_id,narrator_id,position,raw_name) VALUES (?,?,?,?)`, args: [id, chain[i].id, i, chain[i].name ?? null] });
@@ -170,9 +185,28 @@ async function buildHadiths() {
     if (batch.length >= 400) await flush();
   }
   await flush();
+
+  // ── Dedup: AhmedBaset menang. Padam kitab islam-db yang tajuknya sama. ──
+  const abTitles = new Set(
+    (await db.execute("SELECT title_ar FROM books WHERE source='ahmedbaset'")).rows.map((b) => normalizeArabic(b.title_ar))
+  );
+  let dedup = 0;
+  if (abTitles.size) {
+    const idb = (await db.execute("SELECT id,title_ar FROM books WHERE source IS NULL OR source='islamdb'")).rows;
+    for (const b of idb) {
+      if (abTitles.has(normalizeArabic(b.title_ar))) {
+        await db.execute({ sql: "DELETE FROM hadith_narrators WHERE hadith_id IN (SELECT id FROM hadiths WHERE book_id=?)", args: [b.id] });
+        await db.execute({ sql: "DELETE FROM hadiths WHERE book_id=?", args: [b.id] });
+        await db.execute({ sql: "DELETE FROM books WHERE id=?", args: [b.id] });
+        dedup++;
+      }
+    }
+  }
+
   await db.execute(`INSERT INTO hadiths_fts(hadiths_fts) VALUES('rebuild')`);
   await db.execute(`INSERT INTO meta(key,value) VALUES('hadith_built_at', datetime('now')) ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
   console.log(`✓ Kitab: ${nBook} | Hadis: ${nH} | pautan isnad: ${nLink} | tepi isnad: ${nEdge}`);
+  console.log(`✓ Terjemahan EN AhmedBaset: ${nEnTr} | Dedup kitab islam-db: ${dedup}`);
 }
 
 // libsql dayakan FK secara lalai; matikan utk import (rujukan tergantung dibenarkan —

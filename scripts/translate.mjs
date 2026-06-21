@@ -138,7 +138,7 @@ async function rowsNeeding(lang) {
   const r = await db.execute({
     sql: `SELECT h.id, h.matn_ar FROM hadiths h
            WHERE NOT EXISTS (SELECT 1 FROM translations t
-             WHERE t.entity_type='hadith' AND t.entity_id=h.id AND t.lang=? AND t.source='ai')
+             WHERE t.entity_type='hadith' AND t.entity_id=h.id AND t.lang=?)
            LIMIT ?`,
     args: [lang, LIMIT],
   });
