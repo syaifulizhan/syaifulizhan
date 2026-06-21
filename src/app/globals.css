@@ -1085,6 +1085,8 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .adm-actions { display: flex; gap: 10px; margin-top: 14px; }
 .adm-actions .btn { padding: 8px 20px; }
 
+.foot-reflabel { display: block; width: 100%; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
+
 /* toggle dwibahasa */
 .btoggle { margin: 14px 0 18px; }
 .btoggle-row { display: inline-flex; border: 1px solid var(--line-dark); margin-bottom: 10px; }
