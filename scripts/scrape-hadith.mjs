@@ -36,6 +36,7 @@ const onFail = (label, advance) => {
   if (fails >= ABORT_AFTER) { save(); console.error("✗ Terlalu banyak gagal — berhenti; jalankan semula utk sambung."); process.exit(1); }
 };
 
+let brokenConsec = 0; // kitab rosak (500) berturut → kesan site tumbang sebenar
 for (let book = prog.book; book <= MAXBOOK; book++) {
   // ── TOC kitab ──
   let toc;
@@ -55,6 +56,7 @@ for (let book = prog.book; book <= MAXBOOK; book++) {
   prog.books++;
   const chStart = book === prog.book ? prog.chapIdx : 0;
 
+  let chapFails = 0; // bab gagal berturut DALAM kitab ini
   for (let ci = chStart; ci < toc.chapters.length; ci++) {
     const { chapter, title } = toc.chapters[ci];
     try {
@@ -68,11 +70,19 @@ for (let book = prog.book; book <= MAXBOOK; book++) {
           prog.hadiths++;
         }
       } else prog.missing++;
-      fails = 0;
+      chapFails = 0; brokenConsec = 0; // berjaya → reset
     } catch (e) {
-      onFail(`chap ${book}:${chapter} (${e.message})`);
-      prog.book = book; prog.chapIdx = ci; save();
-      await sleep(Math.min(15000, DELAY * fails));
+      chapFails++; prog.missing++;
+      appendFileSync(FAILED, `chap ${book}:${chapter} (${e.message})\n`);
+      prog.book = book; prog.chapIdx = ci + 1; save(); // checkpoint LEPAS bab gagal → tak ulang
+      if (chapFails >= 12) {
+        // kitab ini rosak di islam-db (500 banyak) — langkau, sambung kitab seterusnya
+        console.error(`\n⚠ kitab ${book}: ${chapFails} bab gagal berturut (rosak di islam-db) — langkau kitab`);
+        if (++brokenConsec >= 30) { save(); console.error("✗ 30 kitab rosak berturut — site mungkin tumbang. Berhenti."); process.exit(1); }
+        prog.book = book + 1; prog.chapIdx = 0; save();
+        break;
+      }
+      await sleep(Math.min(10000, DELAY * chapFails));
       continue;
     }
     prog.book = book; prog.chapIdx = ci + 1;
