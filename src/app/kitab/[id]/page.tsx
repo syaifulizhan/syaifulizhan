@@ -8,6 +8,8 @@ import { BilingualToggle } from "@/components/BilingualToggle";
 import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
 import { getBook, getBookHadiths, getBookHadithCount, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
+import { getServerLang } from "@/lib/lang-server";
+import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 const PER_PAGE = 20;
@@ -33,21 +35,22 @@ export default async function KitabPage({
   const hadiths = await getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE);
   const ids = hadiths.map((h) => h.id);
   const [isnads, trs] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids)]);
+  const lang = await getServerLang();
 
   return (
     <>
       <Nav />
       <main className="pwrap">
         <div className="pcrumb">
-          <Link href="/hadis">Hadis</Link>
+          <Link href="/hadis">{T.navHadis[lang]}</Link>
           <span>›</span>
           <span className="ar">{book.title_ar}</span>
         </div>
         <header className="phead">
           <div className="pname ar">{book.title_ar}</div>
           <div className="pbadges">
-            <span className="pbadge">{total.toLocaleString("ms-MY")} hadis</span>
-            <span className="pbadge">Halaman {page} / {totalPages}</span>
+            <span className="pbadge">{total.toLocaleString("en-US")} {T.hadisCount[lang]}</span>
+            <span className="pbadge">{T.pageLabel[lang]} {page} / {totalPages}</span>
           </div>
         </header>
 
@@ -60,12 +63,12 @@ export default async function KitabPage({
               </div>
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />
-              <Isnad nodes={isnads.get(h.id) ?? []} />
+              <Isnad nodes={isnads.get(h.id) ?? []} lang={lang} />
               <SuggestForm entityType="hadith" entityId={h.id} field="matn" currentText={h.matn_ar} />
             </article>
           ))}
           {!hadiths.length && (
-            <p className="pempty">Belum ada hadis untuk kitab ini.</p>
+            <p className="pempty">{T.kitabEmpty[lang]}</p>
           )}
         </div>
 

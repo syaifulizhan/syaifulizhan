@@ -171,6 +171,48 @@ export const T = {
     en: "Verifiable riwāyah knowledge — in your language.",
     ar: "علمٌ بالرواية قابلٌ للتحقُّق — في لغتك.",
   },
+
+  // Brand — disesuaikan ikut bahasa (Arab tulis penuh Arab)
+  brandMain: {
+    bm: "Dewan <em>Izhan</em>",
+    en: "Dewan <em>Izhan</em>",
+    ar: "دِيوَان <em>الإِذهَان</em>",
+  },
+  footRujukan: { bm: "Rujukan", en: "References", ar: "المراجع" },
+
+  // Carian
+  searchTitle: { bm: "Cari dalam Korpus", en: "Search the Corpus", ar: "البحث في المُدوَّنة" },
+  searchPlaceholder: {
+    bm: "Kalimah gharibah, teks hadis, nama perawi atau kitab…",
+    en: "A word, hadith text, narrator or book name…",
+    ar: "كلمة غريبة، نص حديث، اسم راوٍ أو كتاب…",
+  },
+  searchBtn: { bm: "Cari", en: "Search", ar: "بحث" },
+  searchKitab: { bm: "Kitab", en: "Books", ar: "الكتب" },
+  searchNone: { bm: "Tiada hasil.", en: "No results.", ar: "لا نتائج." },
+  searchPrompt: {
+    bm: "Taip untuk cari hadis, perawi atau kitab.",
+    en: "Type to search hadith, narrators or books.",
+    ar: "اكتب للبحث في الحديث أو الرواة أو الكتب.",
+  },
+
+  // Isnad / rantai
+  isnadLinked: { bm: "berpaut", en: "linked", ar: "مُرتبِط" },
+  isnadSanad: { bm: "sanad", en: "chain", ar: "سند" },
+  isnadPerawi: { bm: "perawi", en: "narrators", ar: "رواة" },
+
+  // Chrome halaman hadis/kitab
+  hadisCount: { bm: "hadis", en: "hadith", ar: "حديث" },
+  pageLabel: { bm: "Halaman", en: "Page", ar: "صفحة" },
+  kitabEmpty: {
+    bm: "Belum ada hadis untuk kitab ini.",
+    en: "No hadith for this book yet.",
+    ar: "لا أحاديث لهذا الكتاب بعد.",
+  },
+  gradeLabel: { bm: "Taraf", en: "Grade", ar: "الدرجة" },
+  hadisExplorer: { bm: "Penjelajah Hadis", en: "Hadith Explorer", ar: "مُستكشِف الحديث" },
+  inCorpus: { bm: "hadis dalam korpus setakat ini.", en: "hadith in the corpus so far.", ar: "حديث في المُدوَّنة حتى الآن." },
+  searchResults: { bm: "Hasil carian", en: "Search results", ar: "نتائج البحث" },
 } satisfies Record<string, Tr>;
 
 export type TKey = keyof typeof T;
