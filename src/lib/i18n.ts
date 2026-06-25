@@ -181,7 +181,8 @@ export const T = {
   footRujukan: { bm: "Rujukan", en: "References", ar: "المراجع" },
 
   // Carian
-  searchTitle: { bm: "Cari dalam Korpus", en: "Search the Corpus", ar: "البحث في المُدوَّنة" },
+  searchTitle: { bm: "Cari dalam korpus", en: "Search the corpus", ar: "البحث في المُدوَّنة" },
+  searchBandH: { bm: "Jelajah hadis, perawi & kitab", en: "Explore hadith, narrators & books", ar: "تصفّح الحديث والرواة والكتب" },
   searchPlaceholder: {
     bm: "Kalimah gharibah, teks hadis, nama perawi atau kitab…",
     en: "A word, hadith text, narrator or book name…",
@@ -213,6 +214,47 @@ export const T = {
   hadisExplorer: { bm: "Penjelajah Hadis", en: "Hadith Explorer", ar: "مُستكشِف الحديث" },
   inCorpus: { bm: "hadis dalam korpus setakat ini.", en: "hadith in the corpus so far.", ar: "حديث في المُدوَّنة حتى الآن." },
   searchResults: { bm: "Hasil carian", en: "Search results", ar: "نتائج البحث" },
+
+  // Perawi
+  perawiExplorer: { bm: "Penjelajah Perawi", en: "Narrator Explorer", ar: "مُستكشِف الرواة" },
+  perawiH1: { bm: "Perawi Hadis", en: "Hadith Narrators", ar: "رُواة الحديث" },
+  narrInCorpus: { bm: "perawi dalam korpus setakat ini.", en: "narrators in the corpus so far.", ar: "راوٍ في المُدوَّنة حتى الآن." },
+  narrNone: { bm: "Tiada perawi padan", en: "No matching narrator", ar: "لا راوٍ مُطابِق" },
+  perawiPlaceholder: { bm: "Cari nama perawi… (cth: آدم)", en: "Search narrator name…", ar: "ابحث عن اسم راوٍ…" },
+  narrInfo: { bm: "Maklumat", en: "Information", ar: "معلومات" },
+  narrJarh: { bm: "Jarh wa Taʿdil — penilaian ulama", en: "Jarh wa Taʿdīl — scholarly evaluation", ar: "الجرح والتعديل — أحكام العلماء" },
+  narrGraph: { bm: "Graf Sanad — guru & murid", en: "Isnād Graph — teachers & students", ar: "شبكة الإسناد — الشيوخ والتلاميذ" },
+  narrTeachers: { bm: "Guru", en: "Teachers", ar: "الشيوخ" },
+  narrStudents: { bm: "Murid", en: "Students", ar: "التلاميذ" },
+  narrNoTeachers: { bm: "Belum ada guru terpadan.", en: "No matched teachers yet.", ar: "لا شيوخ مُطابَقون بعد." },
+  narrNoStudents: { bm: "Belum ada murid terpadan.", en: "No matched students yet.", ar: "لا تلاميذ مُطابَقون بعد." },
+  infoKunya: { bm: "Kunya", en: "Kunya", ar: "الكنية" },
+  infoNisbah: { bm: "Nisbah", en: "Nisba", ar: "النسبة" },
+  infoProfession: { bm: "Pekerjaan", en: "Profession", ar: "المهنة" },
+  infoRegion: { bm: "Tinggal di", en: "Lived in", ar: "الإقامة" },
+  infoMawla: { bm: "Naungan", en: "Patronage", ar: "الولاء" },
+  infoDeath: { bm: "Wafat", en: "Died", ar: "الوفاة" },
+  infoDeathPlace: { bm: "Tempat wafat", en: "Place of death", ar: "مكان الوفاة" },
+
+  // Glosari
+  glosariTitle: { bm: "Glosari Istilah Hadis", en: "Hadith Terminology Glossary", ar: "مُعجم مصطلحات الحديث" },
+  glosariH1: { bm: "Kamus Istilah", en: "Terminology Dictionary", ar: "قاموس المصطلحات" },
+  glosariDesc: {
+    bm: "Istilah ʿulūm al-hadith (mustalah & jarh wa taʿdil) — teks Arab, transliterasi, terjemahan & definisi.",
+    en: "Hadith science terms (muṣṭalaḥ & jarh wa taʿdīl) — Arabic text, transliteration, translation & definition.",
+    ar: "مصطلحات علوم الحديث (المصطلح والجرح والتعديل) — نصٌّ عربي ونقحرة وترجمة وتعريف.",
+  },
+  istilahWord: { bm: "istilah", en: "terms", ar: "مصطلح" },
+  glosariEmpty: { bm: "Glosari belum di-seed.", en: "Glossary not seeded yet.", ar: "لم يُملأ المعجم بعد." },
+
+  // Isnad tooltip + cadang pembetulan
+  isnadUnmatched: { bm: "Perawi belum dipadan dgn korpus", en: "Narrator not yet matched to corpus", ar: "راوٍ غير مُطابَق بالمُدوَّنة بعد" },
+  suggestBtn: { bm: "Cadang pembetulan", en: "Suggest a correction", ar: "اقترح تصحيحاً" },
+  suggestText: { bm: "Teks pembetulan dicadangkan…", en: "Suggested correction text…", ar: "نص التصحيح المقترح…" },
+  suggestReason: { bm: "Sebab (pilihan)", en: "Reason (optional)", ar: "السبب (اختياري)" },
+  suggestName: { bm: "Nama / emel anda (pilihan)", en: "Your name / email (optional)", ar: "اسمك / بريدك (اختياري)" },
+  suggestSend: { bm: "Hantar cadangan", en: "Send suggestion", ar: "إرسال الاقتراح" },
+  suggestDone: { bm: "Terima kasih — cadangan dihantar untuk semakan admin.", en: "Thank you — suggestion sent for admin review.", ar: "شكراً — أُرسل الاقتراح لمراجعة المشرف." },
 } satisfies Record<string, Tr>;
 
 export type TKey = keyof typeof T;

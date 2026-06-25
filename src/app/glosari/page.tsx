@@ -1,11 +1,13 @@
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { getGlossary } from "@/lib/glossary";
+import { getServerLang } from "@/lib/lang-server";
+import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function Glosari() {
-  const terms = await getGlossary();
+  const [terms, lang] = await Promise.all([getGlossary(), getServerLang()]);
 
   // kumpul ikut huruf Arab (susunan abjad)
   const groups = new Map<string, typeof terms>();
@@ -19,13 +21,12 @@ export default async function Glosari() {
     <>
       <Nav />
       <main className="pwrap">
-        <div className="psec-t">Glosari Istilah Hadis</div>
+        <div className="psec-t">{T.glosariTitle[lang]}</div>
         <h1 style={{ fontFamily: "var(--display)", fontSize: "2.4rem", marginBottom: "6px" }}>
-          Kamus Istilah
+          {T.glosariH1[lang]}
         </h1>
         <p style={{ color: "var(--muted)", marginBottom: "28px", maxWidth: 620 }}>
-          Istilah ulum al-hadith (mustalah &amp; jarh wa ta&apos;dil) — teks Arab, transliterasi, terjemahan &amp;
-          definisi. Teks Arab definisi menyusul daripada sumber asal. {terms.length} istilah.
+          {T.glosariDesc[lang]} {terms.length} {T.istilahWord[lang]}.
         </p>
 
         {[...groups.entries()].map(([huruf, items]) => (
@@ -62,7 +63,7 @@ export default async function Glosari() {
           </section>
         ))}
 
-        {!terms.length && <p className="pempty">Glosari belum di-seed.</p>}
+        {!terms.length && <p className="pempty">{T.glosariEmpty[lang]}</p>}
       </main>
       <Footer />
     </>

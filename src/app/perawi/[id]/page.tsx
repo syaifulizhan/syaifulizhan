@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { getNarrator, getGrades, getTeachers, getStudents, type Edge } from "@/lib/narrators";
+import { getServerLang } from "@/lib/lang-server";
+import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -26,20 +28,21 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
   const n = await getNarrator(nid);
   if (!n) notFound();
 
-  const [grades, teachers, students] = await Promise.all([
+  const [grades, teachers, students, lang] = await Promise.all([
     getGrades(nid),
     getTeachers(nid),
     getStudents(nid),
+    getServerLang(),
   ]);
 
   const info: [string, string | number | null][] = [
-    ["Kunya", n.kunya],
-    ["Nisbah", n.nisba],
-    ["Pekerjaan", n.profession],
-    ["Tinggal di", n.regions],
-    ["Naungan", n.mawla],
-    ["Wafat", n.death_year ? `${n.death_year} H` : null],
-    ["Tempat wafat", n.death_place],
+    [T.infoKunya[lang], n.kunya],
+    [T.infoNisbah[lang], n.nisba],
+    [T.infoProfession[lang], n.profession],
+    [T.infoRegion[lang], n.regions],
+    [T.infoMawla[lang], n.mawla],
+    [T.infoDeath[lang], n.death_year ? `${n.death_year} H` : null],
+    [T.infoDeathPlace[lang], n.death_place],
   ];
   const infoShown = info.filter(([, v]) => v);
 
@@ -48,7 +51,7 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
       <Nav />
       <main className="pwrap">
         <div className="pcrumb">
-          <Link href="/perawi">Perawi</Link>
+          <Link href="/perawi">{T.navPerawi[lang]}</Link>
           <span>›</span>
           <span className="ar">{n.name_ar}</span>
         </div>
@@ -68,7 +71,7 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
 
         {infoShown.length > 0 && (
           <>
-            <div className="psec-t">Maklumat</div>
+            <div className="psec-t">{T.narrInfo[lang]}</div>
             <div className="pinfo">
               {infoShown.map(([k, v]) => (
                 <div key={k}>
@@ -82,7 +85,7 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
 
         {grades.length > 0 && (
           <>
-            <div className="psec-t">Jarh wa Taʿdil — penilaian ulama</div>
+            <div className="psec-t">{T.narrJarh[lang]}</div>
             <div className="pjarh">
               {grades.map((g, i) => (
                 <div className="pjarh-row" key={i}>
@@ -94,29 +97,29 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
           </>
         )}
 
-        <div className="psec-t">Graf Sanad — guru &amp; murid</div>
+        <div className="psec-t">{T.narrGraph[lang]}</div>
         <div className="pgraph">
           <div className="pcol">
             <h4>
-              Guru <span className="cnt">({teachers.length})</span>
+              {T.narrTeachers[lang]} <span className="cnt">({teachers.length})</span>
             </h4>
             <div className="pnodes">
               {teachers.length ? (
                 teachers.map((e) => <Person key={e.id} e={e} />)
               ) : (
-                <div className="pempty">Belum ada guru terpadan (graf membesar bila scrape penuh selesai).</div>
+                <div className="pempty">{T.narrNoTeachers[lang]}</div>
               )}
             </div>
           </div>
           <div className="pcol">
             <h4>
-              Murid <span className="cnt">({students.length})</span>
+              {T.narrStudents[lang]} <span className="cnt">({students.length})</span>
             </h4>
             <div className="pnodes">
               {students.length ? (
                 students.map((e) => <Person key={e.id} e={e} />)
               ) : (
-                <div className="pempty">Belum ada murid terpadan.</div>
+                <div className="pempty">{T.narrNoStudents[lang]}</div>
               )}
             </div>
           </div>

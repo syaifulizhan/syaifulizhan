@@ -2,6 +2,8 @@ import Link from "next/link";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { searchNarrators, narratorCount } from "@/lib/narrators";
+import { getServerLang } from "@/lib/lang-server";
+import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -11,24 +13,24 @@ export default async function PerawiIndex({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q = "" } = await searchParams;
-  const [results, total] = await Promise.all([searchNarrators(q, 60), narratorCount()]);
+  const [results, total, lang] = await Promise.all([searchNarrators(q, 60), narratorCount(), getServerLang()]);
 
   return (
     <>
       <Nav />
       <main className="pwrap">
-        <div className="psec-t">Penjelajah Perawi</div>
+        <div className="psec-t">{T.perawiExplorer[lang]}</div>
         <h1 style={{ fontFamily: "var(--display)", fontSize: "2.4rem", marginBottom: "6px" }}>
-          Perawi Hadis
+          {T.perawiH1[lang]}
         </h1>
         <p style={{ color: "var(--muted)", marginBottom: "24px" }}>
-          {total.toLocaleString("ms-MY")} perawi dalam korpus setakat ini.
+          {total.toLocaleString("en-US")} {T.narrInCorpus[lang]}
         </p>
 
         <form className="psearch" action="/perawi" method="get">
-          <input name="q" defaultValue={q} placeholder="Cari nama perawi… (cth: آدم)" />
+          <input name="q" defaultValue={q} placeholder={T.perawiPlaceholder[lang]} />
           <button className="btn solid" type="submit">
-            Cari
+            {T.searchBtn[lang]}
           </button>
         </form>
 
@@ -43,7 +45,7 @@ export default async function PerawiIndex({
         </div>
 
         {q && results.length === 0 && (
-          <p className="pempty">Tiada perawi padan “{q}”.</p>
+          <p className="pempty">{T.narrNone[lang]} “{q}”.</p>
         )}
       </main>
       <Footer />

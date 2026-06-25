@@ -59,7 +59,7 @@ export default async function KitabPage({
             <article className="hcard" key={h.id}>
               <div className="hcard-top">
                 {h.chapter_ar && <div className="hchap ar">{h.chapter_ar}</div>}
-                <GradeBadge grade={h.grade} />
+                <GradeBadge grade={h.grade} lang={lang} />
               </div>
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />
