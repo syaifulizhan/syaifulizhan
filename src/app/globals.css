@@ -221,6 +221,27 @@ nav a:hover::after {
   align-items: center;
   gap: 16px;
 }
+/* hamburger (mobile sahaja) */
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--line-dark);
+  padding: 8px 9px;
+  cursor: pointer;
+}
+.nav-burger span {
+  display: block;
+  width: 18px;
+  height: 1.6px;
+  background: var(--paper);
+  transition: transform 0.25s, opacity 0.2s;
+}
+.nav-burger.open span:nth-child(1) { transform: translateY(5.6px) rotate(45deg); }
+.nav-burger.open span:nth-child(2) { opacity: 0; }
+.nav-burger.open span:nth-child(3) { transform: translateY(-5.6px) rotate(-45deg); }
+.nav-overlay { display: none; }
 
 /* ── HERO ── */
 .hero {
@@ -922,29 +943,54 @@ html[lang="ar"] .foot-brand p {
     gap: 14px;
   }
 }
+/* ── Mobile nav: hamburger drawer (elak 6 pautan bertindih/berbalut) ── */
+@media (max-width: 820px) {
+  .nav-burger { display: flex; }
+  .nav-in { flex-wrap: nowrap; height: 62px; }
+  .brand-sub { display: none; }
+  .brand-main { font-size: 1.3rem; }
+  /* nav links → drawer turun dari header */
+  .nav-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(22, 19, 31, 0.98);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line-dark);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    z-index: 60;
+  }
+  .nav-menu.open { max-height: 78vh; }
+  .nav-menu ul {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 6px 0;
+  }
+  .nav-menu li:not(:last-child) { border-bottom: 1px solid var(--line-dark); }
+  .nav-menu a {
+    display: block;
+    padding: 15px 22px;
+    font-size: 0.96rem;
+    opacity: 0.92;
+  }
+  .nav-menu a::after { display: none; }
+  .nav-overlay {
+    display: block;
+    position: fixed;
+    inset: 62px 0 0 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 40;
+  }
+  .lang-sw { order: -1; }
+}
 @media (max-width: 620px) {
-  .wrap {
-    padding: 0 18px;
-  }
-  .unwan {
-    padding: 38px 18px;
-  }
-  .nav-in {
-    height: auto;
-    padding: 10px 0;
-    gap: 10px;
-  }
-  nav ul {
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .brand-sub {
-    display: none;
-  }
-  .hero {
-    padding: 52px 0 60px;
-  }
+  .wrap { padding: 0 18px; }
+  .unwan { padding: 38px 18px; }
+  .hero { padding: 52px 0 60px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * {
