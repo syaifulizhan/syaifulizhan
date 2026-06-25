@@ -8,9 +8,22 @@ main = ".open-next/worker.js"
 compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat"]
 
+workers_dev = true  # kekalkan URL .workers.dev hidup
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+# NOTA: custom domain syaifulizhan.my SUDAH attached ke worker ini di Cloudflare
+# (kekal di akaun CF, bebas dari deploy). SENGAJA tak letak di sini supaya deploy
+# (dari mana-mana: Claude Code/CI/lokal) TAK GAGAL pada langkah custom-domain.
+# Nak ubah domain: urus di CF dashboard → Workers → dewan-izhan → Domains & Routes.
+
+# Korpus hadis/perawi — Cloudflare D1 (ganti Turso; free tier jauh lebih lega).
+[[d1_databases]]
+binding = "DB"
+database_name = "dewan-hadis"
+database_id = "1005aca4-72b4-48ae-a800-1750d65ce061"
 
 # Var awam (di-inline masa build oleh Next): set dalam .env.local.
 # Rahsia runtime (set via `wrangler secret put <NAMA>`):

@@ -1010,11 +1010,33 @@ html[lang="ar"] .foot-brand p {
 .hchap { font-size: 0.92rem; color: var(--gold); font-family: var(--arabic); direction: rtl; margin-bottom: 12px; }
 .hmatn { font-family: var(--arabic); direction: rtl; font-size: 1.5rem; line-height: 2; color: var(--paper); margin-bottom: 18px; }
 .hisnad-t { font-size: 0.66rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+/* isnad klik-turun (collapsible) */
+.hisnad-d { margin-top: 4px; }
+.hisnad-d > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 9px; margin-bottom: 0; user-select: none; transition: color 0.18s; }
+.hisnad-d > summary::-webkit-details-marker { display: none; }
+.hisnad-d > summary:hover { color: var(--gold); }
+.hisnad-caret { display: inline-block; transition: transform 0.18s; color: var(--gold); font-size: 0.8rem; }
+.hisnad-d[open] > summary { margin-bottom: 12px; }
+.hisnad-d[open] .hisnad-caret { transform: rotate(90deg); }
+.hisnad-n { border: 1px solid var(--line-dark); padding: 1px 7px; border-radius: 2px; color: var(--gold-soft); letter-spacing: 0.06em; }
+.hisnad-chain { margin-bottom: 12px; }
+.hisnad-chain:last-child { margin-bottom: 0; }
+.hisnad-br { display: inline-block; font-family: var(--arabic); font-size: 0.8rem; color: var(--gold); border: 1px solid var(--line-dark); padding: 1px 9px; margin-bottom: 7px; }
+.hisnad-pos { display: inline-flex; align-items: center; gap: 5px; }
+.hsep-w { color: var(--gold-soft); font-family: var(--arabic); font-size: 0.95rem; padding: 0 1px; }
 .hisnad { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; direction: rtl; }
 .hnode { font-family: var(--arabic); font-size: 1.05rem; padding: 5px 12px; border: 1px solid var(--line-dark); color: var(--paper); background: rgba(255, 255, 255, 0.02); transition: border-color 0.18s, color 0.18s; }
 a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hnode.unl { color: var(--muted); border-style: dashed; }
 .hsep { color: var(--gold); font-size: 0.9rem; opacity: 0.65; }
+
+/* kotak taraf hadis */
+.hcard-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.hcard-top .hchap { margin-bottom: 0; }
+.hgrade { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border: 1px solid var(--gc); background: color-mix(in srgb, var(--gc) 10%, transparent); white-space: nowrap; }
+.hgrade-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gc); box-shadow: 0 0 7px var(--gc); }
+.hgrade-ar { font-family: var(--arabic); font-size: 1.02rem; color: var(--paper); }
+.hgrade-ms { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gc); font-weight: 600; }
 
 /* cadang pembetulan */
 .suggest { margin-top: 14px; }
