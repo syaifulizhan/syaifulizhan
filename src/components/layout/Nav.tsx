@@ -23,9 +23,10 @@ export default function Nav() {
         <Link className="brand" href="/" onClick={close}>
           <span className="brand-star">۞</span>
           <span>
-            <span className="brand-main">
-              Dewan <em>Izhan</em>
-            </span>
+            <span
+              className={`brand-main${lang === "ar" ? " ar" : ""}`}
+              dangerouslySetInnerHTML={{ __html: T.brandMain[lang] }}
+            />
             <span className="brand-sub"> {T.brandSub[lang]}</span>
           </span>
         </Link>

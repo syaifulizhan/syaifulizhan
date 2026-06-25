@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LangProvider } from "@/components/LangProvider";
+import { getServerLang } from "@/lib/lang-server";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,13 +27,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = await getServerLang();
   return (
-    <html lang="ms" className="h-full antialiased">
+    <html lang={lang === "bm" ? "ms" : lang} className="h-full antialiased">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -49,7 +51,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <LangProvider>{children}</LangProvider>
+        <LangProvider initialLang={lang}>{children}</LangProvider>
       </body>
     </html>
   );

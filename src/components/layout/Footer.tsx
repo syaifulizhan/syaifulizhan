@@ -26,8 +26,11 @@ export default function Footer() {
       <div className="wrap">
         <div className="foot-in">
           <div className="foot-brand">
-            <b>۞ Dewan Izhan</b>
-            <div className="foot-ar">دِيوَان الإِذهَان</div>
+            <b
+              className={lang === "ar" ? "ar" : ""}
+              dangerouslySetInnerHTML={{ __html: `۞ ${T.brandMain[lang]}` }}
+            />
+            {lang !== "ar" && <div className="foot-ar">دِيوَان الإِذهَان</div>}
             <p>{T.footP[lang]}</p>
           </div>
           <div className="handles">
@@ -38,7 +41,7 @@ export default function Footer() {
             ))}
           </div>
           <div className="handles">
-            <span className="foot-reflabel">Rujukan</span>
+            <span className="foot-reflabel">{T.footRujukan[lang]}</span>
             {REFS.map((r) => (
               <a key={r.label} href={r.url} target="_blank" rel="noopener noreferrer">
                 {r.label}

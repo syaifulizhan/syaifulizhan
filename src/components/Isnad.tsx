@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import type { IsnadNode } from "@/lib/hadis";
+import { T } from "@/lib/i18n";
+import type { Lang } from "@/lib/types";
 
 /** Rantai sanad: hormati taḥwīl (ح → cabang) & 'aṭf (و → perawi selari). */
-export function Isnad({ nodes }: { nodes: IsnadNode[] }) {
+export function Isnad({ nodes, lang = "bm" }: { nodes: IsnadNode[]; lang?: Lang }) {
   if (!nodes.length) return null;
 
   // kumpul: chain_no → (position → [perawi selari])
@@ -21,15 +23,15 @@ export function Isnad({ nodes }: { nodes: IsnadNode[] }) {
     <details className="hisnad-d">
       <summary className="hisnad-t">
         <span className="hisnad-caret">▸</span>
-        Rantai Sanad
-        {chainArr.length > 1 && <span className="hisnad-n">{chainArr.length} sanad · taḥwīl</span>}
-        {matched > 0 && <span className="hisnad-n">{matched} berpaut</span>}
+        {T.chainTitle[lang]}
+        {chainArr.length > 1 && <span className="hisnad-n">{chainArr.length} {T.isnadSanad[lang]} · taḥwīl</span>}
+        {matched > 0 && <span className="hisnad-n">{matched} {T.isnadLinked[lang]}</span>}
       </summary>
       {chainArr.map(([cno, posMap], ci) => {
         const positions = [...posMap.entries()].sort((a, b) => a[0] - b[0]);
         return (
           <div key={cno} className="hisnad-chain">
-            {chainArr.length > 1 && <span className="hisnad-br">سند {ci + 1}</span>}
+            {chainArr.length > 1 && <span className="hisnad-br">{T.isnadSanad[lang]} {ci + 1}</span>}
             <div className="hisnad">
               {positions.map(([p, parallel], pi) => (
                 <Fragment key={p}>
