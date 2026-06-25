@@ -10,6 +10,8 @@ const db = createClient({
   url: process.env.TURSO_DATABASE_URL ?? "file:./data/corpus.db",
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
+// Tunggu kunci (penulis selari / build) bukannya gagal serta-merta.
+await db.execute("PRAGMA busy_timeout=15000").catch(() => {});
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -61,9 +63,11 @@ PERATURAN KETAT:
 
 function buildMessages(lang, matn, en) {
   if (lang === "ms" && en) {
+    // English sahih = sumber utama (nama sudah ditransliterasi). Buang matn Arab dari
+    // prompt → jimat ~½ token (penting utk had TPM Groq); istilah dipandu glosari.
     return [
       { role: "system", content: SYSTEM_EN_MS + glossaryFor(matn) },
-      { role: "user", content: `English (sahih):\n${en}\n\nArab (rujukan sahaja):\n${matn}` },
+      { role: "user", content: `English (sahih):\n${en}` },
     ];
   }
   return [
@@ -125,14 +129,23 @@ async function callGemini(messages) {
   if (!res.ok) throw new Error(`gemini ${j.error?.message || res.status}`);
   return j.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 }
-async function callGroq(messages) {
+async function callGroq(messages, attempt = 0) {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY tiada");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: MODEL, messages, temperature: 0.2 }),
+    signal: AbortSignal.timeout(45000), // elak gantung kekal (cth soket mati)
   });
+  // 429 / 503 → hormati retry-after, tunggu & cuba semula (jangan langkau hadis)
+  if ((res.status === 429 || res.status === 503) && attempt < 5) {
+    const ra = Number(res.headers.get("retry-after"));
+    // CAP 30s — retry-after Groq boleh 100-500s (had harian) → jangan tidur berminit.
+    const wait = Math.min(30, Number.isFinite(ra) && ra > 0 ? ra : 2 ** attempt) * 1000 + 500;
+    await new Promise((r) => setTimeout(r, wait));
+    return callGroq(messages, attempt + 1);
+  }
   const j = await res.json();
   if (!res.ok) throw new Error(`groq ${j.error?.message || res.status}`);
   return j.choices?.[0]?.message?.content?.trim();
@@ -159,6 +172,7 @@ async function rowsNeeding(lang) {
     sql: `SELECT h.id, h.matn_ar, ${enCol} en FROM hadiths h
            WHERE NOT EXISTS (SELECT 1 FROM translations t
              WHERE t.entity_type='hadith' AND t.entity_id=h.id AND t.lang=?)
+           ORDER BY (en IS NULL), h.id
            LIMIT ?`,
     args: [lang, LIMIT],
   });
@@ -198,12 +212,15 @@ if (DRY) {
         const r = rows[idx++];
         const fromEn = lang === "ms" && r.en; // BM ikut English sahih → tepat, skip verify (laju)
         try {
+          if (process.env.DBG) console.error(`[dbg] row ${r.id} → CALL…`);
           let text = clean(await CALL(buildMessages(lang, r.matn_ar, r.en)));
+          if (process.env.DBG) console.error(`[dbg] row ${r.id} ← text ${text?.length}`);
           if (text && VERIFY && !fromEn) {
             const checked = clean(await CALL(buildVerifyMessages(lang, r.matn_ar, text)));
             if (checked) text = checked;
           }
           if (text) {
+            if (process.env.DBG) console.error(`[dbg] row ${r.id} → WRITE…`);
             await db.execute({
               sql: `INSERT INTO translations (entity_type,entity_id,lang,text,source,model,is_verified,created_at)
                     VALUES ('hadith',?,?,?,'ai',?,0,datetime('now'))

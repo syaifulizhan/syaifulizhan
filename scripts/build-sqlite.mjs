@@ -28,7 +28,10 @@ async function* readJsonl(file) {
 async function* readMany(files) {
   for (const f of files) if (existsSync(f)) yield* readJsonl(f);
 }
-const NARRATORS_FILES = [NARRATORS, "data/islamdb/narrators.recovered.jsonl"];
+const NARRATORS_FILES = [NARRATORS, "data/islamdb/narrators.recovered.jsonl", "data/itqan/narrators.itqan.jsonl"];
+const ITQAN_GRADES = "data/itqan/grades.itqan.jsonl";
+const ITQAN_RELATIONS = "data/itqan/relations.itqan.jsonl";
+const ITQAN_ENRICH = "data/itqan/enrich.itqan.jsonl";
 const HADITH_FILES = [HADITH, "data/islamdb/hadith.recovered.jsonl", "data/islamdb/ahmedbaset.jsonl"];
 
 async function buildNarrators() {
@@ -41,6 +44,7 @@ async function buildNarrators() {
   );
   await db.execute("DELETE FROM narrator_grades");
   await db.execute("DELETE FROM narrator_relations");
+  await db.execute("DELETE FROM narrators WHERE id>=2000000"); // bersih julat Itqan → padanan terkini berkuat kuasa (buang sisa build lama)
 
   // ── Pas 1: import perawi + jarh ──────────────────────────────────────────
   console.log("→ Pas 1: import perawi + jarh…");
@@ -119,6 +123,47 @@ async function buildNarrators() {
   }
   await flush();
 
+  // ── Pas 3: Itqan — gred perkaya (perawi islam-db) + tepi guru/murid TEPAT (id) ──
+  let itqG = 0, itqE = 0;
+  if (existsSync(ITQAN_GRADES)) {
+    console.log("→ Pas 3a: gred Itqan (perkaya perawi sedia ada)…");
+    batch = [];
+    for await (const g of readJsonl(ITQAN_GRADES)) {
+      batch.push({ sql: `INSERT INTO narrator_grades (narrator_id,scholar,verdict) VALUES (?,?,?)`,
+        args: [g.narrator_id, g.scholar ?? null, g.verdict ?? null] });
+      itqG++;
+      if (batch.length >= 400) await flush();
+    }
+    await flush();
+  }
+  if (existsSync(ITQAN_RELATIONS)) {
+    console.log("→ Pas 3b: tepi guru/murid tepat Itqan…");
+    batch = [];
+    for await (const e of readJsonl(ITQAN_RELATIONS)) {
+      batch.push({ sql: `INSERT OR IGNORE INTO narrator_relations (teacher_id,student_id) VALUES (?,?)`,
+        args: [e.teacher_id, e.student_id] });
+      itqE++;
+      if (batch.length >= 400) await flush();
+    }
+    await flush();
+  }
+  // ── Pas 3c: perkaya medan kosong perawi islam-db (wafat/kota dari Itqan) ──
+  let itqF = 0;
+  if (existsSync(ITQAN_ENRICH)) {
+    console.log("→ Pas 3c: perkaya medan (wafat/kota) perawi islam-db…");
+    batch = [];
+    for await (const e of readJsonl(ITQAN_ENRICH)) {
+      batch.push({
+        sql: `UPDATE narrators SET death_year=COALESCE(death_year,?), death_place=COALESCE(death_place,?), regions=COALESCE(regions,?) WHERE id=?`,
+        args: [e.death_year ?? null, e.death_place ?? null, e.regions ?? null, e.id],
+      });
+      itqF++;
+      if (batch.length >= 400) await flush();
+    }
+    await flush();
+  }
+  if (itqG || itqE || itqF) console.log(`✓ Itqan: gred perkaya ${itqG} | tepi tepat ${itqE} | medan perkaya ${itqF}`);
+
   await db.execute(
     `INSERT INTO meta(key,value) VALUES('narrators_built_at', datetime('now'))
      ON CONFLICT(key) DO UPDATE SET value=excluded.value`
@@ -133,11 +178,25 @@ async function buildHadiths() {
   await db.execute(
     `CREATE VIRTUAL TABLE IF NOT EXISTS hadiths_fts USING fts5(matn_search, content='hadiths', content_rowid='id')`
   );
+  // KEKALKAN src_ref→id sedia ada supaya id hadis STABIL antara build → terjemahan
+  // (source='ai': BM/EN) yg dikunci pada entity_id tak tersilap padan bila korpus membesar.
+  const idBySrc = new Map();
+  let maxId = 0;
+  {
+    let cur = 0;
+    for (;;) {
+      const r = await db.execute({ sql: "SELECT id, src_ref FROM hadiths WHERE id>? ORDER BY id LIMIT 5000", args: [cur] });
+      if (!r.rows.length) break;
+      for (const row of r.rows) { idBySrc.set(row.src_ref, Number(row.id)); if (Number(row.id) > maxId) maxId = Number(row.id); cur = Number(row.id); }
+    }
+  }
+  console.log(`  (kekal stabil: ${idBySrc.size} id sedia ada, maxId=${maxId})`);
+
   await db.execute("DELETE FROM hadiths");
   await db.execute("DELETE FROM hadith_narrators");
   await db.execute("DELETE FROM translations WHERE source='AhmedBaset'"); // di-derive semula tiap build (kekalkan source='ai')
 
-  let hid = 0, nH = 0, nLink = 0, nEdge = 0, nBook = 0, nEnTr = 0;
+  let nH = 0, nLink = 0, nEdge = 0, nBook = 0, nEnTr = 0;
   const seen = new Set();
   let batch = [];
   const flush = async () => { if (batch.length) { await db.batch(batch, "write"); batch = []; } };
@@ -154,7 +213,7 @@ async function buildHadiths() {
       const src = r.src_ref ?? `${r.book}:${r.chapter}:${r.seq}`;
       if (seen.has(src)) continue; // dedupe re-scrape
       seen.add(src);
-      const id = ++hid;
+      const id = idBySrc.get(src) ?? ++maxId; // id stabil (sedia ada) atau baharu lepas max
       batch.push({
         sql: `INSERT INTO hadiths (id,src_ref,book_id,chapter_ref,chapter_ar,number,matn_ar,matn_search,scraped_at)
               VALUES (?,?,?,?,?,?,?,?,datetime('now'))`,
@@ -212,6 +271,7 @@ async function buildHadiths() {
 // libsql dayakan FK secara lalai; matikan utk import (rujukan tergantung dibenarkan —
 // cth perawi dlm isnad/graf yang belum di-scrape akan resolve bila korpus membesar).
 await db.execute("PRAGMA foreign_keys = OFF");
+const ONLY_NARR = process.argv.includes("--narrators-only");
 await buildNarrators();
-await buildHadiths();
+if (!ONLY_NARR) await buildHadiths();
 db.close();

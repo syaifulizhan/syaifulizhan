@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { Isnad } from "@/components/Isnad";
+import { GradeBadge } from "@/components/GradeBadge";
 import { BilingualToggle } from "@/components/BilingualToggle";
 import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
@@ -53,7 +54,10 @@ export default async function KitabPage({
         <div style={{ marginTop: "24px" }}>
           {hadiths.map((h) => (
             <article className="hcard" key={h.id}>
-              {h.chapter_ar && <div className="hchap ar">{h.chapter_ar}</div>}
+              <div className="hcard-top">
+                {h.chapter_ar && <div className="hchap ar">{h.chapter_ar}</div>}
+                <GradeBadge grade={h.grade} />
+              </div>
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />
               <Isnad nodes={isnads.get(h.id) ?? []} />

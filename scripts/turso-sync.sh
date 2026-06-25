@@ -38,9 +38,9 @@ con.close()
 print(f"  dump: {out}")
 PY
 
-echo "→ Muat ke Turso ($DB) ..."
-turso db shell "$DB" < "$OUT"
-echo "→ Kiraan di Turso:"
-turso db shell "$DB" "SELECT 'narrators' t,count(*) n FROM narrators UNION ALL SELECT 'hadiths',count(*) FROM hadiths UNION ALL SELECT 'relations',count(*) FROM narrator_relations"
+echo "→ Muat ke Turso ($DB) via loader Node berkelompok (tahan muatan besar) ..."
+TURSO_SYNC_URL="$(turso db show "$DB" --url)" \
+TURSO_SYNC_TOKEN="$(turso db tokens create "$DB")" \
+  node scripts/turso-load.mjs "$OUT"
 rm -f "$OUT"
 echo "✓ Re-sync selesai."

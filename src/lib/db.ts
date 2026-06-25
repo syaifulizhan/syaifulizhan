@@ -26,3 +26,24 @@ export const corpus = new Proxy({} as Client, {
     return typeof v === "function" ? v.bind(c) : v;
   },
 });
+
+/**
+ * Klien HADIS — Cloudflare D1 (matn + terjemahan). Korpus dibahagi: D1 utk
+ * kandungan bacaan (berubah kerap), Turso utk perawi/isnad (stabil). Binding "DB"
+ * (wrangler.toml) hanya wujud masa request di Worker → dicapai lazy.
+ */
+type Row = Record<string, unknown>;
+interface D1Stmt { bind: (...a: unknown[]) => D1Stmt; all: () => Promise<{ results?: Row[] }> }
+interface D1DB { prepare: (sql: string) => D1Stmt }
+type ExecArg = string | { sql: string; args?: unknown[] };
+
+async function d1Execute(q: ExecArg): Promise<{ rows: Row[] }> {
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const env = getCloudflareContext().env as unknown as { DB: D1DB };
+  const sql = typeof q === "string" ? q : q.sql;
+  const args = (typeof q === "string" ? [] : q.args) ?? [];
+  const r = await env.DB.prepare(sql).bind(...args).all();
+  return { rows: r.results ?? [] };
+}
+
+export const hadithDb = { execute: d1Execute };
