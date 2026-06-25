@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { submitSuggestion } from "@/app/actions";
+import { useLang } from "@/components/LangProvider";
+import { T } from "@/lib/i18n";
 
 export function SuggestForm({
   entityType,
@@ -15,15 +17,16 @@ export function SuggestForm({
   field?: string;
   currentText?: string;
 }) {
+  const { lang: ui } = useLang();
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
 
-  if (sent) return <p className="suggest-done">✓ Terima kasih — cadangan dihantar untuk semakan admin.</p>;
+  if (sent) return <p className="suggest-done">✓ {T.suggestDone[ui]}</p>;
 
   return (
     <div className="suggest">
       <button className="suggest-toggle" onClick={() => setOpen((o) => !o)}>
-        ✎ Cadang pembetulan
+        ✎ {T.suggestBtn[ui]}
       </button>
       {open && (
         <form
@@ -38,10 +41,10 @@ export function SuggestForm({
           {lang && <input type="hidden" name="lang" value={lang} />}
           {field && <input type="hidden" name="field" value={field} />}
           {currentText && <input type="hidden" name="current_text" value={currentText} />}
-          <textarea name="suggested_text" required rows={3} placeholder="Teks pembetulan dicadangkan…" />
-          <input name="reason" placeholder="Sebab (pilihan)" />
-          <input name="submitter" placeholder="Nama / emel anda (pilihan)" />
-          <button type="submit" className="btn solid">Hantar cadangan</button>
+          <textarea name="suggested_text" required rows={3} placeholder={T.suggestText[ui]} />
+          <input name="reason" placeholder={T.suggestReason[ui]} />
+          <input name="submitter" placeholder={T.suggestName[ui]} />
+          <button type="submit" className="btn solid">{T.suggestSend[ui]}</button>
         </form>
       )}
     </div>

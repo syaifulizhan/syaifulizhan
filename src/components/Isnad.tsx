@@ -41,7 +41,7 @@ export function Isnad({ nodes, lang = "bm" }: { nodes: IsnadNode[]; lang?: Lang 
                         {nd.resolved ? (
                           <Link href={`/perawi/${nd.narrator_id}`} className="hnode">{nd.resolved}</Link>
                         ) : (
-                          <span className="hnode unl" title="Perawi belum dipadan dgn korpus">
+                          <span className="hnode unl" title={T.isnadUnmatched[lang]}>
                             {nd.raw_name ?? `#${nd.narrator_id}`}
                           </span>
                         )}

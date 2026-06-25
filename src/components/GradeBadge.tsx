@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { T } from "@/lib/i18n";
+import type { Lang } from "@/lib/types";
 
 // Kotak taraf (darjat) hadis: sahih / hasan / da'if / maudu' …
 const G: Record<string, { ar: string; ms: string; c: string }> = {
@@ -11,11 +13,11 @@ const G: Record<string, { ar: string; ms: string; c: string }> = {
   Shadh: { ar: "شاذ", ms: "Syaz", c: "#c77f33" },
 };
 
-export function GradeBadge({ grade }: { grade: string | null }) {
+export function GradeBadge({ grade, lang = "bm" }: { grade: string | null; lang?: Lang }) {
   if (!grade) return null;
   const g = G[grade] ?? { ar: "", ms: grade, c: "var(--muted)" };
   return (
-    <span className="hgrade" style={{ "--gc": g.c } as CSSProperties} title={`Taraf: ${g.ms}`}>
+    <span className="hgrade" style={{ "--gc": g.c } as CSSProperties} title={`${T.gradeLabel[lang]}: ${g.ms}`}>
       <span className="hgrade-dot" />
       {g.ar && <span className="ar hgrade-ar">{g.ar}</span>}
       <span className="hgrade-ms">{g.ms}</span>

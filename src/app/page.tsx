@@ -7,8 +7,11 @@ import Tentang from "@/components/sections/Tentang";
 import Khidmat from "@/components/sections/Khidmat";
 import Footer from "@/components/layout/Footer";
 import { SearchBox } from "@/components/SearchBox";
+import { getServerLang } from "@/lib/lang-server";
+import { T } from "@/lib/i18n";
 
-export default function Home() {
+export default async function Home() {
+  const lang = await getServerLang();
   return (
     <>
       <StarPattern />
@@ -16,8 +19,8 @@ export default function Home() {
       <Hero />
       <section className="searchband">
         <div className="wrap searchband-in">
-          <div className="eyebrow">Cari dalam korpus</div>
-          <h2 className="searchband-h">Jelajah hadis, perawi &amp; kitab</h2>
+          <div className="eyebrow">{T.searchTitle[lang]}</div>
+          <h2 className="searchband-h">{T.searchBandH[lang]}</h2>
           <SearchBox big />
         </div>
       </section>
