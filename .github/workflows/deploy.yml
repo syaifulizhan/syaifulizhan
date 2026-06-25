@@ -1,0 +1,37 @@
+# Auto-deploy Dewan Izhan → Cloudflare Worker bila push ke main.
+# Setara "Workers Builds" tapi guna GitHub Actions (boleh push dari Claude Code cloud).
+# Secrets/vars repo: CLOUDFLARE_API_TOKEN (secret); NEXT_PUBLIC_SUPABASE_URL,
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, CLOUDFLARE_ACCOUNT_ID (vars).
+# Rahsia runtime worker (TURSO_*, SUPABASE_SECRET_KEY, ADMIN_PASSWORD) kekal di CF
+# (di-set via `wrangler secret put`) — deploy tak mengubahnya.
+name: Deploy ke Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cf
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build (OpenNext)
+        run: npx opennextjs-cloudflare build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Deploy (wrangler)
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
