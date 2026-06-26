@@ -152,6 +152,50 @@ html[lang="ar"] .searchband-h {
   line-height: 1.45;
 }
 
+/* ── BUANG letter-spacing PADA SEMUA TEKS ARAB ──
+   Tulisan Arab bersambung; letter-spacing memutuskannya ("putus-putus").
+
+   (1) Kandungan yang SENTIASA Arab (nama perawi, matn, isnad, istilah
+       glosari, darjat…) — putus dalam SEMUA mod, termasuk BM/EN. Reset
+       terus pada kelasnya supaya betul tanpa mengira bahasa UI. */
+.ar,
+.basmala,
+.hero-ar-name,
+.node .nm,
+.pname,
+.pshuhra,
+.pinfo .v,
+.pjarh-row .sch,
+.pjarh-row .vd,
+.pn .pn-nm,
+.pn .pn-meta,
+.psearch input,
+.hbook .t,
+.hchap,
+.hmatn,
+.hisnad-br,
+.hsep-w,
+.hnode,
+.hgrade-ar,
+.adm-text,
+.glos-letter,
+.glos-ar,
+.matn-ar,
+.card-ar,
+.foot-ar,
+.pbadge {
+  letter-spacing: 0;
+}
+/* (2) Dalam mod Arab, hampir semua teks bertukar Arab. Tetapkan
+   letter-spacing 0 untuk SEMUA elemen — termasuk <span> tanpa kelas yang
+   distail melalui pemilih keturunan (mis. .for-row span). Pemilih
+   "[class] *" melindungi keturunan dengan specificity (0,2,1) supaya
+   mengatasi label dua-kelas (mis. .pinfo .k) dan .for-row span (0.03em). */
+html[lang="ar"] [class],
+html[lang="ar"] [class] * {
+  letter-spacing: 0;
+}
+
 /* ── LANG SWITCHER ── */
 .lang-sw {
   display: flex;
