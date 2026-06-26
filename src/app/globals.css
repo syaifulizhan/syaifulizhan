@@ -104,6 +104,43 @@ h3 {
    Elemen teks Arab guna .ar; teks boleh-tukar-bahasa guna dir="auto". */
 [dir="auto"] { unicode-bidi: plaintext; }
 
+/* ── TIPOGRAFI ARAB: tulisan bersambung ──
+   Tulisan Arab BERSAMBUNG (cursive). Dua benda memutuskan sambungan →
+   nampak "putus-putus":
+     1. letter-spacing — regangkan huruf hingga terpisah.
+     2. font IBM Plex Sans (var(--sans)) — TIADA glyph Arab, jatuh ke
+        fallback sistem yang hodoh.
+   Label/eyebrow kecil (uppercase + tracking) tak diliputi override Arab
+   sedia ada, jadi ia yang pecah. Betulkan: bila bahasa Arab aktif, guna
+   Amiri, buang letter-spacing & uppercase, besarkan sedikit. */
+html[lang="ar"] .eyebrow,
+html[lang="ar"] .hero-sub,
+html[lang="ar"] .psec-t,
+html[lang="ar"] .pinfo .k,
+html[lang="ar"] .pcol h4,
+html[lang="ar"] .hisnad-t,
+html[lang="ar"] .foot-reflabel,
+html[lang="ar"] .adm-tag,
+html[lang="ar"] .adm-lbl {
+  font-family: var(--arabic);
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* Saiz sedikit lebih besar supaya naskh kecil tetap mudah dibaca tanpa tracking. */
+html[lang="ar"] .eyebrow,
+html[lang="ar"] .hero-sub,
+html[lang="ar"] .psec-t {
+  font-size: 0.95rem;
+}
+/* Tajuk pula guna Amiri yang anggun (bukan serif Latin Cormorant). */
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] .searchband-h {
+  font-family: var(--arabic);
+  letter-spacing: 0;
+}
+
 /* ── LANG SWITCHER ── */
 .lang-sw {
   display: flex;
