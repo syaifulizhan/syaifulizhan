@@ -20,7 +20,8 @@ export default function Hero() {
           <span className="awn-corner br">۞</span>
           <div className="basmala">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
           <div className="hero-ar-name">
-            دِيوَان الإِذهَان · مُحَمَّد سَيْف الإِذهَان
+            <span className="hero-ar-diwan">دِيوَان الإِذهَان</span>
+            <span className="hero-ar-person">مُحَمَّد سَيْف الإِذهَان</span>
           </div>
           <h1 dangerouslySetInnerHTML={{ __html: T.heroH1[lang] }} />
           <div className="hero-sub">{T.heroSub[lang]}</div>

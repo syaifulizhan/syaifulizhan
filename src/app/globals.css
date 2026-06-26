@@ -139,6 +139,23 @@ html[lang="ar"] h3 {
   font-family: var(--arabic);
   letter-spacing: 0;
 }
+/* ── FONT ARAB UNTUK SEMUA TEKS DALAM MOD ARAB ──
+   IBM Plex Sans tiada glyph Arab → fallback hodoh/"putus-putus". Jadikan
+   Amiri font lalai (mewarisi) dalam mod Arab, dan ganti elemen yang
+   tetapkan var(--sans) sendiri tetapi memaparkan Arab (butang CTA, tab
+   khidmat, tajuk panel isnad, nota, badge darjat, peranan perawi). */
+html[lang="ar"] body {
+  font-family: var(--arabic);
+}
+html[lang="ar"] .btn,
+html[lang="ar"] .kh-tab,
+html[lang="ar"] .chain-ph,
+html[lang="ar"] .sanad-note,
+html[lang="ar"] .badge,
+html[lang="ar"] .node .role {
+  font-family: var(--arabic);
+  letter-spacing: 0;
+}
 /* ── TAJUK BESAR ARAB: kaligrafi mewah (Aref Ruqaa) ──
    Hanya untuk tajuk utama yang besar — h1/h2 dalam mod Arab, serta nama
    Arab hero & basmala (sentiasa Arab). Aref Ruqaa ada tanda baris tinggi,
@@ -408,11 +425,24 @@ nav a:hover::after {
 }
 .hero-ar-name {
   font-family: var(--arabic-display);
-  font-size: 2.3rem;
   color: var(--paper);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   direction: rtl;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+/* Nama dīwān (jenama) di atas, nama pemilik di bawah — bertindan dielak
+   dengan susun-tegak + line-height lapang untuk tanda baris tinggi Aref Ruqaa. */
+.hero-ar-diwan {
+  font-size: 2.4rem;
   line-height: 1.5;
+}
+.hero-ar-person {
+  font-size: 1.45rem;
+  line-height: 1.5;
+  color: var(--gold-soft);
 }
 .hero h1 {
   font-size: clamp(2.4rem, 5.5vw, 3.9rem);
