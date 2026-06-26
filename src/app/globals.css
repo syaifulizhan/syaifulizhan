@@ -23,6 +23,8 @@
   --display: "Cormorant Garamond", Georgia, serif;
   --sans: "IBM Plex Sans", system-ui, sans-serif;
   --arabic: "Amiri", "Traditional Arabic", serif;
+  /* Tajuk besar Arab sahaja — kaligrafi Thuluth/Ruqʿah yang mewah. */
+  --arabic-display: "Aref Ruqaa", "Amiri", serif;
   --maxw: 1140px;
 }
 
@@ -132,13 +134,22 @@ html[lang="ar"] .hero-sub,
 html[lang="ar"] .psec-t {
   font-size: 0.95rem;
 }
-/* Tajuk pula guna Amiri yang anggun (bukan serif Latin Cormorant). */
-html[lang="ar"] h1,
-html[lang="ar"] h2,
-html[lang="ar"] h3,
-html[lang="ar"] .searchband-h {
+/* Subtajuk kecil (h3) guna Amiri yang anggun (bukan serif Latin Cormorant). */
+html[lang="ar"] h3 {
   font-family: var(--arabic);
   letter-spacing: 0;
+}
+/* ── TAJUK BESAR ARAB: kaligrafi mewah (Aref Ruqaa) ──
+   Hanya untuk tajuk utama yang besar — h1/h2 dalam mod Arab, serta nama
+   Arab hero & basmala (sentiasa Arab). Aref Ruqaa ada tanda baris tinggi,
+   jadi naikkan line-height supaya tidak terpotong. Label/teks badan kekal
+   Amiri. */
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] .searchband-h {
+  font-family: var(--arabic-display);
+  letter-spacing: 0;
+  line-height: 1.45;
 }
 
 /* ── LANG SWITCHER ── */
@@ -343,15 +354,16 @@ nav a:hover::after {
   right: 14px;
 }
 .basmala {
-  font-family: var(--arabic);
-  font-size: 1.55rem;
+  font-family: var(--arabic-display);
+  font-size: 1.7rem;
   color: var(--gold-soft);
   margin-bottom: 20px;
   opacity: 0.95;
   direction: rtl;
+  line-height: 1.5;
 }
 .hero-ar-name {
-  font-family: var(--arabic);
+  font-family: var(--arabic-display);
   font-size: 2.3rem;
   color: var(--paper);
   margin-bottom: 4px;
