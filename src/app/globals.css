@@ -139,6 +139,23 @@ html[lang="ar"] h3 {
   font-family: var(--arabic);
   letter-spacing: 0;
 }
+/* ── FONT ARAB UNTUK SEMUA TEKS DALAM MOD ARAB ──
+   IBM Plex Sans tiada glyph Arab → fallback hodoh/"putus-putus". Jadikan
+   Amiri font lalai (mewarisi) dalam mod Arab, dan ganti elemen yang
+   tetapkan var(--sans) sendiri tetapi memaparkan Arab (butang CTA, tab
+   khidmat, tajuk panel isnad, nota, badge darjat, peranan perawi). */
+html[lang="ar"] body {
+  font-family: var(--arabic);
+}
+html[lang="ar"] .btn,
+html[lang="ar"] .kh-tab,
+html[lang="ar"] .chain-ph,
+html[lang="ar"] .sanad-note,
+html[lang="ar"] .badge,
+html[lang="ar"] .node .role {
+  font-family: var(--arabic);
+  letter-spacing: 0;
+}
 /* ── TAJUK BESAR ARAB: kaligrafi mewah (Aref Ruqaa) ──
    Hanya untuk tajuk utama yang besar — h1/h2 dalam mod Arab, serta nama
    Arab hero & basmala (sentiasa Arab). Aref Ruqaa ada tanda baris tinggi,
@@ -150,6 +167,50 @@ html[lang="ar"] .searchband-h {
   font-family: var(--arabic-display);
   letter-spacing: 0;
   line-height: 1.45;
+}
+
+/* ── BUANG letter-spacing PADA SEMUA TEKS ARAB ──
+   Tulisan Arab bersambung; letter-spacing memutuskannya ("putus-putus").
+
+   (1) Kandungan yang SENTIASA Arab (nama perawi, matn, isnad, istilah
+       glosari, darjat…) — putus dalam SEMUA mod, termasuk BM/EN. Reset
+       terus pada kelasnya supaya betul tanpa mengira bahasa UI. */
+.ar,
+.basmala,
+.hero-ar-name,
+.node .nm,
+.pname,
+.pshuhra,
+.pinfo .v,
+.pjarh-row .sch,
+.pjarh-row .vd,
+.pn .pn-nm,
+.pn .pn-meta,
+.psearch input,
+.hbook .t,
+.hchap,
+.hmatn,
+.hisnad-br,
+.hsep-w,
+.hnode,
+.hgrade-ar,
+.adm-text,
+.glos-letter,
+.glos-ar,
+.matn-ar,
+.card-ar,
+.foot-ar,
+.pbadge {
+  letter-spacing: 0;
+}
+/* (2) Dalam mod Arab, hampir semua teks bertukar Arab. Tetapkan
+   letter-spacing 0 untuk SEMUA elemen — termasuk <span> tanpa kelas yang
+   distail melalui pemilih keturunan (mis. .for-row span). Pemilih
+   "[class] *" melindungi keturunan dengan specificity (0,2,1) supaya
+   mengatasi label dua-kelas (mis. .pinfo .k) dan .for-row span (0.03em). */
+html[lang="ar"] [class],
+html[lang="ar"] [class] * {
+  letter-spacing: 0;
 }
 
 /* ── LANG SWITCHER ── */
@@ -364,11 +425,24 @@ nav a:hover::after {
 }
 .hero-ar-name {
   font-family: var(--arabic-display);
-  font-size: 2.3rem;
   color: var(--paper);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   direction: rtl;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+/* Nama dīwān (jenama) di atas, nama pemilik di bawah — bertindan dielak
+   dengan susun-tegak + line-height lapang untuk tanda baris tinggi Aref Ruqaa. */
+.hero-ar-diwan {
+  font-size: 2.4rem;
   line-height: 1.5;
+}
+.hero-ar-person {
+  font-size: 1.45rem;
+  line-height: 1.5;
+  color: var(--gold-soft);
 }
 .hero h1 {
   font-size: clamp(2.4rem, 5.5vw, 3.9rem);
