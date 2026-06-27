@@ -21,7 +21,8 @@ export default function Nav() {
     <header className="nav">
       <div className="wrap nav-in">
         <Link className="brand" href="/" onClick={close}>
-          <span className="brand-star">۞</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-mark" src="/logo-mark.png" alt="" aria-hidden="true" />
           <span>
             <span
               className={`brand-main${lang === "ar" ? " ar" : ""}`}
