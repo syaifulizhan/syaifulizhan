@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://syaifulizhan.my"),
-  title: "Dewan Izhan · Ilmu Riwayah & Teknologi",
+  title: "Dewan Izhan",
   description:
     "Hadis dibawa dengan sanad, takhrij dan darjatnya — telus, teliti, dalam bahasa kita. Platform ilmu riwayah dan perkhidmatan digital oleh Muhammad Syaiful Izhan.",
   keywords: [
