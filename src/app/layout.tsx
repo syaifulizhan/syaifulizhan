@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     siteName: "Dewan Izhan",
     locale: "ms_MY",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Dewan Izhan" }],
   },
 };
 
