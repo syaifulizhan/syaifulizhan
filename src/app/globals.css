@@ -270,13 +270,14 @@ header.nav {
 }
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 11px;
 }
-.brand-star {
-  color: var(--gold);
-  font-size: 1.35rem;
-  line-height: 1;
+.brand-mark {
+  height: 40px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
 }
 .brand-main {
   font-family: var(--display);
@@ -1071,7 +1072,9 @@ html[lang="ar"] .foot-brand p {
   .nav-burger { display: flex; }
   .nav-in { flex-wrap: nowrap; height: 62px; }
   .brand-sub { display: none; }
-  .brand-main { font-size: 1.3rem; }
+  .brand-main { font-size: 1.2rem; white-space: nowrap; }
+  .brand-mark { height: 34px; }
+  .nav-right { gap: 10px; }
   /* nav links → drawer turun dari header */
   .nav-menu {
     position: absolute;
@@ -1224,7 +1227,7 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .adm-date { font-size: 0.72rem; color: var(--muted); margin-inline-start: auto; }
 .adm-block { margin-bottom: 10px; }
 .adm-lbl { font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-.adm-text { font-family: var(--arabic); direction: rtl; font-size: 1.2rem; color: var(--paper); line-height: 1.7; }
+.adm-text { font-family: var(--arabic); direction: rtl; font-size: 1.7rem; color: var(--paper); line-height: 1.85; }
 .adm-reason { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
 .adm-actions { display: flex; gap: 10px; margin-top: 14px; }
 .adm-actions .btn { padding: 8px 20px; }
