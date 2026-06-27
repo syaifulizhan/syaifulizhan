@@ -245,6 +245,8 @@ export const T = {
     ar: "مصطلحات علوم الحديث (المصطلح والجرح والتعديل) — نصٌّ عربي ونقحرة وترجمة وتعريف.",
   },
   istilahWord: { bm: "istilah", en: "terms", ar: "مصطلح" },
+  glosariSearch: { bm: "Cari istilah… (Arab / rumi / makna)", en: "Search a term… (Arabic / Latin / meaning)", ar: "ابحث عن مصطلح… (عربي / لاتيني / معنى)" },
+  glosariNoMatch: { bm: "Tiada istilah padan.", en: "No matching term.", ar: "لا مصطلح مُطابِق." },
   glosariEmpty: { bm: "Glosari belum di-seed.", en: "Glossary not seeded yet.", ar: "لم يُملأ المعجم بعد." },
 
   // Isnad tooltip + cadang pembetulan

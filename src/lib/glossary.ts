@@ -1,4 +1,4 @@
-import { corpus } from "./db";
+import { hadithDb } from "./db";
 
 export interface GlossaryTerm {
   term_ar: string;
@@ -11,9 +11,14 @@ export interface GlossaryTerm {
   def_en: string | null;
 }
 
+// Glosari di Cloudflare D1 (kecil ~2.5k baris; boleh kembang tanpa Turso).
 export async function getGlossary(): Promise<GlossaryTerm[]> {
-  const r = await corpus.execute(
-    "SELECT term_ar, huruf, translit, term_ms, term_en, def_ar, def_ms, def_en FROM glossary ORDER BY term_ar"
-  );
-  return r.rows as unknown as GlossaryTerm[];
+  try {
+    const r = await hadithDb.execute(
+      "SELECT term_ar, huruf, translit, term_ms, term_en, def_ar, def_ms, def_en FROM glossary ORDER BY term_ar"
+    );
+    return r.rows as unknown as GlossaryTerm[];
+  } catch {
+    return [];
+  }
 }
