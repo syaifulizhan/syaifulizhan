@@ -9,6 +9,11 @@ import { normalizeArabic } from "./lib/arabic.mjs";
 
 const url = process.env.TURSO_DATABASE_URL ?? "file:./data/corpus.db";
 const authToken = process.env.TURSO_AUTH_TOKEN;
+// GUARD: skrip ini DELETE+reINSERT ~1.4M baris — hanya untuk fail LOKAL. Elak
+// tulis berulang ke Turso cloud (punca had 10M pecah dulu). Seed cloud = turso-sync.sh.
+if (/^(libsql|https?|wss):/i.test(url) && !process.env.ALLOW_CLOUD_WRITE) {
+  throw new Error(`⛔ TURSO_DATABASE_URL menunjuk CLOUD (${url.slice(0, 24)}…). build-sqlite hanya utk file:./data/corpus.db. Guna scripts/turso-sync.sh utk seed cloud, atau set ALLOW_CLOUD_WRITE=1 jika betul-betul sengaja.`);
+}
 const db = createClient({ url, authToken });
 
 const NARRATORS = "data/islamdb/narrators.jsonl";

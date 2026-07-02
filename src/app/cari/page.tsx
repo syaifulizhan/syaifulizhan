@@ -37,7 +37,7 @@ export default async function Cari({ searchParams }: { searchParams: Promise<{ q
 
         {t === "hadis" &&
           hadis.map((r) => (
-            <Link href={`/kitab/${r.book_id}`} key={r.id} className="hcard" style={{ display: "block" }}>
+            <Link href={`/kitab/${r.book_id}?h=${r.id}#h-${r.id}`} key={r.id} className="hcard" style={{ display: "block" }}>
               {r.book && <div className="hchap ar">{r.book}{r.chapter_ar ? ` — ${r.chapter_ar}` : ""}</div>}
               <div className="hmatn ar" style={{ fontSize: "1.25rem", marginBottom: 0 }}>{r.matn_ar}</div>
             </Link>
