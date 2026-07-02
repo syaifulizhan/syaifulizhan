@@ -9,9 +9,7 @@ export default function Hero() {
 
   return (
     <section className="hero" id="beranda">
-      <svg className="bg-pattern" aria-hidden="true">
-        <rect width="100%" height="100%" fill="url(#khatam)" />
-      </svg>
+      <div className="bg-pattern" aria-hidden="true" />
       <div className="wrap">
         <Reveal className="unwan">
           <span className="awn-corner tl">۞</span>
@@ -30,7 +28,7 @@ export default function Hero() {
             dangerouslySetInnerHTML={{ __html: T.heroThesis[lang] }}
           />
           <div className="cta-row">
-            <a className="btn solid" href="#sanad">
+            <a className="btn solid" href="#silsilah">
               {T.heroCta1[lang]}
             </a>
             <a className="btn ghost" href="#ilmu">

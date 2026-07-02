@@ -3,11 +3,12 @@ import { notFound } from "next/navigation";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { Isnad } from "@/components/Isnad";
+import { isMarfu } from "@/lib/parse-isnad";
 import { GradeBadge } from "@/components/GradeBadge";
 import { BilingualToggle } from "@/components/BilingualToggle";
 import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
-import { getBook, getBookHadiths, getBookHadithCount, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -19,10 +20,10 @@ export default async function KitabPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; h?: string }>;
 }) {
   const { id } = await params;
-  const { page: pageStr } = await searchParams;
+  const { page: pageStr, h: hStr } = await searchParams;
   const bid = Number(id);
   if (!Number.isInteger(bid)) notFound();
   const book = await getBook(bid);
@@ -30,7 +31,10 @@ export default async function KitabPage({
 
   const total = await getBookHadithCount(bid);
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-  const page = Math.min(Math.max(1, Number(pageStr) || 1), totalPages);
+  // Kalau datang dari carian dgn ?h=<hadithId>, lompat ke halaman hadis itu (bukan page 1).
+  const targetHadith = Number(hStr) || 0;
+  const wantPage = targetHadith ? await getHadithPage(bid, targetHadith, PER_PAGE) : (Number(pageStr) || 1);
+  const page = Math.min(Math.max(1, wantPage), totalPages);
 
   const hadiths = await getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE);
   const ids = hadiths.map((h) => h.id);
@@ -56,14 +60,14 @@ export default async function KitabPage({
 
         <div style={{ marginTop: "24px" }}>
           {hadiths.map((h) => (
-            <article className="hcard" key={h.id}>
+            <article className="hcard" key={h.id} id={`h-${h.id}`}>
               <div className="hcard-top">
                 {h.chapter_ar && <div className="hchap ar">{h.chapter_ar}</div>}
                 <GradeBadge grade={h.grade} lang={lang} />
               </div>
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />
-              <Isnad nodes={isnads.get(h.id) ?? []} lang={lang} />
+              <Isnad nodes={isnads.get(h.id) ?? []} lang={lang} marfu={isMarfu(h.matn_ar)} />
               <SuggestForm entityType="hadith" entityId={h.id} field="matn" currentText={h.matn_ar} />
             </article>
           ))}

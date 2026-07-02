@@ -1,66 +1,100 @@
-// Enjin ekstrak isnad v2 — menghormati seni penulisan sanad klasik:
-//   • ح  (taḥwīl)  → rantai BERUBAH / cabang baharu (bukan nama perawi)
-//   • و  ('aṭf)    → perawi mengambil dari DUA guru (perawi selari pada posisi sama)
-//   • sisipan ( - … - , ( … ) , "وهذا حديثه", "واللفظ له" ) → dibuang
-//   • kunya، nama  → satu orang (apposition)
-// Pulangan: senarai RANTAI (cabang); setiap rantai = senarai POSISI; setiap posisi =
-//   senarai nama selari. Cth: [ [ [n1],[n2],[n3] ], [ [m1],[m2] ] ] = 2 cabang.
-// Padanan nama ke korpus dibuat di luar (enrich). Heuristik — bukan sempurna.
+// Enjin ekstrak isnad v3 (build-time) — PORT SETIA src/lib/parse-isnad.ts.
+// Ubah logik? Ubah DUA-DUA fail serentak (satu runtime TS, satu build JS).
+//   • ح (taḥwīl) → cabang · و ('aṭf) → perawi selari (hormati waw dalam nama)
+//   • verba sanad (حدثنا/أخبرنا/عن/سمعت/قال…) → pemisah posisi
+//   • يعني/هو ابن → penjelas nama SAMA · أبيه/جدّه/جدّي → perawi (relational)
+//   • buang: tashkeel, honorifik/doa, nota riwayat, TARIKH & ANGKA, isyarat
+//     (أومأ بيده), sisipan ( - … - ), dialog/matn
+//   • marfū' → Nabi ﷺ akar; mawqūf/maqṭūʿ → JANGAN letak Nabi
+// parseIsnadFull → { chains, marfu } · parseIsnadChains → chains (serasi lama)
 
-const TASHKEEL = /[ؐ-ًؚ-ٰٟـ​-‏‪-‮﻿]/g;
-const strip = (s) =>
+const TASHKEEL = /[ؐ-ؚـً-ٰٟۖ-ۭ​-‏‪-‮﻿]/g;
+export const strip = (s) =>
   (s || "")
     .replace(TASHKEEL, "")
     .replace(/[ىي]/g, "ي").replace(/[أإآ]/g, "ا").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
+    .replace(/ة/g, "ه")
     .replace(/\s+/g, " ")
     .trim();
 
-const PROPHET = /(رسول الله|النبي صلي|عن النبي|قال النبي|سمعت رسول|ان رسول|عن رسول|قال قال)/;
-const CONNECT = /(?:وحدثنا|وحدثني|واخبرنا|واخبرني|فحدثنا|حدثناه|حدثنا|حدثني|اخبرناه|اخبرنا|اخبرني|انبانا|انباني|ثنا|سمعت|سمع |عن |قال لنا|كتب الي|قرات علي)/g;
-const NOISE = /(رضي الله عنهما|رضي الله عنهم|رضي الله عنها|رضي الله عنه|صلي الله عليه وسلم|عليه السلام|رحمه الله|علي المنبر|واللفظ له|واللفظ لـ?\S*|وهذا حديثه|وهذا لفظ\S*|جميعا|كلاهما)/g;
-const SPEECH = new Set(["قال", "قالت", "انه", "انها", "انهم", "يقول", "تقول", "ان", "سال", "سالت", "فقال", "وقال", "يحدث", "اخبره", "كان", "حدث"]);
+const CONNECT = /(?:وحدثنا|وحدثني|واخبرنا|واخبرني|فحدثنا|فحدثني|حدثناه|حدثنا|حدثني|حدثهم|حدثه|اخبرناه|اخبرنا|اخبرني|اخبرهم|انبانا|انباني|انبانا|ثنا|انا |سمعت|سمعته|سمع |عن |قال لنا|قال لي|كتب الي|قرات علي|قري علي|روي عن|رواه عن|قالوا|قالا|قالت|قال)/g;
+const NOISE = /(رضي الله عنهما|رضي الله عنهم|رضي الله عنها|رضي الله عنه|رضي الله عنهن|صلي الله عليه وسلم|صلي الله عليه واله|عليه السلام|عليه الصلاه والسلام|رحمه الله|رحمهم الله|تعالي|عز وجل|تبارك وتعالي|علي المنبر|واللفظ له|واللفظ لـ?\S*|هذا لفظ\S*|وهذا حديثه|وهذا لفظ\S*|جميعا|كلاهما|واللفظ|زاد فيه|زاد|واللفظ لهما)/g;
+
+const STOP = new Set([
+  "قال", "قالت", "قالوا", "قالا", "انه", "انها", "انهم", "يقول", "تقول", "يقولون", "ان", "سال", "سالت",
+  "فقال", "وقال", "فقالت", "يحدث", "تحدث", "اخبره", "اخبرها", "كان", "كانت", "حدث", "حدثت",
+  "يخطب", "خطب", "يخطبه", "سمعته", "سمعتها", "رايت", "رايته", "رات", "دخلت", "اتيت", "جاء", "جاءت",
+  "وهو", "وهي", "فلما", "لما", "بينما", "بينا", "اذ", "اذا", "فاذا", "حين", "حتي", "ثم", "فذكر", "يذكر", "ذكر",
+  "نحو", "نحوه", "مثل", "بمثله", "قلت", "قلنا", "كنا", "كنت",
+  "اوما", "فاوما", "يومي", "اشار", "فاشار", "يشير", "بيده",
+  "بنحوه", "بهذا", "بهذه", "يا", "يعني", "يعنى", "لفظه", "معناه", "قصته", "الحديث", "فذكره", "بمعناه",
+  "قراءه", "سماعا", "املاء", "اجازه", "اذنا", "مناوله", "قدم", "وفد", "المعروف", "يعرف", "بلده",
+  "فيما", "اذن", "مكاتبه", "قدمها",
+  "سنه", "عام", "شهر", "صفر", "محرم", "ربيع", "جمادي", "رجب", "شعبان", "رمضان", "شوال", "القعده", "الحجه",
+]);
+const NUM = /^و?(واحد|احدي|اثنتين|اثنين|ثنتين|ثلاث|اربع|خمس|ست|سبع|ثمان|ثماني|تسع|عشر|عشره|بضع|نيف|عشرين|عشرون|ثلاثين|ثلاثون|اربعين|اربعون|خمسين|خمسون|ستين|ستون|سبعين|سبعون|ثمانين|ثمانون|تسعين|تسعون|مايه|ميه|مايتين|ميتين|ثلاثمايه|ثلاثميه|اربعمايه|اربعميه|خمسمايه|خمسميه|ستمايه|ستميه|سبعمايه|سبعميه|ثمانمايه|ثمانميه|تسعمايه|تسعميه|الف|الفين|اثنتي|احدي)$/;
+
+const NASAB_BEFORE = new Set(["بن", "ابن", "ابي", "ابو", "ابا", "عبد", "عبيد", "ام", "ذو", "ذي", "ال", "الي", "عن"]);
+const WAW_NAMES = new Set([
+  "وقاص", "وائل", "وهب", "وهيب", "واقد", "وكيع", "ورقاء", "وليد", "واصل", "وبره", "وحشي",
+  "واثله", "وابصه", "واسع", "وردان", "وهبان", "وداعه", "ورقه", "واقم", "وقدان", "وضاح", "ورد",
+  "وازع", "واقدي", "وثيمه", "ودان", "وهابه", "وراد", "ورقان", "واقف", "واصله", "وشيك",
+]);
 
 const cleanSeg = (seg) =>
-  seg.replace(NOISE, " ").replace(/-[^-]{0,40}-/g, " ").replace(/\([^)]{0,45}\)/g, " ")
+  seg.replace(NOISE, " ").replace(/-[^-]{0,60}-/g, " ").replace(/\([^)]{0,60}\)/g, " ")
+     .replace(/(?:يعني|يعنى|وهو|هو) ابن /g, " بن ")
      .replace(/[،:؛.,"'()«»\[\]]/g, " ").replace(/\s+/g, " ").trim();
 
-// satu segmen → nama (potong di token percakapan, hadkan panjang)
 function toName(seg) {
   let tok = cleanSeg(seg).split(" ").filter(Boolean);
-  const cut = tok.findIndex((w) => SPEECH.has(w));
+  tok = tok.filter((w) => w !== "يعني" && w !== "يعنى");
+  const cut = tok.findIndex((w) => STOP.has(w) || NUM.test(w));
   if (cut === 0) return null;
   if (cut > 0) tok = tok.slice(0, cut);
-  const name = tok.join(" ");
-  if (name.length < 3 || tok.length > 8) return null;
+  if (!tok.length) return null;
+  tok = tok.map((w, i) => (i > 0 && w === "ابن" ? "بن" : w));
+  const name = tok.join(" ").trim();
+  if (name.length < 3 || tok.length > 16) return null;
   return name;
 }
 
-// segmen boleh ada perawi SELARI dipisah و: "وكيع وابو معاوية"
+export const cleanName = (s) => toName(strip(s)) ?? strip(s);
+
 function toParallel(seg) {
-  // pisah pada ' و' yang diikuti huruf (atf antara nama) — bukan 'و' dalam perkataan
-  const parts = seg.split(/\sو(?=[^\s])/).map((p) => toName(p)).filter(Boolean);
-  // buang ulang
-  return [...new Set(parts)];
+  const words = cleanSeg(seg).split(" ").filter(Boolean);
+  const groups = [[]];
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const prev = i > 0 ? words[i - 1] : "";
+    const startsWaw = w.length > 1 && w[0] === "و";
+    const isAtf =
+      i > 0 && startsWaw && !NASAB_BEFORE.has(prev) && !WAW_NAMES.has(w) &&
+      groups[groups.length - 1].length > 0;
+    if (isAtf) groups.push([w.slice(1)]);
+    else groups[groups.length - 1].push(w);
+  }
+  return [...new Set(groups.map((g) => toName(g.join(" "))).filter(Boolean))];
 }
 
-export function parseIsnadChains(matn) {
+export function parseIsnadFull(matn) {
   let t = strip(matn);
-  if (!t) return [];
-  // buang sisipan ( - … - / ( … ) ) + noise DAHULU — sebelum pisah cabang/perawi.
-  t = t.replace(/-[^-]{0,45}-/g, " ").replace(/\([^)]{0,50}\)/g, " ").replace(NOISE, " ").replace(/\s+/g, " ").trim();
-  // potong di matan (anggaran)
-  const m = t.search(PROPHET);
-  let isnad = m > 0 ? t.slice(0, m) : t.slice(0, Math.min(t.length, 320));
+  if (!t) return { chains: [], marfu: false };
+  t = t.replace(/-[^-]{0,60}-/g, " ").replace(/\([^)]{0,60}\)/g, " ").replace(NOISE, " ").replace(/\s+/g, " ").trim();
+  t = t.replace(/(?<![ء-ي])(ابيه|ابيها|جده|جدها|جدي|جدتي|جدته|امه|امها|امي|عمه|عمها|عمي|خاله|خالها|خالي|ابنه|ابنته)(?![ء-ي])/g, " عن $1 ");
 
-  // cabang pada ح (taḥwīl) — ح terpencil (ruang kedua sisi atau diikuti و)
+  const MARFU = /النبي|رسول الله|رسول اللـه/;
+  const marfu = MARFU.test(t);
+  const mm = t.search(MARFU);
+  const isnad = mm > 0 ? t.slice(0, mm) : (marfu ? "" : t); // tiada had panjang
+
   const branches = isnad.split(/\sح(?=\s|و)/).map((s) => s.trim()).filter(Boolean);
-
   const chains = [];
   for (const br of branches) {
     const positions = [];
     const seen = new Set();
     for (let seg of br.split(CONNECT)) {
-      seg = seg.trim(); // buang ruang depan → 'و' nama (وكيع) tak tersilap baca 'و' atf
+      seg = seg.trim();
       if (!seg) continue;
       const names = toParallel(seg);
       if (!names.length) continue;
@@ -71,7 +105,12 @@ export function parseIsnadChains(matn) {
     }
     if (positions.length) chains.push(positions);
   }
-  return chains;
+  return { chains, marfu };
+}
+
+// Serasi lama: pulang chains SAHAJA (enrich-hadith.mjs dll).
+export function parseIsnadChains(matn) {
+  return parseIsnadFull(matn).chains;
 }
 
 // Versi rata (relik lama): satu senarai nama (cabang pertama, perawi pertama tiap posisi).

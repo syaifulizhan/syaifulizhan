@@ -38,9 +38,9 @@ export const T = {
     ar: "كلُّ حديثٍ بسنده وتخريجه وحكمه — بيانٌ للأذهان، في كلِّ لغة.",
   },
   heroCta1: {
-    bm: "Cuba Penjelajah Sanad →",
-    en: "Try Isnād Explorer →",
-    ar: "استكشف الإسناد →",
+    bm: "Jana Syajarat al-Isnad →",
+    en: "Generate Isnād Tree →",
+    ar: "وَلِّد شجرة الإسناد →",
   },
   heroCta2: {
     bm: "Jelajah Ilmu",
