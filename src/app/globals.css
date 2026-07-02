@@ -1189,14 +1189,34 @@ html[lang="ar"] .foot-brand p {
 .hchap { font-size: 0.92rem; color: var(--gold); font-family: var(--arabic); direction: rtl; margin-bottom: 12px; }
 .hmatn { font-family: var(--arabic); direction: rtl; font-size: 1.5rem; line-height: 2; color: var(--paper); margin-bottom: 18px; }
 .hisnad-t { font-size: 0.66rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-/* isnad klik-turun (collapsible) */
+/* ── Splash masuk apps (basmalah + logo + Dewan Izhan Arab) ── */
+.splash {
+  position: fixed; inset: 0; z-index: 1000; display: flex;
+  align-items: center; justify-content: center;
+  background: var(--midnight); opacity: 1; transition: opacity 0.7s ease;
+}
+.splash.out { opacity: 0; pointer-events: none; }
+.splash-in { text-align: center; animation: splashUp 0.9s ease both; }
+@keyframes splashUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.splash-basmala { color: var(--gold-soft); font-size: 1.25rem; letter-spacing: 0; margin-bottom: 26px; }
+.splash-logo { width: 84px; height: 84px; object-fit: contain; margin: 0 auto 20px; display: block; }
+.splash-diwan { color: var(--gold); font-size: 2rem; font-weight: 700; margin-bottom: 10px; }
+.splash-person { color: var(--muted); font-size: 1.15rem; }
+
+/* ── Tarik-ke-bawah muat semula (gaya apps) ── */
+.ptr {
+  position: fixed; top: -46px; left: 50%; margin-left: -20px; z-index: 999;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  background: var(--midnight-2); border: 1px solid var(--line-dark); border-radius: 50%;
+}
+.ptr-ico { color: var(--muted); font-size: 1.15rem; transition: color 0.15s, transform 0.2s; }
+.ptr-ico.ready { color: var(--gold); transform: rotate(180deg); }
+.ptr-ico.spin { color: var(--gold); animation: ptrSpin 0.8s linear infinite; }
+@keyframes ptrSpin { to { transform: rotate(360deg); } }
+
+/* isnad seksyen TETAP terbuka bawah matan (tiada dropdown) */
 .hisnad-d { margin-top: 4px; }
-.hisnad-d > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 9px; margin-bottom: 0; user-select: none; transition: color 0.18s; }
-.hisnad-d > summary::-webkit-details-marker { display: none; }
-.hisnad-d > summary:hover { color: var(--gold); }
-.hisnad-caret { display: inline-block; transition: transform 0.18s; color: var(--gold); font-size: 0.8rem; }
-.hisnad-d[open] > summary { margin-bottom: 12px; }
-.hisnad-d[open] .hisnad-caret { transform: rotate(90deg); }
+.hisnad-open > .hisnad-t { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
 .hisnad-n { border: 1px solid var(--line-dark); padding: 1px 7px; border-radius: 2px; color: var(--gold-soft); letter-spacing: 0.06em; }
 .hisnad-chain { margin-bottom: 12px; }
 .hisnad-chain:last-child { margin-bottom: 0; }

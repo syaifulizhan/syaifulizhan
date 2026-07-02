@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { LangProvider } from "@/components/LangProvider";
+import Splash from "@/components/Splash";
+import PullRefresh from "@/components/PullRefresh";
 import { getServerLang } from "@/lib/lang-server";
 import "./globals.css";
 
@@ -52,6 +54,8 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <Splash />
+        <PullRefresh />
         <LangProvider initialLang={lang}>{children}</LangProvider>
       </body>
     </html>

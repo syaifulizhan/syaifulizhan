@@ -230,7 +230,13 @@ export function SanadTree({ nodes, marfu = false, lang = "bm" }: { nodes: SanadN
 
   const G = useMemo(() => {
     if (!ready || !nodes.length) return null;
-    return buildGraph(nodes, marfu, makeMeasure());
+    // jangan biar ranap susun atur menumbangkan seluruh seksyen (perlu refresh)
+    try {
+      return buildGraph(nodes, marfu, makeMeasure());
+    } catch (e) {
+      console.error("SanadTree buildGraph:", e);
+      return null;
+    }
   }, [nodes, marfu, ready]);
 
   if (!nodes.length) return null;

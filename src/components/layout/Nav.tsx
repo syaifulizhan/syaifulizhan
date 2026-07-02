@@ -28,7 +28,6 @@ export default function Nav() {
               className={`brand-main${lang === "ar" ? " ar" : ""}`}
               dangerouslySetInnerHTML={{ __html: T.brandMain[lang] }}
             />
-            <span className="brand-sub"> {T.brandSub[lang]}</span>
           </span>
         </Link>
 
