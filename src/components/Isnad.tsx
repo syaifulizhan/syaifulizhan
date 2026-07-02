@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import type { IsnadNode } from "@/lib/hadis";
+import { cleanName } from "@/lib/parse-isnad";
 import { T } from "@/lib/i18n";
 import type { Lang } from "@/lib/types";
 
-/** Rantai sanad: hormati taḥwīl (ح → cabang) & 'aṭf (و → perawi selari). */
-export function Isnad({ nodes, lang = "bm" }: { nodes: IsnadNode[]; lang?: Lang }) {
+/** Rantai sanad: hormati taḥwīl (ح → cabang) & 'aṭf (و → perawi selari).
+ *  marfu=false (mawqūf/maqṭūʿ) → JANGAN papar nod Nabi ﷺ. */
+export function Isnad({ nodes, lang = "bm", marfu = true }: { nodes: IsnadNode[]; lang?: Lang; marfu?: boolean }) {
   if (!nodes.length) return null;
 
   // kumpul: chain_no → (position → [perawi selari])
@@ -39,10 +41,13 @@ export function Isnad({ nodes, lang = "bm" }: { nodes: IsnadNode[]; lang?: Lang 
                     {parallel.map((nd, k) => (
                       <Fragment key={k}>
                         {nd.resolved ? (
-                          <Link href={`/perawi/${nd.narrator_id}`} className="hnode">{nd.resolved}</Link>
+                          // Papar nama SEPERTI DALAM SANAD ASAL (raw_name, dibersih dari
+                          // verba terlekat cth "عليا يخطب"→"عليا"); klik → biodata penuh.
+                          // Hover papar nama penuh yang dikenal pasti.
+                          <Link href={`/perawi/${nd.narrator_id}`} className="hnode" title={nd.resolved}>{nd.raw_name ? cleanName(nd.raw_name) : nd.resolved}</Link>
                         ) : (
                           <span className="hnode unl" title={T.isnadUnmatched[lang]}>
-                            {nd.raw_name ?? `#${nd.narrator_id}`}
+                            {nd.raw_name ? cleanName(nd.raw_name) : `#${nd.narrator_id}`}
                           </span>
                         )}
                         {k < parallel.length - 1 && <span className="hsep-w">و</span>}
@@ -52,8 +57,12 @@ export function Isnad({ nodes, lang = "bm" }: { nodes: IsnadNode[]; lang?: Lang 
                   {pi < positions.length - 1 && <span className="hsep">عن</span>}
                 </Fragment>
               ))}
-              <span className="hsep">←</span>
-              <span className="hnode" style={{ color: "var(--gold-soft)", borderColor: "var(--gold)" }}>النبي ﷺ</span>
+              {marfu && (
+                <>
+                  <span className="hsep">←</span>
+                  <span className="hnode" style={{ color: "var(--gold-soft)", borderColor: "var(--gold)" }}>النبي ﷺ</span>
+                </>
+              )}
             </div>
           </div>
         );

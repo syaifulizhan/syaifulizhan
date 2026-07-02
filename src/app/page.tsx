@@ -1,7 +1,7 @@
 import StarPattern from "@/components/ui/StarPattern";
 import Nav from "@/components/layout/Nav";
 import Hero from "@/components/sections/Hero";
-import SanadExplorer from "@/components/sections/SanadExplorer";
+import SyajaraGenerator from "@/components/sections/SyajaraGenerator";
 import Ilmu from "@/components/sections/Ilmu";
 import Tentang from "@/components/sections/Tentang";
 import Khidmat from "@/components/sections/Khidmat";
@@ -24,7 +24,7 @@ export default async function Home() {
           <SearchBox big />
         </div>
       </section>
-      <SanadExplorer />
+      <SyajaraGenerator />
       <Ilmu />
       <Tentang />
       <Khidmat />
