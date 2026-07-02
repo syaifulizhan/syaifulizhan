@@ -3,7 +3,7 @@ import { reviewSuggestion } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
-// NOTA: papan ini BELUM dilindungi auth — tambah Supabase Auth/Clerk sebelum deploy (M6).
+// Dilindungi oleh middleware (sesi GitHub). Peti masuk cadangan awam.
 export default async function AdminCadangan() {
   const { data: pending } = await supabaseAdmin
     .from("correction_suggestions")
@@ -15,11 +15,8 @@ export default async function AdminCadangan() {
   const rows = pending ?? [];
 
   return (
-    <main className="pwrap">
-      <div className="psec-t">Admin · Moderasi</div>
-      <h1 style={{ fontFamily: "var(--display)", fontSize: "2.2rem", marginBottom: "6px" }}>
-        Cadangan Pembetulan
-      </h1>
+    <main>
+      <h1 className="adm-h1">Cadangan Pembetulan</h1>
       <p style={{ color: "var(--muted)", marginBottom: "24px" }}>{rows.length} cadangan menunggu semakan.</p>
 
       {rows.length === 0 && <p className="pempty">Tiada cadangan menunggu.</p>}

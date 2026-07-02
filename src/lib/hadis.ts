@@ -34,6 +34,19 @@ export async function getBookHadithCount(bookId: number): Promise<number> {
   return Number(r.rows[0].c);
 }
 
+/** Halaman (1-based) di mana hadith ini berada dlm kitab (ikut susunan chapter_ref, number). */
+export async function getHadithPage(bookId: number, hadithId: number, perPage: number): Promise<number> {
+  const t = await hadithDb.execute({ sql: "SELECT chapter_ref, number FROM hadiths WHERE id = ?", args: [hadithId] });
+  const row = t.rows[0] as unknown as { chapter_ref: number; number: number } | undefined;
+  if (!row) return 1;
+  const c = await hadithDb.execute({
+    sql: `SELECT count(*) n FROM hadiths WHERE book_id = ?
+            AND (chapter_ref < ? OR (chapter_ref = ? AND number < ?))`,
+    args: [bookId, row.chapter_ref, row.chapter_ref, row.number],
+  });
+  return Math.floor(Number(c.rows[0].n) / perPage) + 1;
+}
+
 export async function searchBooks(q: string, limit = 30): Promise<(Book & { title_en: string | null })[]> {
   if (!q.trim()) return [];
   const r = await hadithDb.execute({

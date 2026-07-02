@@ -10,9 +10,7 @@ export default function Khidmat() {
 
   return (
     <section className="khidmat" id="khidmat">
-      <svg className="bg-pattern" aria-hidden="true">
-        <rect width="100%" height="100%" fill="url(#khatam)" />
-      </svg>
+      <div className="bg-pattern" aria-hidden="true" />
       <Reveal className="wrap kh-in">
         <span className="kh-tab">{T.khTab[lang]}</span>
         <h2 dangerouslySetInnerHTML={{ __html: T.khH2[lang] }} />

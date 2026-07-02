@@ -18,10 +18,16 @@
     "import:ahmedbaset": "node scripts/import-ahmedbaset.mjs",
     "corpus:translate": "node --env-file=.env.local scripts/translate.mjs",
     "glossary:sync": "node --env-file=.env.local scripts/glossary-sync.mjs",
+    "glossary:ocr": "python3 scripts/vision-kamus.py 30 572",
+    "glossary:build": "python3 scripts/build-glossary-vision.py --write",
+    "glossary:d1": "bash scripts/glossary-d1-sync.sh",
+    "glossary:resume": "bash scripts/glossary-resume.sh",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare deploy",
-    "supabase:migrate": "node --env-file=.env.local scripts/migrate-supabase.mjs"
+    "supabase:migrate": "node --env-file=.env.local scripts/migrate-supabase.mjs",
+    "turso:usage": "node scripts/turso-usage-guard.mjs",
+    "turso:seed": "bash scripts/turso-sync.sh dewan-izhan --force"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

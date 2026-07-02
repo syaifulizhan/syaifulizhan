@@ -6,8 +6,13 @@
 import { createClient } from "@libsql/client";
 import { glossaryFor } from "./lib/glossary.mjs";
 
+const _turl = process.env.TURSO_DATABASE_URL ?? "file:./data/corpus.db";
+// GUARD: elak tulis pukal berulang ke Turso cloud (punca had pecah dulu). Lokal sahaja.
+if (/^(libsql|https?|wss):/i.test(_turl) && !process.env.ALLOW_CLOUD_WRITE) {
+  throw new Error(`⛔ TURSO_DATABASE_URL menunjuk CLOUD (${_turl.slice(0, 24)}…). translate.mjs hanya utk file lokal. Set ALLOW_CLOUD_WRITE=1 jika sengaja.`);
+}
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL ?? "file:./data/corpus.db",
+  url: _turl,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 // Tunggu kunci (penulis selari / build) bukannya gagal serta-merta.

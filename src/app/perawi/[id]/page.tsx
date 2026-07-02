@@ -8,6 +8,12 @@ import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
+// Nod "ثقتان" (كلاهما ثقة): rawi ambil dari KEDUA-DUA & tak beza → papar dua calon
+// SEBENAR yg boleh diklik supaya orang manfaat biodata penuh kedua-duanya.
+const THIQATAN_ALTS: Record<number, number[]> = {
+  9000001: [2000434, 3443], // سفيان: al-Thawrī / Ibn ʿUyaynah
+};
+
 function Person({ e }: { e: Edge }) {
   return (
     <Link href={`/perawi/${e.id}`} className="pn">
@@ -34,6 +40,8 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
     getStudents(nid),
     getServerLang(),
   ]);
+  const altIds = THIQATAN_ALTS[nid] ?? [];
+  const alts = altIds.length ? (await Promise.all(altIds.map((a) => getNarrator(a)))).filter(Boolean) : [];
 
   const info: [string, string | number | null][] = [
     [T.infoKunya[lang], n.kunya],
@@ -68,6 +76,24 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
             <span className="pbadge">ID {n.id}</span>
           </div>
         </header>
+
+        {alts.length > 0 && (
+          <>
+            <div className="psec-t">كلاهما ثقة — اختر الراوي لقراءة ترجمته</div>
+            <div className="pnodes">
+              {alts.map((a) => (
+                <Link key={a!.id} href={`/perawi/${a!.id}`} className="pn">
+                  <span className="dot" />
+                  <span className="pn-nm ar">{a!.name_ar}</span>
+                  <span className="pn-meta">
+                    {a!.rutbah ?? ""}
+                    {a!.death_year ? ` · ت ${a!.death_year}` : ""}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
 
         {infoShown.length > 0 && (
           <>

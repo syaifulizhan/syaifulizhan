@@ -6,6 +6,21 @@ import type { GlossaryTerm } from "@/lib/glossary";
 
 const norm = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[ً-ٰٟ]/g, "");
 
+// Kunci susunan Arab: ABAIKAN kata sandang "ال" + harakat, normalisasi hamza/alif.
+// Maka "آحاد" dan "الآحَاد" hasilkan kunci sama → tersusun berdekatan.
+// (Kekalkan أل/إل/آل sebab hamza itu huruf pertama sebenar, cth أَلْفَاظ.)
+const HARAKAT_RE = /[ً-ْٰـ]/g;
+const sortKey = (term: string) => {
+  let t = (term || "").replace(HARAKAT_RE, "").replace(/^[«»"'()\s]+/, "");
+  if (t.startsWith("ال")) t = t.slice(2); // buang ا+ل sahaja (bukan hamza)
+  return t
+    .replace(/[آأإ]/g, "ا") // آأإ → ا
+    .replace(/[ىئ]/g, "ي") // ى ئ → ي
+    .replace(/ؤ/g, "و") // ؤ → و
+    .replace(/ة/g, "ه") // ة → ه
+    .trim();
+};
+
 export function GlossarySearch({ terms, lang }: { terms: GlossaryTerm[]; lang: Lang }) {
   const [q, setQ] = useState("");
 
@@ -19,13 +34,22 @@ export function GlossarySearch({ terms, lang }: { terms: GlossaryTerm[]; lang: L
     );
   }, [q, terms]);
 
-  // kumpul ikut huruf Arab
+  // kumpul ikut huruf Arab, susun ikut abjad Arab kanonik (Alif → Ya)
+  const ARABIC_ORDER = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي";
+  const rank = (h: string) => {
+    const i = ARABIC_ORDER.indexOf(h);
+    return i === -1 ? ARABIC_ORDER.length : i; // huruf tak dikenali → akhir
+  };
   const groups = new Map<string, GlossaryTerm[]>();
   for (const t of filtered) {
     const h = t.huruf || "—";
     if (!groups.has(h)) groups.set(h, []);
     groups.get(h)!.push(t);
   }
+  // dalam setiap kumpulan: susun ikut kunci yang abaikan "ال" → آحاد & الآحَاد berdekatan
+  for (const [, items] of groups)
+    items.sort((a, b) => sortKey(a.term_ar).localeCompare(sortKey(b.term_ar), "ar"));
+  const ordered = [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 
   return (
     <>
@@ -39,7 +63,7 @@ export function GlossarySearch({ terms, lang }: { terms: GlossaryTerm[]; lang: L
         />
       </div>
 
-      {[...groups.entries()].map(([huruf, items]) => (
+      {ordered.map(([huruf, items]) => (
         <section key={huruf} style={{ marginBottom: 8 }}>
           <div className="glos-letter ar">{huruf}</div>
           {items.map((t) => (
