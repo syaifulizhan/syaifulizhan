@@ -253,8 +253,9 @@ export function SanadTree({ nodes, marfu = false, lang = "bm" }: { nodes: SanadN
           aria-label="شجرة الإسناد"
         >
           <defs>
-            <marker id="stArrow" markerWidth="9" markerHeight="9" refX="4.5" refY="7.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-              <path d="M0,0 L9,0 L4.5,8 z" fill={GOLD_SOFT} />
+            {/* segitiga menghala +x — orient="auto" pusing ikut arah laluan (ke bawah) */}
+            <marker id="stArrow" markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+              <path d="M0,0 L9,4.5 L0,9 z" fill={GOLD_SOFT} />
             </marker>
           </defs>
           {all.map((p) =>
@@ -281,7 +282,7 @@ export function SanadTree({ nodes, marfu = false, lang = "bm" }: { nodes: SanadN
               <g className={cls}>
                 {n.full && n.full !== n.name && <title>{n.full}</title>}
                 <rect x={n.x - n.w / 2} y={y} width={n.w} height={n.h} rx={8} />
-                <text x={n.x} y={y + PADY - 8} style={{ direction: "rtl" }}>
+                <text x={n.x} y={y + PADY - 8} textAnchor="middle" style={{ direction: "rtl" }}>
                   {n.lines.map((ln, i) => (
                     <tspan key={i} x={n.x} dy={LH}>{ln}</tspan>
                   ))}
