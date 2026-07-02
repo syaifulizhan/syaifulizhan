@@ -19,6 +19,7 @@ const L = {
   stat: { bm: "perawi dikenal pasti", ar: "راويًا معرَّفًا", en: "narrators identified" },
   chain: { bm: "rantai", ar: "سلسلة", en: "chains" },
   empty: { bm: "Tiada perawi dikesan — pastikan ia teks sanad berbahasa Arab.", ar: "لم تُكتشف أسماء — تأكد أنه نص إسناد بالعربية.", en: "No narrators detected — ensure it is Arabic sanad text." },
+  err: { bm: "Ralat sementara — cuba jana sekali lagi.", ar: "خطأ مؤقت — أعد المحاولة.", en: "Temporary error — try again." },
 };
 
 export default function SyajaraGenerator() {
@@ -27,15 +28,36 @@ export default function SyajaraGenerator() {
   const [demo, setDemo] = useState(true); // pratonton blur, belum disentuh
   const [res, setRes] = useState<SanadResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [genId, setGenId] = useState(0); // remount pohon tiap janaan (elak state basi)
+  const [err, setErr] = useState(false);
 
   async function gen(t: string) {
     if (!t.trim()) return;
     setBusy(true);
-    try { setRes(await resolveSanad(t)); } catch { setRes(null); } finally { setBusy(false); }
+    setErr(false);
+    try {
+      setRes(await resolveSanad(t));
+      setGenId((i) => i + 1);
+    } catch (e) {
+      console.error("resolveSanad:", e);
+      setRes(null);
+      setErr(true);
+    } finally {
+      setBusy(false);
+    }
   }
 
   // jana contoh secara automatik pada muat (papar pohon cantik terus)
   useEffect(() => { gen(EXAMPLE); /* eslint-disable-next-line */ }, []);
+
+  // AUTO-JANA berulang kali: tiap kali sanad baharu ditampal/ditaip (debounce),
+  // tanpa perlu klik butang atau refresh
+  useEffect(() => {
+    if (demo || !text.trim()) return;
+    const h = setTimeout(() => gen(text), 900);
+    return () => clearTimeout(h);
+    // eslint-disable-next-line
+  }, [text, demo]);
 
   const onFocus = () => { if (demo) { setDemo(false); setText(""); } };
 
@@ -64,6 +86,7 @@ export default function SyajaraGenerator() {
           </div>
         </Reveal>
 
+        {err && <p className="pempty">{L.err[lang]}</p>}
         {res && (
           <div className="sy-tree">
             {res.total > 0 ? (
@@ -71,7 +94,7 @@ export default function SyajaraGenerator() {
                 <div className="sy-stat">
                   {res.matched}/{res.total} {L.stat[lang]} · {res.chains} {L.chain[lang]}
                 </div>
-                <SanadTree nodes={res.nodes} marfu={res.marfu} lang={lang} />
+                <SanadTree key={genId} nodes={res.nodes} marfu={res.marfu} lang={lang} />
               </>
             ) : (
               <p className="pempty">{L.empty[lang]}</p>

@@ -21,14 +21,14 @@ export function Isnad({ nodes, lang = "bm", marfu = true }: { nodes: IsnadNode[]
   const chainArr = [...chains.entries()].sort((a, b) => a[0] - b[0]);
   const matched = nodes.filter((n) => n.resolved).length;
 
+  // seksyen tetap terbuka di bawah matan — tiada dropdown/details
   return (
-    <details className="hisnad-d">
-      <summary className="hisnad-t">
-        <span className="hisnad-caret">▸</span>
+    <section className="hisnad-d hisnad-open">
+      <div className="hisnad-t">
         {T.chainTitle[lang]}
         {chainArr.length > 1 && <span className="hisnad-n">{chainArr.length} {T.isnadSanad[lang]} · taḥwīl</span>}
         {matched > 0 && <span className="hisnad-n">{matched} {T.isnadLinked[lang]}</span>}
-      </summary>
+      </div>
       {chainArr.map(([cno, posMap], ci) => {
         const positions = [...posMap.entries()].sort((a, b) => a[0] - b[0]);
         return (
@@ -67,6 +67,6 @@ export function Isnad({ nodes, lang = "bm", marfu = true }: { nodes: IsnadNode[]
           </div>
         );
       })}
-    </details>
+    </section>
   );
 }
