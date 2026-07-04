@@ -5,11 +5,19 @@ export interface Book { id: number; title_ar: string; n: number }
 export interface Hadith { id: number; book_id: number; chapter_ar: string | null; number: number; matn_ar: string; grade: string | null }
 export interface IsnadNode { narrator_id: number; chain_no: number; position: number; raw_name: string | null; resolved: string | null }
 
+// Susunan kitab MUKTABAR (bukan ikut bilangan): al-Kutub al-Sittah dahulu ikut tertib
+// ulama (Bukhari→Muslim→Abu Dawud→Tirmidhi→Nasa'i→Ibn Majah), lalu Muwatta, Musnad
+// Ahmad, Darimi; selebihnya ikut bilangan hadis. id 900xxx = koleksi utama AhmedBaset.
 export async function listBooks(limit = 300): Promise<Book[]> {
   const r = await hadithDb.execute({
     sql: `SELECT b.id, b.title_ar, count(h.id) n
             FROM books b LEFT JOIN hadiths h ON h.book_id = b.id
-           GROUP BY b.id ORDER BY n DESC, b.id LIMIT ?`,
+           GROUP BY b.id
+           ORDER BY CASE b.id
+             WHEN 900003 THEN 1 WHEN 900007 THEN 2 WHEN 900001 THEN 3 WHEN 900009 THEN 4
+             WHEN 900008 THEN 5 WHEN 900005 THEN 6 WHEN 900006 THEN 7 WHEN 900002 THEN 8
+             WHEN 900004 THEN 9 ELSE 900 + (1000000 - count(h.id)) / 1000 END,
+             n DESC, b.id LIMIT ?`,
     args: [limit],
   });
   return r.rows as unknown as Book[];
@@ -113,6 +121,24 @@ export async function getTranslationsFor(hadithIds: number[]): Promise<Map<numbe
       map.set(row.entity_id, t);
     }
   } catch { /* jadual translations belum dimuat ke D1 → kosong */ }
+  return map;
+}
+
+// Override sanad terkurasi admin (D1) — ganti hasil parser bila ada. Elak re-parse
+// pukal + re-sync Turso: pembetulan disemak manusia, disimpan ringkas di D1.
+export async function getSanadOverridesFor(hadithIds: number[]): Promise<Map<number, IsnadNode[]>> {
+  const map = new Map<number, IsnadNode[]>();
+  if (!hadithIds.length) return map;
+  const ph = hadithIds.map(() => "?").join(",");
+  try {
+    const r = await hadithDb.execute({
+      sql: `SELECT hadith_id, nodes_json FROM hadith_sanad_override WHERE hadith_id IN (${ph})`,
+      args: hadithIds,
+    });
+    for (const row of r.rows as unknown as { hadith_id: number; nodes_json: string }[]) {
+      try { map.set(row.hadith_id, JSON.parse(row.nodes_json) as IsnadNode[]); } catch { /* abai */ }
+    }
+  } catch { /* jadual belum di D1 */ }
   return map;
 }
 

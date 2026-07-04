@@ -119,7 +119,14 @@ export function parseIsnadChains(matn: string): ParsedIsnad {
   const MARFU = /النبي|رسول الله|رسول اللـه/;
   const marfu = MARFU.test(t);
   const mm = t.search(MARFU);
-  const isnad = mm > 0 ? t.slice(0, mm) : (marfu ? "" : t); // tiada had panjang
+  let isnad = mm > 0 ? t.slice(0, mm) : (marfu ? "" : t); // tiada had panjang
+  // SEMPADAN MATN: bila sahabi mula MENUTURKAN kandungan (bukan sanad lagi). Tanpa
+  // penanda ini, hadis mawqūf/tanpa "رسول الله" (cth Bukhari #4: جابر يحدث عن فترة
+  // الوحي) menyebabkan matn dibaca sbg perawi (فترة الوحي، في حديثه…). Frasa berikut
+  // = konteks/matn, BUKAN sanad: potong isnad di kemunculan TERAWAL.
+  const MATN_CUT = /(?:\sوهو يحدث|\sوهي تحدث|\sوهو يقول|\sوهي تقول|\sوهو يخطب|\sفي حديثه|\sفي حديثها|\sبينا\s|\sبينما\s|\sفيما يذكر|\sيذكر عن|")/;
+  const mc = isnad.search(MATN_CUT);
+  if (mc > 0) isnad = isnad.slice(0, mc);
 
   const branches = isnad.split(/\sح(?=\s|و)/).map((s) => s.trim()).filter(Boolean);
   // كلاهما/كلهم/جميعا… selepas cabang tahwil TERAKHIR = ekor DIKONGSI: semua

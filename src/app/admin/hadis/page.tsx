@@ -1,6 +1,7 @@
 import { hadithDb } from "@/lib/db";
 import { normalizeArabic } from "@/lib/arabic";
-import { updateHadith } from "@/app/actions";
+import { updateHadith, updateSanad } from "@/app/actions";
+import { getIsnadFor, getSanadOverridesFor } from "@/lib/hadis";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,19 @@ async function search(q: string): Promise<{ rows: H[]; tr: Map<string, string> }
 export default async function AdminHadis({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
   const { rows, tr } = await search(q);
+  const ids = rows.map((h) => h.id);
+  // sanad semasa (Turso) sbg rujukan + override sedia ada (D1)
+  const [isnads, overrides] = await Promise.all([getIsnadFor(ids), getSanadOverridesFor(ids)]);
+  const chainText = (id: number): string => {
+    const ov = overrides.get(id);
+    const nodes = ov ?? isnads.get(id) ?? [];
+    return nodes
+      .filter((n) => n.chain_no === 0)
+      .sort((a, b) => a.position - b.position)
+      .map((n) => n.raw_name ?? "")
+      .filter(Boolean)
+      .join("\n");
+  };
 
   return (
     <main>
@@ -77,6 +91,17 @@ export default async function AdminHadis({ searchParams }: { searchParams: Promi
             <label className="adm-f"><span>Terjemahan BM</span><textarea name="tr_ms" defaultValue={tr.get(`${h.id}:ms`) ?? ""} rows={3} /></label>
             <label className="adm-f"><span>Terjemahan EN</span><textarea name="tr_en" defaultValue={tr.get(`${h.id}:en`) ?? ""} rows={3} /></label>
             <div className="adm-actions"><button className="btn solid" type="submit">Simpan</button></div>
+          </form>
+          <form action={updateSanad} className="adm-grid" style={{ marginTop: "10px", borderTop: "1px solid var(--line-dark)", paddingTop: "12px" }}>
+            <input type="hidden" name="id" value={h.id} />
+            <label className="adm-f">
+              <span>Betulkan Silsilat al-Isnad {overrides.has(h.id) ? "· (ada override)" : ""}</span>
+              <textarea name="sanad_text" defaultValue={chainText(h.id)} rows={5} dir="rtl"
+                placeholder="Satu perawi satu baris — dari atas (perawi kitab) ke bawah (sahabi/Nabi). Kosongkan utk kembali auto." />
+            </label>
+            <div className="adm-actions"><button className="btn solid" type="submit">Simpan sanad</button>
+              <span className="adm-hint">Setiap baris dipadan ke profil perawi automatik. Simpan di D1 (tak sentuh graf pukal).</span>
+            </div>
           </form>
         </details>
       ))}

@@ -86,6 +86,43 @@ export async function updateHadith(formData: FormData) {
   revalidatePath("/admin/hadis");
 }
 
+// ── BETULKAN SANAD (override D1; elak re-parse/re-sync Turso pukal) ──
+// Admin taip sanad betul (satu perawi satu baris, dari atas kitab → sahabi/Nabi).
+// Setiap nama dipadan ke perawi korpus (Turso, sekali masa simpan) → simpan JSON di
+// D1. Isnad papar override ini ganti hasil parser. Kosong = padam override (balik auto).
+export async function updateSanad(formData: FormData) {
+  const session = await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (!Number.isFinite(id)) return;
+  const raw = s(formData, "sanad_text");
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) {
+    await hadithDb.execute({ sql: "DELETE FROM hadith_sanad_override WHERE hadith_id=?", args: [id] });
+    revalidatePath("/admin/hadis");
+    return;
+  }
+  // padan setiap nama → perawi (tepat-unik dulu, lalu awalan ber-بن unik)
+  const nodes: { narrator_id: number | null; chain_no: number; position: number; raw_name: string; resolved: string | null }[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const nm = normalizeArabic(lines[i]);
+    let nid: number | null = null, resolved: string | null = null;
+    try {
+      let r = await corpus.execute({ sql: "SELECT id, name_ar FROM narrators WHERE name_search=? LIMIT 2", args: [nm] });
+      if (r.rows.length !== 1 && nm.includes(" بن ")) {
+        r = await corpus.execute({ sql: "SELECT id, name_ar FROM narrators WHERE name_search>=? AND name_search<? LIMIT 2", args: [nm + " ", nm + " ￿"] });
+      }
+      if (r.rows.length === 1) { nid = Number(r.rows[0].id); resolved = String(r.rows[0].name_ar ?? ""); }
+    } catch { /* Turso down → simpan nama sahaja */ }
+    nodes.push({ narrator_id: nid, chain_no: 0, position: i, raw_name: lines[i], resolved });
+  }
+  await hadithDb.execute({
+    sql: `INSERT INTO hadith_sanad_override (hadith_id, nodes_json, edited_by, edited_at)
+          VALUES (?,?,?,?) ON CONFLICT(hadith_id) DO UPDATE SET nodes_json=excluded.nodes_json, edited_by=excluded.edited_by, edited_at=excluded.edited_at`,
+    args: [id, JSON.stringify(nodes), session.login ?? "admin", new Date().toISOString()],
+  });
+  revalidatePath("/admin/hadis");
+}
+
 // ── PERAWI (Turso — live bila kuota reset) ─────────────────────────
 export async function updateNarrator(formData: FormData) {
   await requireAdmin();
