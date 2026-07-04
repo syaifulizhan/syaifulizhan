@@ -151,4 +151,18 @@ Akses DISAHKAN 4 Jul:
 - Alternatif: OpenITI/RELEASE (mARkdown), seemorg/usul-data.
 Pelan bentuk data: fasa 1 = syarah per-hadis terkurasi dorar (jadual `sharh`: hadith_id, sumber,
 teks, pautan dorar) + isi `grade`/`takhrij`; fasa 2 = teks penuh turath dijajarkan ke hadis via
-**raqm** (⇒ misi 8a PRASYARAT). Susun ikut kurun (klasik→kontemporari) pada UI.
+matn (bukan raqm). Susun ikut kurun (klasik→kontemporari) pada UI.
+
+**⚠️ PILOT DORAR 4 Jul (baca sahaja) — PENEMUAN KESELAMATAN KRITIKAL:**
+Carian matn `dorar_api.json?skey=` utk "إنما الأعمال بالنيات" pulang 15 hasil untuk matn SAMA
+tetapi **rawi BERBEZA** (عمر / أبو سعيد / أنس / علي) dgn hukm BERCANGGAH (صحيح، منكر، خطأ، ضعيف،
+غريب). Sebabnya موسوعة dorar = indeks HUKM MUHADDITH (setiap ulama menilai jalan/sanad tertentu),
+bukan indeks satu-hadis-satu-nombor. **BAHAYA:** lekat naif = boleh label hadis صحيح البخاري (rawi
+عمر) sebagai "منكر" (sebenarnya hukm utk jalan أبو سعيد) → SALAH di sisi agama. Filter `mhd=` pada
+endpoint JSON DIABAIKAN. Padanan `الصفحة أو الرقم` = mukasurat kitab PENGKRITIK (cth التلخيص الحبير
+1/81), BUKAN nombor hadis seragam → sahkan penomboran TAK relevan utk padanan syarah.
+**SYARAT padanan BETUL (wajib):** padan **rawi (sahabat) + kitab sumber + matn** serentak; utamakan
+entri sumber-PRIMER (المصدر = kitab kita, cth صحيح البخاري). Guna SITE search mod specialist
+(server-side, elak auto-translate Chrome) yg beri sharhId. **JANGAN bulk sebelum sahih pd sampel.**
+Wrapper had 100/IP/hari; local IP CF-blocked (guna CF Worker/server). 85k hadis = perlu rate-limit
+hormat + cache; timbang sumber pukal utk darjat (Itqan sedia ada 3,955) supaya tak hammer dorar.
