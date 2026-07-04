@@ -47,3 +47,6 @@ next-env.d.ts
 /.open-next/
 .wrangler/
 .dev.vars
+
+# Artifak sementara skrip (manifest dedup, state resume, ujian _tmp-*)
+scripts/_*
