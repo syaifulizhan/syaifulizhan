@@ -2,7 +2,10 @@
 
 > Keadaan SEMASA misi selamatkan موسوعة الحديث (islam-db.com) — scrape & pulih perawi,
 > matan hadis, sanad. Kekal merentas sesi. Senibina: [`hadith-platform.md`](./hadith-platform.md).
-> Kemas kini: **1 Julai 2026**.
+> Kemas kini: **4 Julai 2026** (audit penuh + misi baharu §8).
+> Kiraan semasa: narrators **127,286** (pasca-dedup) · relations 497,946 · hadith_narrators 339,315
+> (terpaut 142,149 = 42%) · hadiths 60,514 · books 942 · glossary 2,181 lokal / 2,169 D1 ·
+> Turso usage ~7.36M/10M (guard 9.5M).
 
 ## 0. MATLAMAT BESAR (jangan lupa lagi)
 Selamatkan korpus mausu'ah hadithiyyah yang **rosak/hilang** dari islam-db.com:
@@ -98,11 +101,48 @@ ambiguiti **لا يضر** (sanad tetap sahih). Bukan kecacatan, bukan "gagal ken
 
 **PAPARAN ISNAD (LIVE):** `src/components/Isnad.tsx` papar **raw_name** (nama sanad asal, cth الزهري); hover=nama penuh (title); klik=`/perawi/<id>` biodata penuh. Bukan papar nama penuh terus.
 
-## 7. LANGKAH SETERUSNYA (checklist)
-- [ ] Probe max narrator ID islam-db → sambung `scrape-narrators.mjs --to=N` sampai 100k+.
-- [ ] Naikkan `scrape-hadith.mjs --maxBook` + siasat hasil rendah → 100k+ matan.
-- [ ] `retry-failed.mjs` (824 hadis + 94 perawi gagal).
-- [ ] Siasat jurang Itqan 114k→102,783.
-- [ ] `npm run corpus:build` → bina semula corpus.db.
-- [ ] Pulih Turso perawi (`turso-sync.sh --force`) + sahkan perawi live hidup.
-- [ ] Sambung OCR glosari sampai 543/543.
+## 7. CHECKLIST (audit semula 4 Jul 2026)
+Siap sejak audit lepas: ✅ glosari 543/543 (2,181 entri lokal) · ✅ Turso pulih (akaun baharu dewan-izhan) ·
+✅ dedup pendua 2M-range (584 gabung, lokal+remote selari) · ✅ pemautan 42% · ✅ penjana syajarah + disambiguasi graf LIVE.
+
+**Masih TERBUKA (warisan):**
+- [ ] **Scrape islam-db TERGANTUNG** — perawi 25,072 (had lalai `--to=42517`; 17,445 missing; 94 gagal); hadis islam-db hanya 9,603 (berhenti book 1422; hasil ~10/kitab PERLU SIASAT parser; 824 gagal). Matlamat 100k+.
+- [ ] **Musnad Ahmad 1,374/~26k sahaja** — clone `data/hadith-json` sudah dipadam; clone semula AhmedBaset/hadith-json → import penuh (semak kitab lain juga).
+- [ ] **authors & topics KOSONG (0 baris)** — books.author_id/topic_id tergantung; hanya 16/942 buku ada author_ar, total_hadith semua NULL.
+- [ ] **Terjemahan BM: 873/60,514 (1.4%)** — misi "BM tulen" terbengkalai (EN 47,464 dari AhmedBaset). M4 Gemini belum bulk; kualiti perlu tune.
+- [ ] grade hanya 3,955 (6.5%), takhrij 0 → isi dari dorar (lihat §8).
+- [ ] hn YATIM 4,262 baris (id islam-db tak wujud — isu import lama) + tepi graf yatim ~5k → bersih (NULL-kan / padam).
+- [ ] Glosari: 12 entri lokal belum sync D1 (`glossary-d1-sync.sh`).
+- [ ] Hawramani fasa B — parse bio HTML (indeks 100,915 siap; bio baru ~58).
+- [ ] Itqan jurang 114k→102,783 (~11k) belum disiasat.
+- [ ] Re-parse korpus dgn parser v3 (struktur tahwil) — delta rowid tak boleh guna kalau struktur berubah.
+- [ ] Rotate kunci Supabase/Turso yang pernah terdedah dlm chat (belum disahkan dibuat).
+- [ ] Admin passkey (fasa 2).
+- [ ] ⚠️ GOTCHA: `npm run corpus:build` (build-sqlite dari jsonl) mungkin PADAM hasil dedup/pemautan dlm corpus.db — SEMAK skrip sebelum guna; corpus.db kini sumber kebenaran, bukan jsonl.
+
+## 8. MISI BARU (arahan pemilik 4 Jul 2026)
+### 8a. Raqm al-hadis — nombor hadis ikut kitab asal penulis
+Keadaan kini: `hadiths.number` BERCAMPUR semantik — kitab AhmedBaset (900001+) = `idInBook`
+(nombor per-buku ✓) tapi kitab islamdb = turutan-dalam-BAB (tak guna utk rujukan).
+- [ ] Tambah kolum `number_in_book` + `numbering_edition` (edisi rujukan per kitab: Bukhari=ط السلفية/Fath, Muslim=عبد الباقي, dll).
+- [ ] Sahkan penomboran AhmedBaset vs edisi standard (Bukhari ab=7,277 vs standard 7,563 — siasat: riwayat berulang digabung?). Silang-semak: sunnah.com, fawazahmed0/hadith-api (CDN percuma), turath ط السلفية.
+- [ ] Nombor kitab islamdb (925 buku kecil) — perlu sumber/derivasi.
+- [ ] UI: papar raqm + permalink `/kitab/[id]/hadis/[raqm]`; carian ikut raqm.
+
+### 8b. Syarah kitab (klasik → kontemporari) — "syeikh baharu": dorar.net + turath.io
+Akses DISAHKAN 4 Jul:
+- **dorar.net API rasmi** `https://dorar.net/dorar_api.json?skey=…` → JSON (rawi, muhaddith, sumber,
+  الصفحة أو الرقم, خلاصة حكم المحدث). ⚠️ CF sekat curl dari IP kita — BERFUNGSI via Chrome pengguna
+  (navigate+get_page_text); JSON mentah TAK kena auto-translate. ⚠️ Chrome auto-translate BM AKTIF —
+  jangan scrape HTML dorar via get_page_text (teks diterjemah!), guna endpoint JSON.
+- **Wrapper GitHub `AhmedElTabarani/dorar-hadith-api`** (117★, aktif Jun 2026, tiada instance hosted
+  awam) — self-host; endpoint site: hadith/:id, similar, alternate, **usul** (takhrij), **sharh/:id**,
+  **sharh/search**, mohdith/:id, book/:id. Uji dari CF Worker (mungkin lepas CF dorar; belum diuji).
+- **turath.io (Shamela JSON) TERBUKA via curl**: meta `api.turath.io/book?id=N`, teks penuh
+  `files.turath.io/books-v3/{N}.json` (pages[{text,vol,page}]), carian `api.turath.io/search?q=`.
+  Disahkan: **Fath al-Bari ط السلفية = id 1673** (7,996 hlm, 61MB). Sumber teks penuh syarah klasik
+  (فتح الباري، عمدة القاري، شرح النووي، عون المعبود، تحفة الأحوذي…).
+- Alternatif: OpenITI/RELEASE (mARkdown), seemorg/usul-data.
+Pelan bentuk data: fasa 1 = syarah per-hadis terkurasi dorar (jadual `sharh`: hadith_id, sumber,
+teks, pautan dorar) + isi `grade`/`takhrij`; fasa 2 = teks penuh turath dijajarkan ke hadis via
+**raqm** (⇒ misi 8a PRASYARAT). Susun ikut kurun (klasik→kontemporari) pada UI.
