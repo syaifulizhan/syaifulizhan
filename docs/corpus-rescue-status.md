@@ -2,10 +2,18 @@
 
 > Keadaan SEMASA misi selamatkan موسوعة الحديث (islam-db.com) — scrape & pulih perawi,
 > matan hadis, sanad. Kekal merentas sesi. Senibina: [`hadith-platform.md`](./hadith-platform.md).
-> Kemas kini: **4 Julai 2026** (audit penuh + misi baharu §8).
-> Kiraan semasa: narrators **127,286** (pasca-dedup) · relations 497,946 · hadith_narrators 339,315
-> (terpaut 142,149 = 42%) · hadiths 60,514 · books 942 · glossary 2,181 lokal / 2,169 D1 ·
-> Turso usage ~7.36M/10M (guard 9.5M).
+> Kemas kini: **5 Julai 2026** (misi diperluas: kelengkapan KITAB + hukm, bukan perawi shj).
+> Kiraan semasa: narrators **127,286** (pasca-dedup) · hadith_narrators 480,940 (terpaut ~166,923
+> = 35%) · **hadiths 85,503** (49,510 AhmedBaset + 26,363 Musnad Ahmad al-Maknaz + 9,630 islamdb) ·
+> books 942 (**18 lengkap, 894 stub ≤10 hadis, ~30 separa**) · hadith_ruling 2,967 (200 hadis
+> Bukhari, 93% primer) · glossary 2,181 · Turso usage ~7.82M/9.5M.
+
+## ⚠️ PRINSIP RIWAYAT (pemilik, 5 Jul): kitab satu tajuk boleh ada BANYAK RIWAYAT
+Muwatta = 3+ riwayat BERBEZA (يحيى الليثي #19, محمد بن الحسن الشيباني #21, أبي مصعب الزهري #22) —
+disusun jalur berbeza, kandungan/tertib berbeza → **KITAB BERBEZA, BUKAN duplikat**. Kitab lain pun
+mungkin begitu. **Dedup hadis HANYA dlm kitab(riwayat) SAMA (matn ternormal); JANGAN gabung riwayat
+berbeza.** Bila lengkapkan kitab, ambil riwayat SPESIFIK. 900006 موطأ مالك (AhmedBaset) = agaknya
+riwayat يحيى؛ #19/21/22 islamdb = stub 9 hadis (perlu lengkap dari sumber betul ikut riwayat).
 
 ## 0. MATLAMAT BESAR (jangan lupa lagi)
 Selamatkan korpus mausu'ah hadithiyyah yang **rosak/hilang** dari islam-db.com:
