@@ -221,7 +221,7 @@ export async function getRulingsFor(hadithIds: number[]): Promise<Map<number, Ru
       });
       const tgt = new Map<string, number>();
       for (const row of hr.rows as unknown as { id: number; book_id: number; number: number }[]) tgt.set(`${row.book_id}:${row.number}`, row.id);
-      for (const w of wanted) { const id = tgt.get(`${w.book}:${w.num}`); if (id) w.r.href = `/kitab/${w.book}?h=${id}`; }
+      for (const w of wanted) { const id = tgt.get(`${w.book}:${w.num}`); if (id) w.r.href = `/kitab/${w.book}?h=${id}#h-${id}`; }
     }
   } catch { /* jadual hadith_ruling belum di D1 → kosong */ }
   return map;
