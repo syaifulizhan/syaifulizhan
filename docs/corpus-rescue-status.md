@@ -166,3 +166,15 @@ entri sumber-PRIMER (المصدر = kitab kita, cth صحيح البخاري). Gu
 (server-side, elak auto-translate Chrome) yg beri sharhId. **JANGAN bulk sebelum sahih pd sampel.**
 Wrapper had 100/IP/hari; local IP CF-blocked (guna CF Worker/server). 85k hadis = perlu rate-limit
 hormat + cache; timbang sumber pukal utk darjat (Itqan sedia ada 3,955) supaya tak hammer dorar.
+
+**PILOT BACKEND SIAP (4 Jul, lokal sahaja):**
+- Jadual `hadith_ruling` (hadith_id, rawi, muhaddith, source_book, ref, hukm, is_primary, sharh_id, ord)
+  UNIQUE(hadith_id,muhaddith,source_book,ref) — belum di D1.
+- `scripts/parse-dorar.mjs`: baca respons dorar_api.json (disimpan dari pelayar) → hukm berstruktur;
+  tanda `is_primary` bila المصدر = kitab hadis kita. DISAHKAN pd hadis 10513 (صحيح البخاري #13 =
+  "لا يؤمن أحدكم…"): primer البخاري→صحيح ★ + 6 takhrij (Tirmidhi صحيح, Ibn Hibban, Albani, Shu'ayb
+  "على شرط الشيخين"…) dgn atribusi penuh. dorar mmg pulang entri primer صحيح البخاري (رقم 13 = raqm kita).
+- ✅ Kebolehlaksanaan DISAHKAN: dorar dedah hukm primer + takhrij penuh; padan ikut kitab+matn.
+**BELUM (perlu keputusan pemilik):** (1) format papar mesra-Malaysia (UI); (2) mekanisme fetch skala
+85k (pelayar-sahaja lokal / CF Worker / berfasa kitab utama dulu); (3) fetch matn-query (buang isnad,
+ambil frasa matn distinktif) — frasa terlalu umum → entri primer terbenam (kes الأعمال بالنيات).
