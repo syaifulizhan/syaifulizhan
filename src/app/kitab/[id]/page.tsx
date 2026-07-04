@@ -10,7 +10,7 @@ import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
 import { Rulings } from "@/components/Rulings";
 import { BookNav } from "@/components/BookNav";
-import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor } from "@/lib/hadis";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor, getSharahForBook } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -43,9 +43,10 @@ export default async function KitabPage({
     : (Number(pageStr) || 1);
   const page = Math.min(Math.max(1, wantPage), totalPages);
 
-  const [hadiths, chapters] = await Promise.all([
+  const [hadiths, chapters, sharahBooks] = await Promise.all([
     getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE, search),
     search ? Promise.resolve([]) : getBookChapters(bid),
+    getSharahForBook(bid),
   ]);
   const ids = hadiths.map((h) => h.id);
   const [isnads, trs, rulings, overrides] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids), getSanadOverridesFor(ids)]);
@@ -67,6 +68,14 @@ export default async function KitabPage({
             <span className="pbadge">{T.pageLabel[lang]} {page} / {totalPages}</span>
           </div>
         </header>
+
+        {sharahBooks.length > 0 && (
+          <div className="ksharh">
+            {sharahBooks.map((s) => (
+              <Link key={s.id} href={`/syarah/${s.id}`}>۞ {s.name}</Link>
+            ))}
+          </div>
+        )}
 
         <BookNav chapters={chapters} basePath={`/kitab/${bid}`} currentSearch={search} lang={lang} />
 
