@@ -116,6 +116,32 @@ export async function getTranslationsFor(hadithIds: number[]): Promise<Map<numbe
   return map;
 }
 
+export interface Ruling {
+  rawi: string | null; muhaddith: string | null; source_book: string | null;
+  ref: string | null; hukm: string | null; is_primary: number;
+}
+// Takhrij & ahkam (dorar): SEMUA jalur dipelihara (rawi+muhaddith+kitab+hukm).
+// Amanah: jangan runtuh jadi 1 gred — sanad berbeza boleh beri hukm berbeza.
+export async function getRulingsFor(hadithIds: number[]): Promise<Map<number, Ruling[]>> {
+  const map = new Map<number, Ruling[]>();
+  if (!hadithIds.length) return map;
+  const ph = hadithIds.map(() => "?").join(",");
+  try {
+    const r = await hadithDb.execute({
+      sql: `SELECT hadith_id, rawi, muhaddith, source_book, ref, hukm, is_primary
+              FROM hadith_ruling WHERE hadith_id IN (${ph})
+             ORDER BY is_primary DESC, ord`,
+      args: hadithIds,
+    });
+    for (const row of r.rows as unknown as (Ruling & { hadith_id: number })[]) {
+      const arr = map.get(row.hadith_id) ?? [];
+      arr.push({ rawi: row.rawi, muhaddith: row.muhaddith, source_book: row.source_book, ref: row.ref, hukm: row.hukm, is_primary: row.is_primary });
+      map.set(row.hadith_id, arr);
+    }
+  } catch { /* jadual hadith_ruling belum di D1 → kosong */ }
+  return map;
+}
+
 export async function hadithCount(): Promise<number> {
   const r = await hadithDb.execute("SELECT count(*) c FROM hadiths");
   return Number(r.rows[0].c);
