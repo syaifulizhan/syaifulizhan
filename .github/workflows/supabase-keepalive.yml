@@ -1,0 +1,32 @@
+# Keep-alive Supabase (dewan-izhan) — projek free-tier PAUSE selepas ~7 hari tiada
+# aktiviti. Cron ini buat satu query REST ringan 2× seminggu (Isnin & Khamis) supaya
+# projek kekal aktif → auth + moderasi cadangan tak terganggu.
+# Guna repo VARS sedia ada (NEXT_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY) — tiada secret baharu.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 3 * * 1,4"   # Isnin & Khamis 03:17 UTC (jurang <7 hari)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST (query ringan)
+        run: |
+          URL="${{ vars.NEXT_PUBLIC_SUPABASE_URL }}"
+          KEY="${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}"
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY tiada dlm repo vars"; exit 1
+          fi
+          code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
+            "$URL/rest/v1/correction_suggestions?select=id&limit=1" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          echo "HTTP $code"
+          head -c 300 /tmp/resp.txt || true
+          # 200/206 = aktif; 401/403 (RLS) pun kira aktiviti API → masih keep-alive.
+          case "$code" in
+            2*|401|403) echo "✓ Supabase aktif (keep-alive berjaya)";;
+            *) echo "::error::Supabase balas $code — projek mungkin dah pause, semak dashboard"; exit 1;;
+          esac
