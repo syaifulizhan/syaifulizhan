@@ -50,3 +50,7 @@ next-env.d.ts
 
 # Artifak sementara skrip (manifest dedup, state resume, ujian _tmp-*)
 scripts/_*
+
+# CSV/clone sumber besar (dimuat semula bila perlu)
+data/mhashim-ahmad.csv
+data/hadith-json/

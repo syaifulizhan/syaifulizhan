@@ -205,6 +205,7 @@ export const T = {
   // Chrome halaman hadis/kitab
   hadisCount: { bm: "hadis", en: "hadith", ar: "حديث" },
   pageLabel: { bm: "Halaman", en: "Page", ar: "صفحة" },
+  raqmLabel: { bm: "No.", en: "No.", ar: "رقم" },
   kitabEmpty: {
     bm: "Belum ada hadis untuk kitab ini.",
     en: "No hadith for this book yet.",

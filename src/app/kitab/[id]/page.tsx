@@ -63,7 +63,14 @@ export default async function KitabPage({
             <article className="hcard" key={h.id} id={`h-${h.id}`}>
               <div className="hcard-top">
                 {h.chapter_ar && <div className="hchap ar">{h.chapter_ar}</div>}
-                <GradeBadge grade={h.grade} lang={lang} />
+                <div className="hcard-meta">
+                  <GradeBadge grade={h.grade} lang={lang} />
+                  {h.number != null && (
+                    <a className="hraqm" href={`#h-${h.id}`} title={`${T.raqmLabel[lang]} ${h.number}`}>
+                      {T.raqmLabel[lang]}&nbsp;{h.number.toLocaleString("en-US")}
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />

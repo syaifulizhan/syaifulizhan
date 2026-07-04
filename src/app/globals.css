@@ -1232,6 +1232,9 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 /* kotak taraf hadis */
 .hcard-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .hcard-top .hchap { margin-bottom: 0; }
+.hcard-meta { display: inline-flex; align-items: center; gap: 10px; margin-inline-start: auto; }
+.hraqm { font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 11px; border: 1px solid var(--line-dark); color: var(--gold); background: rgba(199, 163, 56, 0.05); white-space: nowrap; text-decoration: none; font-variant-numeric: tabular-nums; }
+.hraqm:hover { border-color: var(--gold); background: rgba(199, 163, 56, 0.1); }
 .hgrade { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border: 1px solid var(--gc); background: color-mix(in srgb, var(--gc) 10%, transparent); white-space: nowrap; }
 .hgrade-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gc); box-shadow: 0 0 7px var(--gc); }
 .hgrade-ar { font-family: var(--arabic); font-size: 1.02rem; color: var(--paper); }
