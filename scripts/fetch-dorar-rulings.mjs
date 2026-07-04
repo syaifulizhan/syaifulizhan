@@ -20,8 +20,9 @@ const CK = "scripts/_dorar-checkpoint.json";
 const ck = existsSync(CK) ? JSON.parse(readFileSync(CK, "utf8")) : { done: [], lastId: 0 };
 const doneSet = new Set(ck.done);
 
-// ── susunan kitab: UTAMA dulu (17 kitab utama) → kitab kecil ──
-const MAJOR = [900003, 900007, 900001, 900008, 900009, 900005, 900004, 900006, 900002, 900010, 900011, 900012, 900013, 900014, 900015, 900016, 900017];
+// ── susunan kitab MUKTABAR: Kutub Sittah (Bukhari→Muslim→Abu Dawud→Tirmidhi→Nasa'i
+// →Ibn Majah) → Muwatta → Ahmad → Darimi → koleksi lain → 924 kitab kecil ──
+const MAJOR = [900003, 900007, 900001, 900009, 900008, 900005, 900006, 900002, 900004, 900010, 900011, 900012, 900013, 900014, 900015, 900016, 900017];
 const bookName = new Map((await db.execute("SELECT id, title_ar FROM books")).rows.map((r) => [Number(r.id), String(r.title_ar ?? "")]));
 
 // ── frasa matn distinktif (buang isnad) ──

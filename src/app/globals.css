@@ -1253,6 +1253,8 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .rul-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 5px; }
 .rul-rawi { font-family: var(--arabic); direction: rtl; font-size: 0.86rem; color: var(--muted); }
 .rul-badge { font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--line-dark); padding: 2px 7px; }
+.rul-toggle { margin-top: 11px; font-family: var(--sans); font-size: 0.76rem; letter-spacing: 0.04em; color: var(--gold-soft); background: none; border: 1px solid var(--line-dark); padding: 7px 13px; cursor: pointer; transition: border-color 0.16s, color 0.16s; }
+.rul-toggle:hover { border-color: var(--gold); color: var(--gold); }
 .hgrade { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border: 1px solid var(--gc); background: color-mix(in srgb, var(--gc) 10%, transparent); white-space: nowrap; }
 .hgrade-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gc); box-shadow: 0 0 7px var(--gc); }
 .hgrade-ar { font-family: var(--arabic); font-size: 1.02rem; color: var(--paper); }
@@ -1287,8 +1289,9 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .adm-lbl { font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .adm-text { font-family: var(--arabic); direction: rtl; font-size: 1.7rem; color: var(--paper); line-height: 1.85; }
 .adm-reason { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
-.adm-actions { display: flex; gap: 10px; margin-top: 14px; }
+.adm-actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
 .adm-actions .btn { padding: 8px 20px; }
+.adm-hint { font-size: 0.72rem; color: var(--muted); }
 
 .foot-reflabel { display: block; width: 100%; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
 
