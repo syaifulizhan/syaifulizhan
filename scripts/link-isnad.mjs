@@ -25,6 +25,31 @@ for (;;) {
 const uniq = (m, k) => { const s = m.get(k); return s && s.size === 1 ? [...s][0] : null; };
 const cands = (k) => full.get(k) || shu.get(k) || null;
 
+// Token GENERIK/relational — BUKAN identiti: jangan sesekali paut ikut nama
+// (kes buruk lama: ابيه→"أبي مولى عباس" ×120, غيره→perawi "غيرة" ×52).
+// Relational (ابيه/جده…) diselesaikan skrip link-relational ikut nasab jiran.
+const GENERIC = new Set([
+  "ابيه", "ابيها", "جده", "جدها", "جدي", "جدته", "جدتي", "امه", "امها", "امي",
+  "عمه", "عمها", "عمي", "خاله", "خالها", "خالي", "ابنه", "ابنته",
+  "غيره", "وغيره", "غيرهما", "بعضهم", "بعض", "رجل", "رجلا", "رجلين", "امراه",
+  "شيخ", "شيخا", "اخر", "آخر", "قوم", "ناس", "اناس", "جماعه", "اصحابه", "اصحابنا",
+  "فلان", "عده", "غير واحد", "مولاه", "مولي", "ثقه", "الثقه", "خادم", "اعرابي", "صاحب",
+]);
+
+// Indeks AWALAN ber-بن (kes المُهْمَل — Kamus al-Ghouri hlm 547): "سفيان" sahaja
+// boleh jadi الثوري ATAU ابن عيينة → calon = semua "سفيان بن …", biar graf
+// guru-murid tentukan. Susun name_search sekali; cari julat via binary search.
+const sortedNames = [...full.entries()].map(([k, s]) => [k, s]).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+function prefixCands(nm) {
+  const pre = nm + " بن ";
+  let lo = 0, hi = sortedNames.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (sortedNames[mid][0] < pre) lo = mid + 1; else hi = mid; }
+  const out = new Set();
+  for (let i = lo; i < sortedNames.length && sortedNames[i][0].startsWith(pre); i++)
+    for (const id of sortedNames[i][1]) { out.add(id); if (out.size > 120) return null; } // terlalu generik (محمد…) → jangan teka
+  return out.size ? out : null;
+}
+
 console.log("→ Muat narrator_relations…");
 const rel = new Set();
 let roff = 0;
@@ -58,7 +83,7 @@ while (changed && pass < 6) {
   changed = false; pass++;
   let uni = 0, ctx = 0;
   for (const r of rows) {
-    if (r.nid != null || !r.nm) continue;
+    if (r.nid != null || !r.nm || GENERIC.has(r.nm)) continue;
     // KETEPATAN-DAHULU (jangan tertukar orang):
     // Tier 1 — nama PENUH unik = identiti pasti (nasab lengkap).
     const f = uniq(full, r.nm);
@@ -66,10 +91,18 @@ while (changed && pass < 6) {
     // Tier 2 — calon (penuh/shuhra/kunya) yg DISOKONG graf guru-murid jiran yg dah dipaut.
     //          shuhra/kunya TAK dipaut tanpa sokongan konteks (elak سفيان→orang salah).
     const cs = new Set([...(full.get(r.nm) || []), ...(shu.get(r.nm) || []), ...(kun.get(r.nm) || [])]);
+    // Tier 2b — nama ringkas/kabur: tambah calon awalan ber-بن (سفيان → سفيان بن …).
+    if (!cs.size) { const pc = prefixCands(r.nm); if (pc) for (const id of pc) cs.add(id); }
     if (cs.size) {
       const prev = at.get(`${r.h}|${r.ch}|${r.po - 1}`), next = at.get(`${r.h}|${r.ch}|${r.po + 1}`);
-      const ok = [...cs].filter((x) => linked(x, prev) || linked(x, next));
-      if (ok.length === 1) { setLink(r, ok[0]); ctx++; changed = true; }
+      // PERSILANGAN dulu: calon mesti berhubung dgn SEMUA jiran terpaut (kes سفيان:
+      // مسعر guru dua-dua Sufyan, tapi ابن ابي عمر murid ابن عيينة shj → tunggal).
+      // Fallback: union-unik (berhubung dgn mana-mana satu jiran).
+      if (prev != null || next != null) {
+        const both = [...cs].filter((x) => (prev == null || linked(x, prev)) && (next == null || linked(x, next)));
+        const ok = both.length === 1 ? both : [...cs].filter((x) => linked(x, prev) || linked(x, next));
+        if (ok.length === 1) { setLink(r, ok[0]); ctx++; changed = true; }
+      }
     }
     // else: RAGU → kekal tak dipaut (nama papar teks biasa).
   }
