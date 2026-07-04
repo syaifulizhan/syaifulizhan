@@ -24,12 +24,15 @@ export function parseDorarSite(html) {
     // dorar id (/h/{id}) dlm segmen ini
     const idm = seg.match(/\/h\/([A-Za-z0-9]{6,12})\b/);
     const dorar_id = idm ? idm[1] : null;
+    // sharhId: <a xplain="{id}"> (0 = tiada syarah)
+    const shm = seg.match(/xplain="?(\d+)"?/);
+    const sharh_id = shm && shm[1] !== "0" ? shm[1] : null;
     // kategori التصنيف الموضوعي: senarai <a href=/hadith-category/cat/..>nama</a>
     const catBlock = seg.match(/التصنيف الموضوعي\s*:?\s*([\s\S]*?)(?:<\/div|موقع الدرر|<h5|أحاديث مشابهة)/);
     const categories = catBlock
       ? [...catBlock[1].matchAll(/<a[^>]*hadith-category[^>]*>([\s\S]*?)<\/a>/g)].map((m) => clean(m[1])).filter(Boolean)
       : [];
-    out.push({ rawi, muhaddith, source_book, ref, hukm, dorar_id, categories });
+    out.push({ rawi, muhaddith, source_book, ref, hukm, dorar_id, sharh_id, categories });
   }
   return out;
 }
