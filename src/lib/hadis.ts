@@ -231,3 +231,49 @@ export async function hadithCount(): Promise<number> {
   const r = await hadithDb.execute("SELECT count(*) c FROM hadiths");
   return Number(r.rows[0].c);
 }
+
+// ── SYARAH (kitab turath teks penuh — bacaan) ──────────────────────────────
+export interface SharahBook { id: number; name: string; author: string | null; npages: number; book_ref: number | null }
+export interface SharahPage { idx: number; vol: string | null; page: number | null; text: string }
+
+export async function listSharahBooks(): Promise<SharahBook[]> {
+  try {
+    const r = await hadithDb.execute("SELECT id, name, author, npages, book_ref FROM turath_book ORDER BY name");
+    return r.rows as unknown as SharahBook[];
+  } catch { return []; }
+}
+export async function getSharahBook(id: number): Promise<SharahBook | null> {
+  try {
+    const r = await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE id=?", args: [id] });
+    return (r.rows[0] as unknown as SharahBook) ?? null;
+  } catch { return null; }
+}
+// syarah utk satu kitab hadis (cth Fath al-Bari → Bukhari)
+export async function getSharahForBook(bookRef: number): Promise<SharahBook[]> {
+  try {
+    const r = await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=?", args: [bookRef] });
+    return r.rows as unknown as SharahBook[];
+  } catch { return []; }
+}
+export async function getSharahPages(id: number, limit: number, offset: number, search = ""): Promise<SharahPage[]> {
+  const q = search.trim() ? normalizeArabic(search) : "";
+  try {
+    const r = await hadithDb.execute({
+      sql: q
+        ? `SELECT idx, vol, page, text FROM turath_page WHERE book_id=? AND text LIKE ? ORDER BY idx LIMIT ? OFFSET ?`
+        : `SELECT idx, vol, page, text FROM turath_page WHERE book_id=? ORDER BY idx LIMIT ? OFFSET ?`,
+      args: q ? [id, `%${search.trim()}%`, limit, offset] : [id, limit, offset],
+    });
+    return r.rows as unknown as SharahPage[];
+  } catch { return []; }
+}
+export async function getSharahPageCount(id: number, search = ""): Promise<number> {
+  const q = search.trim();
+  try {
+    const r = await hadithDb.execute({
+      sql: q ? "SELECT count(*) c FROM turath_page WHERE book_id=? AND text LIKE ?" : "SELECT count(*) c FROM turath_page WHERE book_id=?",
+      args: q ? [id, `%${q}%`] : [id],
+    });
+    return Number(r.rows[0].c);
+  } catch { return 0; }
+}

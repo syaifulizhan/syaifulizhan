@@ -21,6 +21,7 @@ export const T = {
   navPerawi: { bm: "Perawi", en: "Narrators", ar: "الرُّواة" },
   navHadis: { bm: "Hadis", en: "Hadith", ar: "الحديث" },
   navGlosari: { bm: "Glosari", en: "Glossary", ar: "المُصطلحات" },
+  navSyarah: { bm: "Syarah", en: "Sharh", ar: "الشُروح" },
 
   heroH1: {
     bm: "Ilmu yang <em>boleh disemak</em>",

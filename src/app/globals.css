@@ -1236,6 +1236,15 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hraqm { font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 11px; border: 1px solid var(--line-dark); color: var(--gold); background: rgba(199, 163, 56, 0.05); white-space: nowrap; text-decoration: none; font-variant-numeric: tabular-nums; }
 .hraqm:hover { border-color: var(--gold); background: rgba(199, 163, 56, 0.1); }
 
+/* Pembaca syarah (turath teks penuh) */
+.scard { border: 1px solid var(--line-dark); background: rgba(30, 26, 42, 0.42); padding: 20px 22px; margin-bottom: 14px; }
+.scard-top { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+.stext-h { font-family: var(--arabic); direction: rtl; font-size: 1.25rem; color: var(--gold-soft); margin: 14px 0 8px; font-weight: 700; }
+.stext { font-family: var(--arabic); direction: rtl; font-size: 1.2rem; line-height: 2.1; color: var(--paper); margin: 0 0 10px; text-align: justify; overflow-wrap: anywhere; }
+.ksharh { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; }
+.ksharh a { font-size: 0.82rem; padding: 7px 13px; border: 1px solid var(--line-dark); color: var(--gold-soft); text-decoration: none; background: rgba(199, 163, 56, 0.05); transition: border-color 0.16s, color 0.16s; }
+.ksharh a:hover { border-color: var(--gold); color: var(--gold); }
+
 /* Navigasi kitab: carian per-kitab + Table of Content (كتاب) burger */
 .bnav { margin: 18px 0 4px; display: flex; flex-direction: column; gap: 12px; }
 .bnav-search { display: flex; gap: 8px; align-items: stretch; }
