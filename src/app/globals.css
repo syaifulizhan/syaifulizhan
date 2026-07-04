@@ -1236,6 +1236,27 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hraqm { font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 11px; border: 1px solid var(--line-dark); color: var(--gold); background: rgba(199, 163, 56, 0.05); white-space: nowrap; text-decoration: none; font-variant-numeric: tabular-nums; }
 .hraqm:hover { border-color: var(--gold); background: rgba(199, 163, 56, 0.1); }
 
+/* Navigasi kitab: carian per-kitab + Table of Content (كتاب) burger */
+.bnav { margin: 18px 0 4px; display: flex; flex-direction: column; gap: 12px; }
+.bnav-search { display: flex; gap: 8px; align-items: stretch; }
+.bnav-search input { flex: 1; min-width: 0; font-family: var(--arabic); font-size: 1.05rem; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-dark); color: var(--paper); }
+.bnav-search input:focus { outline: none; border-color: var(--gold); }
+.bnav-search .btn { padding: 8px 16px; font-size: 1.1rem; }
+.bnav-clear { align-self: center; font-size: 0.8rem; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.bnav-clear:hover { color: var(--gold-soft); }
+.bnav-toc { border: 1px solid var(--line-dark); }
+.bnav-burger { width: 100%; text-align: start; background: rgba(255, 255, 255, 0.02); border: none; color: var(--paper); font-family: var(--sans); font-size: 0.9rem; padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.bnav-burger:hover { background: rgba(199, 163, 56, 0.06); }
+.bnav-lines { color: var(--gold); font-size: 1.1rem; }
+.bnav-cnt { margin-inline-start: auto; font-size: 0.76rem; color: var(--gold); border: 1px solid var(--line-dark); padding: 2px 9px; }
+.bnav-list { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; border-top: 1px solid var(--line-dark); }
+.bnav-list li { border-bottom: 1px solid var(--line-dark); }
+.bnav-list li:last-child { border-bottom: none; }
+.bnav-list a { display: flex; align-items: center; gap: 12px; padding: 10px 15px; text-decoration: none; color: var(--paper); transition: background 0.14s; }
+.bnav-list a:hover { background: rgba(199, 163, 56, 0.07); }
+.bnav-ktb { flex: 1; min-width: 0; font-family: var(--arabic); direction: rtl; font-size: 1.08rem; color: var(--gold-soft); overflow-wrap: anywhere; }
+.bnav-n { font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 /* Takhrij & Ahkam (dorar) — senarai penuh, primer diserlah */
 .rul { margin-top: 18px; border-top: 1px solid var(--line-dark); padding-top: 14px; }
 .rul-head { font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; font-weight: 600; }

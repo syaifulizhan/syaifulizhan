@@ -9,7 +9,8 @@ import { BilingualToggle } from "@/components/BilingualToggle";
 import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
 import { Rulings } from "@/components/Rulings";
-import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor } from "@/lib/hadis";
+import { BookNav } from "@/components/BookNav";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -21,23 +22,31 @@ export default async function KitabPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string; h?: string }>;
+  searchParams: Promise<{ page?: string; h?: string; s?: string; ch?: string }>;
 }) {
   const { id } = await params;
-  const { page: pageStr, h: hStr } = await searchParams;
+  const { page: pageStr, h: hStr, s: sStr, ch: chStr } = await searchParams;
   const bid = Number(id);
   if (!Number.isInteger(bid)) notFound();
   const book = await getBook(bid);
   if (!book) notFound();
 
-  const total = await getBookHadithCount(bid);
+  const search = (sStr ?? "").trim();
+  const total = await getBookHadithCount(bid, search);
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-  // Kalau datang dari carian dgn ?h=<hadithId>, lompat ke halaman hadis itu (bukan page 1).
+  // ?h=<hadithId> → lompat ke halaman hadis; ?ch=<كتاب> → lompat ke halaman كتاب itu.
   const targetHadith = Number(hStr) || 0;
-  const wantPage = targetHadith ? await getHadithPage(bid, targetHadith, PER_PAGE) : (Number(pageStr) || 1);
+  const targetChapter = Number(chStr) || 0;
+  const wantPage = search ? (Number(pageStr) || 1)
+    : targetHadith ? await getHadithPage(bid, targetHadith, PER_PAGE)
+    : targetChapter ? await getChapterPage(bid, targetChapter, PER_PAGE)
+    : (Number(pageStr) || 1);
   const page = Math.min(Math.max(1, wantPage), totalPages);
 
-  const hadiths = await getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE);
+  const [hadiths, chapters] = await Promise.all([
+    getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE, search),
+    search ? Promise.resolve([]) : getBookChapters(bid),
+  ]);
   const ids = hadiths.map((h) => h.id);
   const [isnads, trs, rulings, overrides] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids), getSanadOverridesFor(ids)]);
   const lang = await getServerLang();
@@ -54,10 +63,12 @@ export default async function KitabPage({
         <header className="phead">
           <div className="pname ar">{book.title_ar}</div>
           <div className="pbadges">
-            <span className="pbadge">{total.toLocaleString("en-US")} {T.hadisCount[lang]}</span>
+            <span className="pbadge">{total.toLocaleString("en-US")} {search ? T.hadisCount[lang] + " ✓" : T.hadisCount[lang]}</span>
             <span className="pbadge">{T.pageLabel[lang]} {page} / {totalPages}</span>
           </div>
         </header>
+
+        <BookNav chapters={chapters} basePath={`/kitab/${bid}`} currentSearch={search} lang={lang} />
 
         <div style={{ marginTop: "24px" }}>
           {hadiths.map((h) => (
@@ -85,7 +96,7 @@ export default async function KitabPage({
           )}
         </div>
 
-        <Pagination page={page} totalPages={totalPages} basePath={`/kitab/${bid}`} />
+        <Pagination page={page} totalPages={totalPages} basePath={`/kitab/${bid}`} extraQuery={search ? `s=${encodeURIComponent(search)}` : ""} />
       </main>
       <Footer />
     </>

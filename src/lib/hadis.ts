@@ -28,18 +28,47 @@ export async function getBook(id: number): Promise<{ id: number; title_ar: strin
   return (r.rows[0] as unknown as { id: number; title_ar: string }) ?? null;
 }
 
-export async function getBookHadiths(bookId: number, limit = 20, offset = 0): Promise<Hadith[]> {
+export async function getBookHadiths(bookId: number, limit = 20, offset = 0, search = ""): Promise<Hadith[]> {
+  const q = search.trim() ? normalizeArabic(search) : "";
   const r = await hadithDb.execute({
-    sql: `SELECT id, book_id, chapter_ar, number, matn_ar, grade FROM hadiths
-           WHERE book_id = ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`,
-    args: [bookId, limit, offset],
+    sql: q
+      ? `SELECT id, book_id, chapter_ar, number, matn_ar, grade FROM hadiths
+          WHERE book_id = ? AND matn_search LIKE ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`
+      : `SELECT id, book_id, chapter_ar, number, matn_ar, grade FROM hadiths
+          WHERE book_id = ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`,
+    args: q ? [bookId, `%${q}%`, limit, offset] : [bookId, limit, offset],
   });
   return r.rows as unknown as Hadith[];
 }
 
-export async function getBookHadithCount(bookId: number): Promise<number> {
-  const r = await hadithDb.execute({ sql: "SELECT count(*) c FROM hadiths WHERE book_id = ?", args: [bookId] });
+export async function getBookHadithCount(bookId: number, search = ""): Promise<number> {
+  const q = search.trim() ? normalizeArabic(search) : "";
+  const r = await hadithDb.execute({
+    sql: q ? "SELECT count(*) c FROM hadiths WHERE book_id = ? AND matn_search LIKE ?" : "SELECT count(*) c FROM hadiths WHERE book_id = ?",
+    args: q ? [bookId, `%${q}%`] : [bookId],
+  });
   return Number(r.rows[0].c);
+}
+
+// Table of Content: struktur كتاب asal kitab (kaedah paling tepat) — ikut chapter_ref.
+export interface Chapter { chapter_ref: number; chapter_ar: string; n: number }
+export async function getBookChapters(bookId: number): Promise<Chapter[]> {
+  const r = await hadithDb.execute({
+    sql: `SELECT chapter_ref, chapter_ar, COUNT(*) n FROM hadiths
+           WHERE book_id = ? AND chapter_ar IS NOT NULL AND length(chapter_ar) > 0
+           GROUP BY chapter_ref, chapter_ar ORDER BY chapter_ref`,
+    args: [bookId],
+  });
+  return r.rows as unknown as Chapter[];
+}
+
+// Halaman (1-based) di mana satu كتاب bermula (utk navigasi ToC).
+export async function getChapterPage(bookId: number, chapterRef: number, perPage: number): Promise<number> {
+  const r = await hadithDb.execute({
+    sql: "SELECT count(*) c FROM hadiths WHERE book_id = ? AND chapter_ref < ?",
+    args: [bookId, chapterRef],
+  });
+  return Math.floor(Number(r.rows[0].c) / perPage) + 1;
 }
 
 /** Halaman (1-based) di mana hadith ini berada dlm kitab (ikut susunan chapter_ref, number). */

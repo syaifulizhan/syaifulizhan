@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 // Pagination bernombor (1 … 4 5 [6] 7 8 … 50) — estetik, sepadan tema.
-export function Pagination({ page, totalPages, basePath }: { page: number; totalPages: number; basePath: string }) {
+export function Pagination({ page, totalPages, basePath, extraQuery = "" }: { page: number; totalPages: number; basePath: string; extraQuery?: string }) {
   if (totalPages <= 1) return null;
-  const href = (p: number) => `${basePath}?page=${p}`;
+  const href = (p: number) => `${basePath}?${extraQuery ? extraQuery + "&" : ""}page=${p}`;
 
   const pages: (number | "…")[] = [];
   const win = 2;
