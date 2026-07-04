@@ -8,7 +8,8 @@ import { GradeBadge } from "@/components/GradeBadge";
 import { BilingualToggle } from "@/components/BilingualToggle";
 import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
-import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getIsnadFor, getTranslationsFor } from "@/lib/hadis";
+import { Rulings } from "@/components/Rulings";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getIsnadFor, getTranslationsFor, getRulingsFor } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -38,7 +39,7 @@ export default async function KitabPage({
 
   const hadiths = await getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE);
   const ids = hadiths.map((h) => h.id);
-  const [isnads, trs] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids)]);
+  const [isnads, trs, rulings] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids)]);
   const lang = await getServerLang();
 
   return (
@@ -75,6 +76,7 @@ export default async function KitabPage({
               <div className="hmatn ar">{h.matn_ar}</div>
               <BilingualToggle tr={trs.get(h.id)} />
               <Isnad nodes={isnads.get(h.id) ?? []} lang={lang} marfu={isMarfu(h.matn_ar)} />
+              <Rulings rulings={rulings.get(h.id) ?? []} lang={lang} />
               <SuggestForm entityType="hadith" entityId={h.id} field="matn" currentText={h.matn_ar} />
             </article>
           ))}

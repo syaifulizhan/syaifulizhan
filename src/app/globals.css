@@ -1235,10 +1235,38 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hcard-meta { display: inline-flex; align-items: center; gap: 10px; margin-inline-start: auto; }
 .hraqm { font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 11px; border: 1px solid var(--line-dark); color: var(--gold); background: rgba(199, 163, 56, 0.05); white-space: nowrap; text-decoration: none; font-variant-numeric: tabular-nums; }
 .hraqm:hover { border-color: var(--gold); background: rgba(199, 163, 56, 0.1); }
+
+/* Takhrij & Ahkam (dorar) — senarai penuh, primer diserlah */
+.rul { margin-top: 18px; border-top: 1px solid var(--line-dark); padding-top: 14px; }
+.rul-head { font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; font-weight: 600; }
+.rul-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rul-item { display: flex; gap: 9px; align-items: flex-start; padding: 8px 11px; border: 1px solid var(--line-dark); background: rgba(255, 255, 255, 0.015); }
+.rul-primary { border-color: var(--gold); background: rgba(199, 163, 56, 0.07); }
+.rul-star { color: var(--gold); font-size: 0.9rem; line-height: 1.5; }
+.rul-dot { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.rul-body { flex: 1; min-width: 0; }
+.rul-line { font-family: var(--arabic); direction: rtl; font-size: 1rem; color: var(--paper); }
+.rul-mhd { color: var(--gold-soft); font-weight: 600; }
+.rul-src { color: var(--muted); font-size: 0.92rem; }
+.rul-hukm { font-family: var(--arabic); direction: rtl; font-size: 0.98rem; color: var(--paper); margin-top: 4px; line-height: 1.7; }
+.rul-primary .rul-hukm { color: var(--gold); }
+.rul-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 5px; }
+.rul-rawi { font-family: var(--arabic); direction: rtl; font-size: 0.86rem; color: var(--muted); }
+.rul-badge { font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--line-dark); padding: 2px 7px; }
 .hgrade { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border: 1px solid var(--gc); background: color-mix(in srgb, var(--gc) 10%, transparent); white-space: nowrap; }
 .hgrade-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gc); box-shadow: 0 0 7px var(--gc); }
 .hgrade-ar { font-family: var(--arabic); font-size: 1.02rem; color: var(--paper); }
 .hgrade-ms { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gc); font-weight: 600; }
+
+/* ── Pengukuhan overflow mudah alih — SERAGAM di semua tempat ──
+   Punca: item flex/grid dgn nama perawi Arab panjang tak mengecut (min-width lalai
+   = auto) → kotak/pohon tolak keluar dari card di skrin sempit (Android/iPhone).
+   Baiki: benarkan mengecut (min-width:0) + balut teks + pohon SVG skrol mendatar. */
+.pcol, .pn, .rul-item, .rul-body, .hisnad-pos, .sttree-wrap { min-width: 0; }
+.pn .pn-nm, .rul-line, .rul-hukm, .rul-src, .rul-rawi, .hnode { overflow-wrap: anywhere; word-break: break-word; }
+.hnode, .rul-item, .sttree-wrap { max-width: 100%; }
+.sttree-scroll { max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.pinfo .v, .pjarh-row .vd, .pjarh-row .sch, .hmatn { overflow-wrap: anywhere; }
 
 /* cadang pembetulan */
 .suggest { margin-top: 14px; }
