@@ -42,6 +42,11 @@ export const CANON: Record<string, number> = {
   // formula masyhur isnad أبي عمرو الشيباني: "حدثنا صاحب هذه الدار وأومأ بيده
   // إلى دار عبد الله" = عبد الله بن مسعود (sahabi, disahkan konteks دار عبد الله)
   "صاحب هذه الدار": 2000529,
+  // syeikh Muslim/Tirmizi: محمد بن يحيى بن أبي عمر العدني ثم المكي (#7317, 272 relasi;
+  // bentuk isnad lazim: ابن أبي عمر / محمد بن أبي عمر المكي)
+  "محمد بن ابي عمر المكي": 7317,
+  "محمد بن ابي عمر": 7317,
+  "ابن ابي عمر": 7317,
   // ambigu-thiqatān → nod dua-calon
   "سفيان": 9000001,
 };
