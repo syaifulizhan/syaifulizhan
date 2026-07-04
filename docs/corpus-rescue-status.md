@@ -105,9 +105,12 @@ ambiguiti **لا يضر** (sanad tetap sahih). Bukan kecacatan, bukan "gagal ken
 Siap sejak audit lepas: ✅ glosari 543/543 (2,181 entri lokal) · ✅ Turso pulih (akaun baharu dewan-izhan) ·
 ✅ dedup pendua 2M-range (584 gabung, lokal+remote selari) · ✅ pemautan 42% · ✅ penjana syajarah + disambiguasi graf LIVE.
 
+**SIAP 4 Jul (sesi petang):**
+- [x] ✅ **Musnad Ahmad PENUH 26,363** (al-Maknaz, mhashim6/Open-Hadith-Data) menggantikan AhmedBaset 1,374 (bab 8–30 hilang). Live D1+Turso+lokal selari. 1,345 terjemahan dikekalkan. Isnad diparse (150,353 hn). raqm 1–26,363 dlm `number`. Skrip: import-musnad-ahmad / enrich-ahmad / sync-ahmad-turso / sync-ahmad-d1. Turso usage 7.68M/9.5M.
+- [x] ✅ **Raqm al-hadis dipapar** — badge "No. N" boleh-klik pada kad hadis (kitab/[id]). `number` = raqm buku utk 17 kitab utama.
+
 **Masih TERBUKA (warisan):**
 - [ ] **Scrape islam-db TERGANTUNG** — perawi 25,072 (had lalai `--to=42517`; 17,445 missing; 94 gagal); hadis islam-db hanya 9,603 (berhenti book 1422; hasil ~10/kitab PERLU SIASAT parser; 824 gagal). Matlamat 100k+.
-- [ ] **Musnad Ahmad 1,374/~26k sahaja** — clone `data/hadith-json` sudah dipadam; clone semula AhmedBaset/hadith-json → import penuh (semak kitab lain juga).
 - [ ] **authors & topics KOSONG (0 baris)** — books.author_id/topic_id tergantung; hanya 16/942 buku ada author_ar, total_hadith semua NULL.
 - [ ] **Terjemahan BM: 873/60,514 (1.4%)** — misi "BM tulen" terbengkalai (EN 47,464 dari AhmedBaset). M4 Gemini belum bulk; kualiti perlu tune.
 - [ ] grade hanya 3,955 (6.5%), takhrij 0 → isi dari dorar (lihat §8).
@@ -122,12 +125,15 @@ Siap sejak audit lepas: ✅ glosari 543/543 (2,181 entri lokal) · ✅ Turso pul
 
 ## 8. MISI BARU (arahan pemilik 4 Jul 2026)
 ### 8a. Raqm al-hadis — nombor hadis ikut kitab asal penulis
-Keadaan kini: `hadiths.number` BERCAMPUR semantik — kitab AhmedBaset (900001+) = `idInBook`
-(nombor per-buku ✓) tapi kitab islamdb = turutan-dalam-BAB (tak guna utk rujukan).
-- [ ] Tambah kolum `number_in_book` + `numbering_edition` (edisi rujukan per kitab: Bukhari=ط السلفية/Fath, Muslim=عبد الباقي, dll).
-- [ ] Sahkan penomboran AhmedBaset vs edisi standard (Bukhari ab=7,277 vs standard 7,563 — siasat: riwayat berulang digabung?). Silang-semak: sunnah.com, fawazahmed0/hadith-api (CDN percuma), turath ط السلفية.
-- [ ] Nombor kitab islamdb (925 buku kecil) — perlu sumber/derivasi.
-- [ ] UI: papar raqm + permalink `/kitab/[id]/hadis/[raqm]`; carian ikut raqm.
+`hadiths.number` semantik ikut sumber: **17 kitab utama** (16 AhmedBaset src_ref `ab:%` = idInBook
+Sunnah.com; Ahmad `maknaz:%` = al-Maknaz 1–26,363) = raqm buku ✓; **924 kitab islamdb** = turutan-BAB.
+- [x] ✅ UI papar raqm ("No. N" badge, permalink `#h-<id>`).
+- [ ] **KEPUTUSAN PEMILIK diperlukan**: unifikasi ke SATU edisi standard? Nombor sekarang campuran
+  sumber (Bukhari ab=7,277 vs عبد الباقي=7,563; Muslim Sunnah.com=عبد الباقي; Ahmad=al-Maknaz).
+  Pilihan: (A) kekal per-sumber + label edisi jujur; (B) unifikasi al-Maknaz (mhashim ada SEMUA 9
+  kitab seragam — perlu re-import/padan); (C) unifikasi عبد الباقي utk Sahihayn. Skala vs ketepatan.
+- [ ] Kolum `numbering_edition` per buku (jujur, tanpa dakwaan palsu) — tangguh sampai (A/B/C) dipilih.
+- [ ] 924 kitab islamdb: nombor turutan-BAB, bukan raqm buku — perlu sumber/derivasi kalau nak.
 
 ### 8b. Syarah kitab (klasik → kontemporari) — "syeikh baharu": dorar.net + turath.io
 Akses DISAHKAN 4 Jul:
