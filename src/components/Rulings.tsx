@@ -19,7 +19,11 @@ function Item({ r, lang }: { r: Ruling; lang: Lang }) {
       <div className="rul-body">
         <div className="rul-line ar">
           {r.muhaddith && <span className="rul-mhd">{r.muhaddith}</span>}
-          {r.source_book && <span className="rul-src"> — {r.source_book}{r.ref ? ` (${r.ref})` : ""}</span>}
+          {r.source_book && (
+            r.href
+              ? <a className="rul-src rul-link" href={r.href}> — {r.source_book}{r.ref ? ` (${r.ref})` : ""} ↵</a>
+              : <span className="rul-src"> — {r.source_book}{r.ref ? ` (${r.ref})` : ""}</span>
+          )}
         </div>
         {r.hukm && <div className="rul-hukm ar">{r.hukm}</div>}
         <div className="rul-meta">

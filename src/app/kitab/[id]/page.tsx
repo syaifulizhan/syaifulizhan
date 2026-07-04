@@ -78,8 +78,9 @@ export default async function KitabPage({
                 <div className="hcard-meta">
                   <GradeBadge grade={h.grade} lang={lang} />
                   {h.number != null && (
-                    <a className="hraqm" href={`#h-${h.id}`} title={`${T.raqmLabel[lang]} ${h.number}`}>
-                      {T.raqmLabel[lang]}&nbsp;{h.number.toLocaleString("en-US")}
+                    <a className="hraqm" href={search ? `/kitab/${bid}?h=${h.id}#h-${h.id}` : `#h-${h.id}`}
+                       title={search ? "Buka dlm kitab" : `${T.raqmLabel[lang]} ${h.number}`}>
+                      {T.raqmLabel[lang]}&nbsp;{h.number.toLocaleString("en-US")}{search ? " ↗" : ""}
                     </a>
                   )}
                 </div>

@@ -1269,6 +1269,8 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .rul-line { font-family: var(--arabic); direction: rtl; font-size: 1rem; color: var(--paper); }
 .rul-mhd { color: var(--gold-soft); font-weight: 600; }
 .rul-src { color: var(--muted); font-size: 0.92rem; }
+.rul-link { text-decoration: none; border-bottom: 1px dotted var(--gold-soft); transition: color 0.14s; }
+.rul-link:hover { color: var(--gold); border-bottom-color: var(--gold); }
 .rul-hukm { font-family: var(--arabic); direction: rtl; font-size: 0.98rem; color: var(--paper); margin-top: 4px; line-height: 1.7; }
 .rul-primary .rul-hukm { color: var(--gold); }
 .rul-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 5px; }

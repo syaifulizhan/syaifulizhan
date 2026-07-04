@@ -76,10 +76,13 @@ export async function getHadithPage(bookId: number, hadithId: number, perPage: n
   const t = await hadithDb.execute({ sql: "SELECT chapter_ref, number FROM hadiths WHERE id = ?", args: [hadithId] });
   const row = t.rows[0] as unknown as { chapter_ref: number; number: number } | undefined;
   if (!row) return 1;
+  // COALESCE: kitab tanpa struktur كتاب (cth Musnad Ahmad, chapter_ref NULL) — NULL
+  // gagal perbandingan → dulu sentiasa muka 1. Selaras dgn ORDER BY getBookHadiths.
+  const cr = row.chapter_ref ?? -1;
   const c = await hadithDb.execute({
     sql: `SELECT count(*) n FROM hadiths WHERE book_id = ?
-            AND (chapter_ref < ? OR (chapter_ref = ? AND number < ?))`,
-    args: [bookId, row.chapter_ref, row.chapter_ref, row.number],
+            AND (COALESCE(chapter_ref,-1) < ? OR (COALESCE(chapter_ref,-1) = ? AND number < ?))`,
+    args: [bookId, cr, cr, row.number],
   });
   return Math.floor(Number(c.rows[0].n) / perPage) + 1;
 }
@@ -173,8 +176,14 @@ export async function getSanadOverridesFor(hadithIds: number[]): Promise<Map<num
 
 export interface Ruling {
   rawi: string | null; muhaddith: string | null; source_book: string | null;
-  ref: string | null; hukm: string | null; is_primary: number;
+  ref: string | null; hukm: string | null; is_primary: number; href?: string | null;
 }
+// Peta sumber dorar → book_id KITA — HANYA Sahihayn (penomboran AhmedBaset sepadan
+// dorar, disahkan Bukhari #13). Kitab lain: penomboran/riwayat tak pasti → jangan
+// paut (elak salah-lekat = salah fakta). ة/ه & أ/ا dinormalisasi utk padan.
+const DORAR_LINKABLE: Record<string, number> = {
+  "صحيح البخاري": 900003, "صحيح مسلم": 900007,
+};
 // Takhrij & ahkam (dorar): SEMUA jalur dipelihara (rawi+muhaddith+kitab+hukm).
 // Amanah: jangan runtuh jadi 1 gred — sanad berbeza boleh beri hukm berbeza.
 export async function getRulingsFor(hadithIds: number[]): Promise<Map<number, Ruling[]>> {
@@ -192,6 +201,27 @@ export async function getRulingsFor(hadithIds: number[]): Promise<Map<number, Ru
       const arr = map.get(row.hadith_id) ?? [];
       arr.push({ rawi: row.rawi, muhaddith: row.muhaddith, source_book: row.source_book, ref: row.ref, hukm: row.hukm, is_primary: row.is_primary });
       map.set(row.hadith_id, arr);
+    }
+    // Takhrij BOLEH-KLIK (Sahihayn sahaja): (sumber+rakam) → hadis KITA.
+    const nb = (s: string | null) => normalizeArabic(s ?? "");
+    const wanted: { book: number; num: number; r: Ruling }[] = [];
+    for (const arr of map.values())
+      for (const rl of arr) {
+        const bid = DORAR_LINKABLE[nb(rl.source_book)];
+        const num = rl.ref && /^\d+$/.test(rl.ref.trim()) ? Number(rl.ref.trim()) : null;
+        if (bid && num) wanted.push({ book: bid, num, r: rl });
+      }
+    if (wanted.length) {
+      const keys = [...new Set(wanted.map((w) => `${w.book}:${w.num}`))];
+      const ph = keys.map(() => "(?,?)").join(",");
+      const args = keys.flatMap((k) => k.split(":").map(Number));
+      const hr = await hadithDb.execute({
+        sql: `SELECT id, book_id, number FROM hadiths WHERE (book_id, number) IN (VALUES ${ph})`,
+        args,
+      });
+      const tgt = new Map<string, number>();
+      for (const row of hr.rows as unknown as { id: number; book_id: number; number: number }[]) tgt.set(`${row.book_id}:${row.number}`, row.id);
+      for (const w of wanted) { const id = tgt.get(`${w.book}:${w.num}`); if (id) w.r.href = `/kitab/${w.book}?h=${id}`; }
     }
   } catch { /* jadual hadith_ruling belum di D1 → kosong */ }
   return map;
