@@ -290,6 +290,20 @@ export async function getSharahForKitab(bookRef: number, kitabNo: number): Promi
   } catch { return null; }
 }
 
+// باب bagi satu كتاب (utk ToC sub-item) — dari struktur sharh (Fath al-Bari). Ringan (tajuk sahaja).
+export interface BabItem { bab_no: number; bab_title: string }
+export async function getBookBab(bookRef: number, kitabNo: number): Promise<BabItem[]> {
+  try {
+    const bk = (await hadithDb.execute({ sql: "SELECT id FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as { id: number } | undefined;
+    if (!bk) return [];
+    const r = await hadithDb.execute({
+      sql: "SELECT DISTINCT bab_no, bab_title FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0 AND bab_title IS NOT NULL ORDER BY bab_no",
+      args: [bk.id, kitabNo],
+    });
+    return r.rows as unknown as BabItem[];
+  } catch { return []; }
+}
+
 // RINGAN: adakah syarah wujud utk كتاب ini + bil باب (tanpa teks besar) — utk SSR.
 export async function getSharahMeta(bookRef: number, kitabNo: number): Promise<{ book: SharahBook; nBab: number } | null> {
   try {
