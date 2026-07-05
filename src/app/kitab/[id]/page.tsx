@@ -11,7 +11,8 @@ import { Pagination } from "@/components/Pagination";
 import { Rulings } from "@/components/Rulings";
 import { BookNav } from "@/components/BookNav";
 import { SharahKitab } from "@/components/SharahKitab";
-import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor, getSharahMeta } from "@/lib/hadis";
+import { HadithSyarah } from "@/components/HadithSyarah";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor, getSharahMeta, getHadithBabFor } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -51,9 +52,10 @@ export default async function KitabPage({
   const ids = hadiths.map((h) => h.id);
   // Syarah inline utk كتاب hadis yg dipapar (chapter_ref hadis pertama = kitab_no syarah).
   const kitabNo = hadiths.find((h) => h.chapter_ref != null)?.chapter_ref ?? 0;
-  const [isnads, trs, rulings, overrides, sharah] = await Promise.all([
+  const [isnads, trs, rulings, overrides, sharah, babMap] = await Promise.all([
     getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids), getSanadOverridesFor(ids),
     kitabNo && !search ? getSharahMeta(bid, kitabNo) : Promise.resolve(null),
+    getHadithBabFor(ids),
   ]);
   const lang = await getServerLang();
 
@@ -97,6 +99,8 @@ export default async function KitabPage({
               <BilingualToggle tr={trs.get(h.id)} />
               <Isnad nodes={overrides.get(h.id) ?? isnads.get(h.id) ?? []} lang={lang} marfu={isMarfu(h.matn_ar)} />
               <Rulings rulings={rulings.get(h.id) ?? []} lang={lang} />
+              {(() => { const b = babMap.get(h.id); return b?.bab_title && h.chapter_ref != null
+                ? <HadithSyarah bookRef={bid} kitabNo={h.chapter_ref} babTitle={b.bab_title} lang={lang} /> : null; })()}
               <SuggestForm entityType="hadith" entityId={h.id} field="matn" currentText={h.matn_ar} />
             </article>
           ))}

@@ -290,6 +290,40 @@ export async function getSharahForKitab(bookRef: number, kitabNo: number): Promi
   } catch { return null; }
 }
 
+// باب bagi banyak hadis (padanan matan) — utk papar syarah + tajuk باب di bawah setiap hadis.
+export interface HadithBab { kitab_title: string | null; bab_no: number; bab_title: string | null }
+export async function getHadithBabFor(hadithIds: number[]): Promise<Map<number, HadithBab>> {
+  const map = new Map<number, HadithBab>();
+  if (!hadithIds.length) return map;
+  try {
+    const ph = hadithIds.map(() => "?").join(",");
+    const r = await hadithDb.execute({ sql: `SELECT hadith_id, kitab_title, bab_no, bab_title FROM hadith_bab WHERE hadith_id IN (${ph})`, args: hadithIds });
+    for (const row of r.rows as unknown as (HadithBab & { hadith_id: number })[]) map.set(row.hadith_id, row);
+  } catch { /* jadual belum wujud */ }
+  return map;
+}
+
+// Syarah (Fath al-Bari) bagi satu باب — utk nota-kaki di bawah hadis. Padan ikut tajuk باب TEPAT.
+export async function getSyarahForBab(bookRef: number, kitabNo: number, babTitle: string): Promise<{ book: SharahBook; text: string } | null> {
+  try {
+    const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
+    if (!bk) return null;
+    // hadith_bab.bab_title = tashkeel dibuang + ada awalan nombor; sharh_segment.bab_title = tashkeel
+    // kekal + awalan dibuang. Normalkan kedua (buang tashkeel+awalan+ﷺ) → padan senarai باب كتاب.
+    const babNorm = (s: string) => s.replace(/[ً-ْٰـ]/g, "").replace(/^[\d٠-٩]+\s*[-.]?\s*/, "").replace(/\s+/g, " ").trim();
+    const target = babNorm(babTitle);
+    const babs = await hadithDb.execute({ sql: "SELECT DISTINCT bab_title FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kitabNo] });
+    const hit = (babs.rows as unknown as { bab_title: string }[]).find((x) => babNorm(x.bab_title) === target);
+    if (!hit) return null;
+    const r = await hadithDb.execute({
+      sql: "SELECT text FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_title=? ORDER BY seq",
+      args: [bk.id, kitabNo, hit.bab_title],
+    });
+    if (!r.rows.length) return null;
+    return { book: bk, text: (r.rows as unknown as { text: string }[]).map((x) => x.text).join(" ") };
+  } catch { return null; }
+}
+
 // باب bagi satu كتاب (utk ToC sub-item) — dari struktur sharh (Fath al-Bari). Ringan (tajuk sahaja).
 export interface BabItem { bab_no: number; bab_title: string }
 export async function getBookBab(bookRef: number, kitabNo: number): Promise<BabItem[]> {
