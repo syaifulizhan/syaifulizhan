@@ -4,9 +4,9 @@ import type { SharahBook, SharahSeg } from "@/lib/hadis";
 import type { Lang } from "@/lib/types";
 
 const HEAD: Record<Lang, string> = { bm: "Syarah", en: "Commentary", ar: "الشرح" };
-const OPEN: Record<Lang, string> = { bm: "Buka syarah كتاب ini", en: "Open commentary for this book", ar: "افتح شرح هذا الكتاب" };
+const OPEN: Record<Lang, string> = { bm: "Buka", en: "Open", ar: "افتح" };
 const CLOSE: Record<Lang, string> = { bm: "Tutup", en: "Close", ar: "طيّ" };
-const BAB: Record<Lang, string> = { bm: "bab", en: "chapters", ar: "بابًا" };
+const BAB: Record<Lang, string> = { bm: "bab", en: "chapters", ar: "باب" };
 const LOADING: Record<Lang, string> = { bm: "Memuat…", en: "Loading…", ar: "جارٍ التحميل…" };
 
 function Bab({ seg }: { seg: SharahSeg }) {
@@ -47,8 +47,12 @@ export function SharahKitab({ book, kitabNo, bookRef, nBab, lang }: {
   return (
     <section className="shk">
       <button className="shk-head" onClick={toggle} aria-expanded={open}>
-        ۞ {HEAD[lang]}: {book.name}{book.author ? ` — ${book.author}` : ""}
-        <span className="shk-cnt">{busy ? LOADING[lang] : open ? CLOSE[lang] : `${OPEN[lang]} · ${nBab} ${BAB[lang]}`}</span>
+        <span className="shk-lead">
+          <span className="shk-mark">۞</span>
+          <span className="shk-label">{HEAD[lang]}</span>
+          <span className="shk-cnt">{busy ? LOADING[lang] : open ? CLOSE[lang] : `${OPEN[lang]} · ${nBab} ${BAB[lang]}`}</span>
+        </span>
+        <span className="shk-book ar">{book.name}</span>
       </button>
       {open && segs && (
         <ol className="shk-list">

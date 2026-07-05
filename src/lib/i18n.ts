@@ -222,7 +222,7 @@ export const T = {
   perawiH1: { bm: "Perawi Hadis", en: "Hadith Narrators", ar: "رُواة الحديث" },
   narrInCorpus: { bm: "perawi dalam korpus setakat ini.", en: "narrators in the corpus so far.", ar: "راوٍ في المُدوَّنة حتى الآن." },
   narrNone: { bm: "Tiada perawi padan", en: "No matching narrator", ar: "لا راوٍ مُطابِق" },
-  perawiPlaceholder: { bm: "Cari nama perawi… (cth: آدم)", en: "Search narrator name…", ar: "ابحث عن اسم راوٍ…" },
+  perawiPlaceholder: { bm: "Cari nama perawi…", en: "Search narrator name…", ar: "ابحث عن اسم راوٍ…" },
   narrInfo: { bm: "Maklumat", en: "Information", ar: "معلومات" },
   narrJarh: { bm: "Jarh wa Taʿdil — penilaian ulama", en: "Jarh wa Taʿdīl — scholarly evaluation", ar: "الجرح والتعديل — أحكام العلماء" },
   narrGraph: { bm: "Graf Sanad — guru & murid", en: "Isnād Graph — teachers & students", ar: "شبكة الإسناد — الشيوخ والتلاميذ" },
