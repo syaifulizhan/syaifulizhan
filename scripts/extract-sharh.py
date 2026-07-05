@@ -58,11 +58,8 @@ print(f"segmen: {len(segs)} | كتاب unik: {nk} | باب: {nb}")
 print("كتاب:", sorted(set(s["kitab_norm"] for s in segs))[:6])
 
 if not WRITE: print("\n(DRY)"); con.close(); sys.exit(0)
-# skema + ketul
-cols = con.execute("PRAGMA table_info(sharh_segment)").fetchall()
-if not any(c[1]=="kitab_norm" for c in cols):
-    con.execute("DROP TABLE IF EXISTS sharh_segment")
-    con.execute("CREATE TABLE sharh_segment (sharh_book_id INTEGER, kitab_no INTEGER, kitab_title TEXT, kitab_norm TEXT, bab_no INTEGER, bab_title TEXT, seq INTEGER PRIMARY KEY AUTOINCREMENT, para INTEGER, text TEXT)")
+# guna skema SEDIA ADA (jangan drop — kekal syarah lain cth FB 1673). DELETE hanya buku ini.
+con.execute("CREATE TABLE IF NOT EXISTS sharh_segment (sharh_book_id INTEGER, kitab_no INTEGER, kitab_title TEXT, bab_no INTEGER, bab_title TEXT, seq INTEGER PRIMARY KEY AUTOINCREMENT, para INTEGER, text TEXT)")
 con.execute("DELETE FROM sharh_segment WHERE sharh_book_id=?", (SBID,))
 def chunks(t, size=6000):
     if len(t) <= size: return [t]
@@ -77,7 +74,7 @@ def chunks(t, size=6000):
 n = 0
 for s in segs:
     for pi, ch in enumerate(chunks(s["text"])):
-        con.execute("INSERT INTO sharh_segment (sharh_book_id,kitab_no,kitab_title,kitab_norm,bab_no,bab_title,para,text) VALUES (?,?,?,?,?,?,?,?)",
-                    (SBID, s["kitab_no"], s["kitab_title"], s["kitab_norm"], s["bab_no"], s["bab_title"], pi, ch)); n += 1
+        con.execute("INSERT INTO sharh_segment (sharh_book_id,kitab_no,kitab_title,bab_no,bab_title,para,text) VALUES (?,?,?,?,?,?,?)",
+                    (SBID, s["kitab_no"], s["kitab_title"], s["bab_no"], s["bab_title"], pi, ch)); n += 1
 con.commit(); print(f"\n✓ {len(segs)} segmen ({n} baris) disimpan.")
 con.close()
