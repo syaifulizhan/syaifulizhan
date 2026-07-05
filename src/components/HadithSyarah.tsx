@@ -11,8 +11,8 @@ const SRC = "فتح الباري — ابن حجر";
 
 // Nota-kaki syarah (Fath al-Bari) DI BAWAH satu hadis — ikut باب hadis itu (padanan matan).
 // Papar tajuk باب + huraian ابن حجر. Lazy: muat bila buka (elak teks besar dlm SSR).
-export function HadithSyarah({ bookRef, kitabNo, babTitle, lang }: {
-  bookRef: number; kitabNo: number; babTitle: string; lang: Lang;
+export function HadithSyarah({ bookRef, kitabTitle, babTitle, lang }: {
+  bookRef: number; kitabTitle: string; babTitle: string; lang: Lang;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function HadithSyarah({ bookRef, kitabNo, babTitle, lang }: {
     if (!open && text === null) {
       setBusy(true);
       try {
-        const r = await fetch(`/api/hadith-syarah?book=${bookRef}&kitab=${kitabNo}&bab=${encodeURIComponent(babTitle)}`);
+        const r = await fetch(`/api/hadith-syarah?book=${bookRef}&kt=${encodeURIComponent(kitabTitle)}&bab=${encodeURIComponent(babTitle)}`);
         setText((await r.json()).text ?? "");
       } catch { setText(""); }
       setBusy(false);

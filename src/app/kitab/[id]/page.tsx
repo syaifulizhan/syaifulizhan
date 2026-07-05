@@ -99,8 +99,8 @@ export default async function KitabPage({
               <BilingualToggle tr={trs.get(h.id)} />
               <Isnad nodes={overrides.get(h.id) ?? isnads.get(h.id) ?? []} lang={lang} marfu={isMarfu(h.matn_ar)} />
               <Rulings rulings={rulings.get(h.id) ?? []} lang={lang} />
-              {(() => { const b = babMap.get(h.id); return b?.bab_title && h.chapter_ref != null
-                ? <HadithSyarah bookRef={bid} kitabNo={h.chapter_ref} babTitle={b.bab_title} lang={lang} /> : null; })()}
+              {(() => { const b = babMap.get(h.id); return b?.bab_title && b.kitab_title
+                ? <HadithSyarah bookRef={bid} kitabTitle={b.kitab_title} babTitle={b.bab_title} lang={lang} /> : null; })()}
               <SuggestForm entityType="hadith" entityId={h.id} field="matn" currentText={h.matn_ar} />
             </article>
           ))}
