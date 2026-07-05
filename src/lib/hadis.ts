@@ -305,17 +305,24 @@ export async function getHadithBabFor(hadithIds: number[]): Promise<Map<number, 
 
 // Syarah bagi satu باب — nota-kaki di bawah hadis. Padan ikut TAJUK كتاب+باب (dari sumber
 // syarah sendiri) — robust merentas syarah (FB↔Bukhari 1:1; Nawawi↔Muslim كتاب tak jajar nombor).
-const tnorm = (s: string) => (s || "").replace(/[ً-ْٰـ]/g, "").replace(/^[\d٠-٩]+\s*[-.]?\s*/, "").replace(/\s+/g, " ").trim();
+// Normalisasi tajuk: tashkeel, hamza/ة/ى, kurungan-depan + (N)/N- prefix. Robust merentas edisi.
+const tnorm = (s: string) => (s || "").replace(/[ً-ْٰـ]/g, "").replace(/[إأآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
+  .replace(/^[([]?\s*[\d٠-٩]*\s*[)\]]?\s*[-.]?\s*/, "").replace(/[^ء-ي ]/g, " ").replace(/\s+/g, " ").trim();
+const pfx = (s: string, n: number) => s.split(" ").slice(0, n).join(" ");
 export async function getSyarahForBab(bookRef: number, kitabTitle: string, babTitle: string): Promise<{ book: SharahBook; text: string } | null> {
   try {
     const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
     if (!bk) return null;
     const kt = tnorm(kitabTitle), bt = tnorm(babTitle);
     const kitabs = await hadithDb.execute({ sql: "SELECT DISTINCT kitab_no, kitab_title FROM sharh_segment WHERE sharh_book_id=?", args: [bk.id] });
-    const kHit = (kitabs.rows as unknown as { kitab_no: number; kitab_title: string }[]).find((x) => tnorm(x.kitab_title) === kt);
+    const krows = kitabs.rows as unknown as { kitab_no: number; kitab_title: string }[];
+    // كتاب: exact-norm dulu, fallback awalan 2-perkataan (edisi syarah tajuk berlari)
+    const kHit = krows.find((x) => tnorm(x.kitab_title) === kt) ?? krows.find((x) => { const n = tnorm(x.kitab_title); return pfx(n, 2) === pfx(kt, 2) && kt.split(" ").length >= 2; });
     if (!kHit) return null;
     const babs = await hadithDb.execute({ sql: "SELECT DISTINCT bab_title FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kHit.kitab_no] });
-    const bHit = (babs.rows as unknown as { bab_title: string }[]).find((x) => tnorm(x.bab_title) === bt);
+    const brows = babs.rows as unknown as { bab_title: string }[];
+    // باب: exact-norm dulu, fallback awalan 6-perkataan (beza panjang antara edisi — amanah)
+    const bHit = brows.find((x) => tnorm(x.bab_title) === bt) ?? brows.find((x) => { const n = tnorm(x.bab_title); return n.split(" ").length >= 6 && bt.split(" ").length >= 6 && pfx(n, 6) === pfx(bt, 6); });
     if (!bHit) return null;
     const r = await hadithDb.execute({
       sql: "SELECT text FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_title=? ORDER BY seq",
