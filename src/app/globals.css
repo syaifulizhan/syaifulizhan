@@ -1224,7 +1224,9 @@ html[lang="ar"] .foot-brand p {
 .hisnad-pos { display: inline-flex; align-items: center; gap: 5px; }
 .hsep-w { color: var(--gold-soft); font-family: var(--arabic); font-size: 0.95rem; padding: 0 1px; }
 .hisnad { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; direction: rtl; }
-.hnode { font-family: var(--arabic); font-size: 1.05rem; padding: 5px 12px; border: 1px solid var(--line-dark); color: var(--paper); background: rgba(255, 255, 255, 0.02); transition: border-color 0.18s, color 0.18s; }
+.hnode { font-family: var(--arabic); font-size: 1.05rem; padding: 5px 12px; border: 1px solid var(--line-dark); color: var(--paper); background: rgba(255, 255, 255, 0.02); transition: border-color 0.18s, color 0.18s;
+  /* nama SATU baris — jangan pecah huruf-demi-huruf (Arab bersambung); potong ‹…› jika terlalu panjang */
+  flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30ch; }
 a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hnode.unl { color: var(--muted); border-style: dashed; }
 .hsep { color: var(--gold); font-size: 0.9rem; opacity: 0.65; }

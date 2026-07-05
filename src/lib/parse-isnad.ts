@@ -124,7 +124,7 @@ export function parseIsnadChains(matn: string): ParsedIsnad {
   // penanda ini, hadis mawqūf/tanpa "رسول الله" (cth Bukhari #4: جابر يحدث عن فترة
   // الوحي) menyebabkan matn dibaca sbg perawi (فترة الوحي، في حديثه…). Frasa berikut
   // = konteks/matn, BUKAN sanad: potong isnad di kemunculan TERAWAL.
-  const MATN_CUT = /(?:\sوهو يحدث|\sوهي تحدث|\sوهو يقول|\sوهي تقول|\sوهو يخطب|\sفي حديثه|\sفي حديثها|\sبينا\s|\sبينما\s|\sفيما يذكر|\sيذكر عن|")/;
+  const MATN_CUT = /(?:\sوهو يحدث|\sوهي تحدث|\sوهو يقول|\sوهي تقول|\sوهو يخطب|\sفي حديثه|\sفي حديثها|\sبينا\s|\sبينما\s|\sفيما يذكر|\sيذكر عن|\sلعن\s|\sلعنت\s|\sقال ابو داود|\sقال ابو عيسي|\sقال ابو عبد الرحمن|\sقال ابو حاتم|\sقال ابو زرعة|")/;
   const mc = isnad.search(MATN_CUT);
   if (mc > 0) isnad = isnad.slice(0, mc);
 
