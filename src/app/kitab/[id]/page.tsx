@@ -10,7 +10,8 @@ import { SuggestForm } from "@/components/SuggestForm";
 import { Pagination } from "@/components/Pagination";
 import { Rulings } from "@/components/Rulings";
 import { BookNav } from "@/components/BookNav";
-import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor } from "@/lib/hadis";
+import { SharahKitab } from "@/components/SharahKitab";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor, getSharahForKitab } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -48,7 +49,12 @@ export default async function KitabPage({
     search ? Promise.resolve([]) : getBookChapters(bid),
   ]);
   const ids = hadiths.map((h) => h.id);
-  const [isnads, trs, rulings, overrides] = await Promise.all([getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids), getSanadOverridesFor(ids)]);
+  // Syarah inline utk كتاب hadis yg dipapar (chapter_ref hadis pertama = kitab_no syarah).
+  const kitabNo = hadiths.find((h) => h.chapter_ref != null)?.chapter_ref ?? 0;
+  const [isnads, trs, rulings, overrides, sharah] = await Promise.all([
+    getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids), getSanadOverridesFor(ids),
+    kitabNo && !search ? getSharahForKitab(bid, kitabNo) : Promise.resolve(null),
+  ]);
   const lang = await getServerLang();
 
   return (
@@ -69,6 +75,8 @@ export default async function KitabPage({
         </header>
 
         <BookNav chapters={chapters} basePath={`/kitab/${bid}`} currentSearch={search} lang={lang} />
+
+        {sharah && <SharahKitab book={sharah.book} segs={sharah.segs} lang={lang} />}
 
         <div style={{ marginTop: "24px" }}>
           {hadiths.map((h) => (

@@ -2,7 +2,7 @@ import { corpus, hadithDb } from "./db";
 import { normalizeArabic } from "./arabic";
 
 export interface Book { id: number; title_ar: string; n: number }
-export interface Hadith { id: number; book_id: number; chapter_ar: string | null; number: number; matn_ar: string; grade: string | null }
+export interface Hadith { id: number; book_id: number; chapter_ar: string | null; chapter_ref: number | null; number: number; matn_ar: string; grade: string | null }
 export interface IsnadNode { narrator_id: number; chain_no: number; position: number; raw_name: string | null; resolved: string | null }
 
 // Susunan kitab MUKTABAR (bukan ikut bilangan): al-Kutub al-Sittah dahulu ikut tertib
@@ -32,9 +32,9 @@ export async function getBookHadiths(bookId: number, limit = 20, offset = 0, sea
   const q = search.trim() ? normalizeArabic(search) : "";
   const r = await hadithDb.execute({
     sql: q
-      ? `SELECT id, book_id, chapter_ar, number, matn_ar, grade FROM hadiths
+      ? `SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths
           WHERE book_id = ? AND matn_search LIKE ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`
-      : `SELECT id, book_id, chapter_ar, number, matn_ar, grade FROM hadiths
+      : `SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths
           WHERE book_id = ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`,
     args: q ? [bookId, `%${q}%`, limit, offset] : [bookId, limit, offset],
   });
@@ -267,6 +267,29 @@ export async function getSharahPages(id: number, limit: number, offset: number, 
     return r.rows as unknown as SharahPage[];
   } catch { return []; }
 }
+// Segmen syarah (كتاب→باب→huraian) — inline di bawah كتاب pada halaman hadis.
+export interface SharahSeg { kitab_no: number; kitab_title: string | null; bab_no: number; bab_title: string | null; text: string }
+// Syarah utk satu كتاب (chapter_ref hadis = kitab_no syarah, tertib Bukhari 1:1).
+export async function getSharahForKitab(bookRef: number, kitabNo: number): Promise<{ book: SharahBook; segs: SharahSeg[] } | null> {
+  try {
+    const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
+    if (!bk) return null;
+    const r = await hadithDb.execute({
+      sql: "SELECT kitab_no, kitab_title, bab_no, bab_title, text FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? ORDER BY seq",
+      args: [bk.id, kitabNo],
+    });
+    // baris DIKETUL (~6KB) — kumpul semula ikut باب (bab_no), cantum teks ikut turutan seq.
+    const rows = r.rows as unknown as SharahSeg[];
+    const segs: SharahSeg[] = [];
+    for (const row of rows) {
+      const last = segs[segs.length - 1];
+      if (last && last.bab_no === row.bab_no && last.bab_title === row.bab_title) last.text += " " + row.text;
+      else segs.push({ ...row });
+    }
+    return segs.length ? { book: bk, segs } : null;
+  } catch { return null; }
+}
+
 export async function getSharahPageCount(id: number, search = ""): Promise<number> {
   const q = search.trim();
   try {

@@ -21,15 +21,15 @@ con.close()
 def esc(v):
     return "NULL" if v is None else "'" + str(v).replace("'", "''") + "'"
 BATCH = 200  # statement per fail (elak fail terlalu besar utk wrangler)
-# fail 0: bersihkan dulu
-with open(f"{outdir}/000.sql", "w") as f:
-    f.write("DELETE FROM glossary WHERE source='kamus-ghouri';\n")
+# ⚠️ ADDITIVE SAHAJA — TIADA DELETE. Pemilik edit glosari LIVE di D1 (admin); DELETE+INSERT
+# dulu menimpa/revert suntingan itu. INSERT OR IGNORE (term_ar UNIQUE) = hanya tambah
+# istilah BARU; istilah sedia ada (mungkin disunting) TAK disentuh. D1 = sumber kebenaran.
 n = 0
 for bi in range(0, len(rows), BATCH):
     with open(f"{outdir}/{bi//BATCH+1:03d}.sql", "w") as f:
         for r in rows[bi:bi+BATCH]:
             vals = ",".join(esc(v) for v in r)
-            f.write(f"INSERT INTO glossary ({COLS},source) VALUES ({vals},'kamus-ghouri');\n")
+            f.write(f"INSERT OR IGNORE INTO glossary ({COLS},source) VALUES ({vals},'kamus-ghouri');\n")
             n += 1
 print(f"  {n} baris dalam {len(os.listdir(outdir))} fail (batch {BATCH})")
 PY
