@@ -1236,6 +1236,20 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .hraqm { font-size: 0.78rem; letter-spacing: 0.04em; padding: 4px 11px; border: 1px solid var(--line-dark); color: var(--gold); background: rgba(199, 163, 56, 0.05); white-space: nowrap; text-decoration: none; font-variant-numeric: tabular-nums; }
 .hraqm:hover { border-color: var(--gold); background: rgba(199, 163, 56, 0.1); }
 
+/* Syarah inline per كتاب (nota-kaki, باب buka-tutup) */
+.shk { margin: 16px 0; border: 1px solid var(--line-dark); }
+.shk-head { width: 100%; text-align: start; background: rgba(199, 163, 56, 0.05); border: none; color: var(--gold-soft); font-family: var(--arabic); direction: rtl; font-size: 1.05rem; padding: 12px 15px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.shk-head:hover { background: rgba(199, 163, 56, 0.09); }
+.shk-cnt { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--muted); }
+.shk-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-dark); }
+.shk-bab { border-bottom: 1px solid var(--line-dark); }
+.shk-bab:last-child { border-bottom: none; }
+.shk-bab-h { width: 100%; text-align: start; background: none; border: none; color: var(--paper); font-family: var(--arabic); direction: rtl; font-size: 1.02rem; padding: 10px 15px; cursor: pointer; display: flex; gap: 9px; align-items: flex-start; }
+.shk-bab-h:hover { background: rgba(255, 255, 255, 0.02); }
+.shk-caret { color: var(--gold); font-size: 0.8rem; }
+.shk-babt { flex: 1; min-width: 0; color: var(--gold-soft); overflow-wrap: anywhere; }
+.shk-text { font-family: var(--arabic); direction: rtl; font-size: 1.12rem; line-height: 2.05; color: var(--paper); padding: 4px 22px 16px; text-align: justify; overflow-wrap: anywhere; }
+
 /* Pembaca syarah (turath teks penuh) */
 .scard { border: 1px solid var(--line-dark); background: rgba(30, 26, 42, 0.42); padding: 20px 22px; margin-bottom: 14px; }
 .scard-top { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
