@@ -74,7 +74,7 @@ export default async function KitabPage({
           </div>
         </header>
 
-        <BookNav chapters={chapters} basePath={`/kitab/${bid}`} currentSearch={search} lang={lang} />
+        <BookNav chapters={chapters} basePath={`/kitab/${bid}`} currentSearch={search} lang={lang} bookRef={bid} hasBab={!!sharah} />
 
         {sharah && <SharahKitab book={sharah.book} kitabNo={kitabNo} bookRef={bid} nBab={sharah.nBab} lang={lang} />}
 
