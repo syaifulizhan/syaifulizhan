@@ -10,6 +10,7 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i >= 0 ? proce
 const WRITE = process.argv.includes("--write");
 const LIMIT = Number(arg("--limit", "0")) || 0;
 const ONLY_BOOK = arg("--book", "");
+const MAJOR_ONLY = process.argv.includes("--major-only"); // hanya buku UTAMA (lengkap) — elak tanda hadis tak lengkap 'selesai'
 const DELAY = Number(arg("--delay", "1500"));
 const KEY = process.env.DORAR_KEY;
 const BASE = process.env.DORAR_PROXY ?? "https://syaifulizhan.my/api/dorar";
@@ -68,6 +69,7 @@ function parse(html, ourBookNorm) {
 // ── senarai kerja ──
 let where = "1=1";
 if (ONLY_BOOK) where = `h.book_id=${Number(ONLY_BOOK)}`;
+else if (MAJOR_ONLY) where = `h.book_id IN (${MAJOR.join(",")})`;
 const rows = (await db.execute({
   sql: `SELECT h.id, h.book_id, h.matn_ar FROM hadiths h WHERE ${where} ORDER BY h.book_id, h.id`,
 })).rows.map((r) => ({ id: Number(r.id), book: Number(r.book_id), matn: String(r.matn_ar) }));
