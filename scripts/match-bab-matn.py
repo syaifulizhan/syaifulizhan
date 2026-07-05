@@ -6,6 +6,7 @@
 import sqlite3, re, sys
 
 TID = int(sys.argv[1]); OUR = int(sys.argv[2]); WRITE = "--write" in sys.argv
+LOOSE = "--loose" in sys.argv  # syarah tanpa nombor hadis (cth Nawawi) — kesan ikut حدثنا sahaja
 con = sqlite3.connect("data/corpus.db")
 def norm(s):
     s = re.sub(r"[ً-ْٰـ]", "", s or "")
@@ -27,7 +28,8 @@ for idx, t in rows:
         buf += t[last:m.start()]; last = m.end()
         markers.append((len(buf), re.sub(r"\s+", " ", strip_tags(m.group(1))).strip()))
     buf += t[last:]
-HAD = re.compile(r'(?<![\d٠-٩])([\d٠-٩]{1,4})\s*-\s*(حدثنا|حدثني|اخبرنا|اخبرني)')
+HAD = re.compile(r'(?<![ء-ي])(حدثنا|حدثني|اخبرنا|اخبرني)' if LOOSE
+                 else r'(?<![\d٠-٩])([\d٠-٩]{1,4})\s*-\s*(حدثنا|حدثني|اخبرنا|اخبرني)')
 def title_at(pos):
     kt = bb = None; cnt = {}
     for mp, tv in markers:
