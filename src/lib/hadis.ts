@@ -290,6 +290,17 @@ export async function getSharahForKitab(bookRef: number, kitabNo: number): Promi
   } catch { return null; }
 }
 
+// RINGAN: adakah syarah wujud utk كتاب ini + bil باب (tanpa teks besar) — utk SSR.
+export async function getSharahMeta(bookRef: number, kitabNo: number): Promise<{ book: SharahBook; nBab: number } | null> {
+  try {
+    const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
+    if (!bk) return null;
+    const r = await hadithDb.execute({ sql: "SELECT COUNT(DISTINCT bab_no) c FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kitabNo] });
+    const nBab = Number(r.rows[0].c);
+    return nBab || (await hadithDb.execute({ sql: "SELECT COUNT(*) c FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=?", args: [bk.id, kitabNo] })).rows[0].c ? { book: bk, nBab } : null;
+  } catch { return null; }
+}
+
 export async function getSharahPageCount(id: number, search = ""): Promise<number> {
   const q = search.trim();
   try {

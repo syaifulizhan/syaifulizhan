@@ -11,7 +11,7 @@ import { Pagination } from "@/components/Pagination";
 import { Rulings } from "@/components/Rulings";
 import { BookNav } from "@/components/BookNav";
 import { SharahKitab } from "@/components/SharahKitab";
-import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor, getSharahForKitab } from "@/lib/hadis";
+import { getBook, getBookHadiths, getBookHadithCount, getHadithPage, getChapterPage, getBookChapters, getIsnadFor, getTranslationsFor, getRulingsFor, getSanadOverridesFor, getSharahMeta } from "@/lib/hadis";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -53,7 +53,7 @@ export default async function KitabPage({
   const kitabNo = hadiths.find((h) => h.chapter_ref != null)?.chapter_ref ?? 0;
   const [isnads, trs, rulings, overrides, sharah] = await Promise.all([
     getIsnadFor(ids), getTranslationsFor(ids), getRulingsFor(ids), getSanadOverridesFor(ids),
-    kitabNo && !search ? getSharahForKitab(bid, kitabNo) : Promise.resolve(null),
+    kitabNo && !search ? getSharahMeta(bid, kitabNo) : Promise.resolve(null),
   ]);
   const lang = await getServerLang();
 
@@ -76,7 +76,7 @@ export default async function KitabPage({
 
         <BookNav chapters={chapters} basePath={`/kitab/${bid}`} currentSearch={search} lang={lang} />
 
-        {sharah && <SharahKitab book={sharah.book} segs={sharah.segs} lang={lang} />}
+        {sharah && <SharahKitab book={sharah.book} kitabNo={kitabNo} bookRef={bid} nBab={sharah.nBab} lang={lang} />}
 
         <div style={{ marginTop: "24px" }}>
           {hadiths.map((h) => (
