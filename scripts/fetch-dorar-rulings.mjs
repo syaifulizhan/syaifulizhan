@@ -75,32 +75,53 @@ const rows = (await db.execute({
 })).rows.map((r) => ({ id: Number(r.id), book: Number(r.book_id), matn: String(r.matn_ar) }));
 rows.sort((a, b) => (MAJOR.indexOf(a.book) + 1 || 999) - (MAJOR.indexOf(b.book) + 1 || 999) || a.book - b.book || a.id - b.id);
 
-let processed = 0, withPrimary = 0, withAny = 0, saved = 0;
-for (const h of rows) {
-  if (doneSet.has(h.id)) continue;
-  if (LIMIT && processed >= LIMIT) break;
-  const q = matnQuery(h.matn);
-  if (q.length < 8) { doneSet.add(h.id); continue; }
-  const body = await fetchDorar(q);
-  processed++;
-  if (!body) { console.log(`  #${h.id} (${bookName.get(h.book)}): GAGAL fetch`); await sleep(DELAY); continue; }
-  const rulings = parse(body, nb(bookName.get(h.book) ?? ""));
-  const prim = rulings.filter((r) => r.is_primary);
-  if (rulings.length) withAny++;
-  if (prim.length) withPrimary++;
-  if (processed <= 15 || processed % 50 === 0)
-    console.log(`  #${h.id} ${bookName.get(h.book)} q="${q.slice(0,30)}…" → ${rulings.length} hukm, primer ${prim.length}${prim.length ? " ("+prim[0].hukm+")" : ""}`);
-  if (WRITE && rulings.length) {
-    for (const r of rulings)
-      await db.execute({ sql: `INSERT OR IGNORE INTO hadith_ruling (hadith_id,rawi,muhaddith,source_book,ref,hukm,is_primary,ord,fetched_at) VALUES (?,?,?,?,?,?,?,?,?)`,
-        args: [h.id, r.rawi, r.muhaddith, r.source_book, r.ref, r.hukm, r.is_primary, r.ord, new Date().toISOString()] });
-    saved += rulings.length;
+// ── BOOSTER: worker pool concurrent (fetch serentak; tulis di-batch = satu penulis,
+// selamat SQLite). Ketepatan SAMA (matnQuery+parse tak berubah). --concurrency N --delay 0
+const CONC = Math.max(1, Number(arg("--concurrency", "1")));
+const queue = rows.filter((h) => !doneSet.has(h.id));
+console.log(`→ ${queue.length} hadis belum selesai · concurrency ${CONC} · delay ${DELAY}ms`);
+let processed = 0, withPrimary = 0, withAny = 0, saved = 0, fails = 0, qi = 0, flushing = false;
+const pending = [];
+
+async function flush(force) {
+  if (flushing || (!force && pending.length < 80)) return;
+  flushing = true;
+  const batch = pending.splice(0);
+  for (const { h, rulings } of batch) {
+    if (WRITE && rulings.length) {
+      for (const r of rulings)
+        await db.execute({ sql: `INSERT OR IGNORE INTO hadith_ruling (hadith_id,rawi,muhaddith,source_book,ref,hukm,is_primary,ord,fetched_at) VALUES (?,?,?,?,?,?,?,?,?)`,
+          args: [h.id, r.rawi, r.muhaddith, r.source_book, r.ref, r.hukm, r.is_primary, r.ord, new Date().toISOString()] });
+      saved += rulings.length;
+    }
+    doneSet.add(h.id);
   }
-  doneSet.add(h.id); ck.lastId = h.id;
-  if (WRITE && processed % 25 === 0) { ck.done = [...doneSet]; writeFileSync(CK, JSON.stringify(ck)); }
-  await sleep(DELAY);
+  if (WRITE) { ck.done = [...doneSet]; writeFileSync(CK, JSON.stringify(ck)); }
+  flushing = false;
 }
-if (WRITE) { ck.done = [...doneSet]; writeFileSync(CK, JSON.stringify(ck)); }
+
+async function worker() {
+  while (qi < queue.length) {
+    if (LIMIT && processed >= LIMIT) break;
+    const h = queue[qi++];
+    const q = matnQuery(h.matn);
+    if (q.length < 8) { doneSet.add(h.id); continue; }
+    const body = await fetchDorar(q);
+    processed++;
+    if (!body) { fails++; continue; } // GAGAL → JANGAN tanda done (cuba lagi larian depan)
+    const rulings = parse(body, nb(bookName.get(h.book) ?? ""));
+    if (rulings.length) withAny++;
+    if (rulings.some((r) => r.is_primary)) withPrimary++;
+    pending.push({ h, rulings });
+    if (processed % 250 === 0)
+      console.log(`  [${processed}/${queue.length}] ada-hukm ${withAny} · primer ${withPrimary} · gagal ${fails} · simpan ${saved}`);
+    await flush(false);
+    if (DELAY) await sleep(DELAY);
+  }
+}
+
+await Promise.all(Array.from({ length: CONC }, () => worker()));
+await flush(true);
 console.log(`\n${WRITE ? "✓" : "(DRY)"} diproses ${processed} · ada hukm ${withAny} · ada primer ${withPrimary} (${processed?Math.round(withPrimary/processed*100):0}%) · disimpan ${saved} baris`);
 console.log(`checkpoint: ${doneSet.size} hadis selesai${WRITE ? " (disimpan "+CK+")" : " (DRY — tak simpan)"}`);
 db.close();
