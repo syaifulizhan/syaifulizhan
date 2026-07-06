@@ -101,25 +101,42 @@ export async function updateSanad(formData: FormData) {
     revalidatePath("/admin/hadis");
     return;
   }
-  // padan setiap nama → perawi (tepat-unik dulu, lalu awalan ber-بن unik)
-  const nodes: { narrator_id: number | null; chain_no: number; position: number; raw_name: string; resolved: string | null }[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const nm = normalizeArabic(lines[i]);
-    let nid: number | null = null, resolved: string | null = null;
-    try {
-      let r = await corpus.execute({ sql: "SELECT id, name_ar FROM narrators WHERE name_search=? LIMIT 2", args: [nm] });
-      if (r.rows.length !== 1 && nm.includes(" بن ")) {
-        r = await corpus.execute({ sql: "SELECT id, name_ar FROM narrators WHERE name_search>=? AND name_search<? LIMIT 2", args: [nm + " ", nm + " ￿"] });
+  // Padan nama → perawi secara BATCH (1-2 query Turso, bukan N) — elak CF Worker timeout/
+  // had subrequest yg menyebabkan "server error" dulu. Turso down → simpan nama sahaja.
+  const norms = lines.map((l) => normalizeArabic(l));
+  const resolved = new Map<string, { id: number; name: string }>();
+  try {
+    // (1) padanan TEPAT-unik untuk semua nama sekali gus
+    const ph = norms.map(() => "?").join(",");
+    const r = await corpus.execute({ sql: `SELECT id, name_ar, name_search FROM narrators WHERE name_search IN (${ph})`, args: norms });
+    const cnt = new Map<string, number>();
+    for (const row of r.rows) cnt.set(String(row.name_search), (cnt.get(String(row.name_search)) ?? 0) + 1);
+    for (const row of r.rows) { const k = String(row.name_search); if (cnt.get(k) === 1) resolved.set(k, { id: Number(row.id), name: String(row.name_ar ?? "") }); }
+    // (2) awalan ber-بن unik untuk nama yg belum padan (1 query LIKE-OR) — kes المهمل
+    const pend = [...new Set(norms.filter((n) => !resolved.has(n) && n.includes(" بن ")))].slice(0, 30);
+    if (pend.length) {
+      const like = pend.map(() => "name_search LIKE ? || ' %'").join(" OR ");
+      const r2 = await corpus.execute({ sql: `SELECT id, name_ar, name_search FROM narrators WHERE ${like}`, args: pend });
+      for (const n of pend) {
+        const hits = (r2.rows as unknown as { id: number; name_ar: string; name_search: string }[]).filter((x) => String(x.name_search).startsWith(n + " "));
+        if (hits.length === 1) resolved.set(n, { id: Number(hits[0].id), name: String(hits[0].name_ar ?? "") });
       }
-      if (r.rows.length === 1) { nid = Number(r.rows[0].id); resolved = String(r.rows[0].name_ar ?? ""); }
-    } catch { /* Turso down → simpan nama sahaja */ }
-    nodes.push({ narrator_id: nid, chain_no: 0, position: i, raw_name: lines[i], resolved });
-  }
-  await hadithDb.execute({
-    sql: `INSERT INTO hadith_sanad_override (hadith_id, nodes_json, edited_by, edited_at)
-          VALUES (?,?,?,?) ON CONFLICT(hadith_id) DO UPDATE SET nodes_json=excluded.nodes_json, edited_by=excluded.edited_by, edited_at=excluded.edited_at`,
-    args: [id, JSON.stringify(nodes), session.login ?? "admin", new Date().toISOString()],
+    }
+  } catch { /* Turso down/kuota → simpan nama sahaja, JANGAN crash */ }
+  const nodes = lines.map((line, i) => {
+    const m = resolved.get(norms[i]);
+    return { narrator_id: m?.id ?? null, chain_no: 0, position: i, raw_name: line, resolved: m?.name ?? null };
   });
+  try {
+    await hadithDb.execute({
+      sql: `INSERT INTO hadith_sanad_override (hadith_id, nodes_json, edited_by, edited_at)
+            VALUES (?,?,?,?) ON CONFLICT(hadith_id) DO UPDATE SET nodes_json=excluded.nodes_json, edited_by=excluded.edited_by, edited_at=excluded.edited_at`,
+      args: [id, JSON.stringify(nodes), session.login ?? "admin", new Date().toISOString()],
+    });
+  } catch (e) {
+    console.error("updateSanad D1 INSERT gagal:", e);
+    throw new Error("Gagal simpan sanad — cuba lagi");
+  }
   revalidatePath("/admin/hadis");
 }
 
