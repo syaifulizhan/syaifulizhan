@@ -1,6 +1,7 @@
 import { corpus } from "@/lib/db";
 import { normalizeArabic } from "@/lib/arabic";
 import { updateNarrator } from "@/app/actions";
+import { Pagination } from "@/components/Pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -17,30 +18,32 @@ interface N {
   bio_ar: string | null;
 }
 
-async function search(q: string): Promise<{ rows: N[]; down: boolean }> {
+const PER = 25;
+// Cari ATAU browse SEMUA perawi (ikut halaman) — admin nampak semua, boleh edit.
+async function search(q: string, page: number): Promise<{ rows: N[]; total: number; down: boolean }> {
   try {
     if (/^\d+$/.test(q)) {
       const r = await corpus.execute({ sql: "SELECT * FROM narrators WHERE id=? LIMIT 1", args: [Number(q)] });
-      return { rows: r.rows as unknown as N[], down: false };
+      return { rows: r.rows as unknown as N[], total: 0, down: false };
     }
     if (q) {
       const match = normalizeArabic(q).split(" ").filter(Boolean).map((t) => `${t}*`).join(" ");
-      const r = await corpus.execute({
-        sql: `SELECT n.* FROM narrators_fts f JOIN narrators n ON n.id=f.rowid WHERE narrators_fts MATCH ? LIMIT 40`,
-        args: [match],
-      });
-      return { rows: r.rows as unknown as N[], down: false };
+      const r = await corpus.execute({ sql: `SELECT n.* FROM narrators_fts f JOIN narrators n ON n.id=f.rowid WHERE narrators_fts MATCH ? LIMIT 40`, args: [match] });
+      return { rows: r.rows as unknown as N[], total: 0, down: false };
     }
-    const r = await corpus.execute("SELECT * FROM narrators ORDER BY id LIMIT 25");
-    return { rows: r.rows as unknown as N[], down: false };
+    const total = Number((await corpus.execute("SELECT COUNT(*) c FROM narrators")).rows[0].c);
+    const r = await corpus.execute({ sql: "SELECT * FROM narrators ORDER BY id LIMIT ? OFFSET ?", args: [PER, (page - 1) * PER] });
+    return { rows: r.rows as unknown as N[], total, down: false };
   } catch {
-    return { rows: [], down: true };
+    return { rows: [], total: 0, down: true };
   }
 }
 
-export default async function AdminPerawi({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = "" } = await searchParams;
-  const { rows, down } = await search(q);
+export default async function AdminPerawi({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+  const { q = "", page: pageStr = "" } = await searchParams;
+  const page = Math.max(1, Number(pageStr) || 1);
+  const { rows, total, down } = await search(q, page);
+  const totalPages = Math.max(1, Math.ceil(total / PER));
 
   return (
     <main>
@@ -53,7 +56,7 @@ export default async function AdminPerawi({ searchParams }: { searchParams: Prom
         <button className="btn solid" type="submit">Cari</button>
       </form>
 
-      <p className="adm-count">{rows.length} hasil</p>
+      <p className="adm-count">{q ? `${rows.length} hasil` : `${total.toLocaleString("en-US")} perawi · halaman ${page}/${totalPages}`}</p>
       {rows.map((n) => (
         <details className="adm-row" key={n.id}>
           <summary>
@@ -77,6 +80,7 @@ export default async function AdminPerawi({ searchParams }: { searchParams: Prom
         </details>
       ))}
       {rows.length === 0 && !down && <p className="pempty">Tiada hasil.</p>}
+      {!q && !down && <Pagination page={page} totalPages={totalPages} basePath="/admin/perawi" />}
     </main>
   );
 }

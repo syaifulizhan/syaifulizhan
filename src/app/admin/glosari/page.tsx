@@ -1,6 +1,7 @@
 import { hadithDb } from "@/lib/db";
 import { normalizeArabic } from "@/lib/arabic";
 import { updateGlossary, addGlossary, deleteGlossary } from "@/app/actions";
+import { Pagination } from "@/components/Pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +17,14 @@ interface Row {
   source: string | null;
 }
 
-async function search(q: string): Promise<Row[]> {
+const PER = 50;
+// Cari ATAU browse SEMUA glosari (ikut halaman) — admin nampak semua, boleh edit.
+async function search(q: string, page: number): Promise<{ rows: Row[]; total: number }> {
   try {
     if (!q) {
-      const r = await hadithDb.execute("SELECT rowid,* FROM glossary ORDER BY rowid DESC LIMIT 40");
-      return r.rows as unknown as Row[];
+      const total = Number((await hadithDb.execute("SELECT COUNT(*) c FROM glossary")).rows[0].c);
+      const r = await hadithDb.execute({ sql: "SELECT rowid,* FROM glossary ORDER BY term_ar LIMIT ? OFFSET ?", args: [PER, (page - 1) * PER] });
+      return { rows: r.rows as unknown as Row[], total };
     }
     const n = `%${normalizeArabic(q)}%`;
     const l = `%${q.toLowerCase()}%`;
@@ -30,9 +34,9 @@ async function search(q: string): Promise<Row[]> {
             ORDER BY term_ar LIMIT 60`,
       args: [n, l, l, l],
     });
-    return r.rows as unknown as Row[];
+    return { rows: r.rows as unknown as Row[], total: 0 };
   } catch {
-    return [];
+    return { rows: [], total: 0 };
   }
 }
 
@@ -49,9 +53,11 @@ function Field({ name, val, label, area }: { name: string; val: string | null; l
   );
 }
 
-export default async function AdminGlosari({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = "" } = await searchParams;
-  const rows = await search(q);
+export default async function AdminGlosari({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+  const { q = "", page: pageStr = "" } = await searchParams;
+  const page = Math.max(1, Number(pageStr) || 1);
+  const { rows, total } = await search(q, page);
+  const totalPages = Math.max(1, Math.ceil(total / PER));
 
   return (
     <main>
@@ -77,7 +83,7 @@ export default async function AdminGlosari({ searchParams }: { searchParams: Pro
         </form>
       </details>
 
-      <p className="adm-count">{rows.length} hasil</p>
+      <p className="adm-count">{q ? `${rows.length} hasil` : `${total.toLocaleString("en-US")} istilah · halaman ${page}/${totalPages}`}</p>
       {rows.map((r) => (
         <details className="adm-row" key={r.rowid}>
           <summary>
@@ -105,6 +111,7 @@ export default async function AdminGlosari({ searchParams }: { searchParams: Pro
         </details>
       ))}
       {rows.length === 0 && <p className="pempty">Tiada hasil.</p>}
+      {!q && <Pagination page={page} totalPages={totalPages} basePath="/admin/glosari" />}
     </main>
   );
 }
