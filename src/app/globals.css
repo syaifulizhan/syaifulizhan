@@ -1431,6 +1431,7 @@ a.hnode:hover { border-color: var(--gold); color: var(--gold-soft); }
 .adm-sub { color: var(--muted); margin-bottom: 20px; font-size: .9rem; }
 .adm-search { display: flex; gap: 8px; margin-bottom: 18px; }
 .adm-search input { flex: 1; }
+.adm-select { flex: 1; min-width: 0; background: var(--midnight2); border: 1px solid var(--line-dark); color: var(--paper); padding: 8px 10px; font-family: var(--sans); }
 .adm-count { color: var(--muted); font-size: .8rem; margin: 10px 0; }
 .adm-add { border: 1px solid var(--line-dark); padding: 12px 16px; margin-bottom: 22px; }
 .adm-add > summary { cursor: pointer; color: var(--gold-soft); font-weight: 600; }
