@@ -238,20 +238,20 @@ export interface SharahPage { idx: number; vol: string | null; page: number | nu
 
 export async function listSharahBooks(): Promise<SharahBook[]> {
   try {
-    const r = await corpus.execute("SELECT id, name, author, npages, book_ref FROM turath_book ORDER BY name");
+    const r = await hadithDb.execute("SELECT id, name, author, npages, book_ref FROM turath_book ORDER BY name");
     return r.rows as unknown as SharahBook[];
   } catch { return []; }
 }
 export async function getSharahBook(id: number): Promise<SharahBook | null> {
   try {
-    const r = await corpus.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE id=?", args: [id] });
+    const r = await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE id=?", args: [id] });
     return (r.rows[0] as unknown as SharahBook) ?? null;
   } catch { return null; }
 }
 // syarah utk satu kitab hadis (cth Fath al-Bari → Bukhari)
 export async function getSharahForBook(bookRef: number): Promise<SharahBook[]> {
   try {
-    const r = await corpus.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=?", args: [bookRef] });
+    const r = await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=?", args: [bookRef] });
     return r.rows as unknown as SharahBook[];
   } catch { return []; }
 }
@@ -272,7 +272,7 @@ export interface SharahSeg { kitab_no: number; kitab_title: string | null; bab_n
 // Syarah utk satu كتاب (chapter_ref hadis = kitab_no syarah, tertib Bukhari 1:1).
 export async function getSharahForKitab(bookRef: number, kitabNo: number): Promise<{ book: SharahBook; segs: SharahSeg[] } | null> {
   try {
-    const bk = (await corpus.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
+    const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
     if (!bk) return null;
     const r = await hadithDb.execute({
       sql: "SELECT kitab_no, kitab_title, bab_no, bab_title, text FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? ORDER BY seq",
@@ -311,15 +311,15 @@ const tnorm = (s: string) => (s || "").replace(/[ً-ْٰـ]/g, "").replace(/[إ�
 const pfx = (s: string, n: number) => s.split(" ").slice(0, n).join(" ");
 export async function getSyarahForBab(bookRef: number, kitabTitle: string, babTitle: string): Promise<{ book: SharahBook; text: string } | null> {
   try {
-    const bk = (await corpus.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
+    const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
     if (!bk) return null;
     const kt = tnorm(kitabTitle), bt = tnorm(babTitle);
-    const kitabs = await corpus.execute({ sql: "SELECT DISTINCT kitab_no, kitab_title FROM sharh_segment WHERE sharh_book_id=?", args: [bk.id] });
+    const kitabs = await hadithDb.execute({ sql: "SELECT DISTINCT kitab_no, kitab_title FROM sharh_segment WHERE sharh_book_id=?", args: [bk.id] });
     const krows = kitabs.rows as unknown as { kitab_no: number; kitab_title: string }[];
     // كتاب: exact-norm dulu, fallback awalan 2-perkataan (edisi syarah tajuk berlari)
     const kHit = krows.find((x) => tnorm(x.kitab_title) === kt) ?? krows.find((x) => { const n = tnorm(x.kitab_title); return pfx(n, 2) === pfx(kt, 2) && kt.split(" ").length >= 2; });
     if (!kHit) return null;
-    const babs = await corpus.execute({ sql: "SELECT DISTINCT bab_title FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kHit.kitab_no] });
+    const babs = await hadithDb.execute({ sql: "SELECT DISTINCT bab_title FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kHit.kitab_no] });
     const brows = babs.rows as unknown as { bab_title: string }[];
     // باب: exact-norm dulu, fallback awalan 6-perkataan (beza panjang antara edisi — amanah)
     const bHit = brows.find((x) => tnorm(x.bab_title) === bt) ?? brows.find((x) => { const n = tnorm(x.bab_title); return n.split(" ").length >= 6 && bt.split(" ").length >= 6 && pfx(n, 6) === pfx(bt, 6); });
@@ -337,7 +337,7 @@ export async function getSyarahForBab(bookRef: number, kitabTitle: string, babTi
 export interface BabItem { bab_no: number; bab_title: string }
 export async function getBookBab(bookRef: number, kitabNo: number): Promise<BabItem[]> {
   try {
-    const bk = (await corpus.execute({ sql: "SELECT id FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as { id: number } | undefined;
+    const bk = (await hadithDb.execute({ sql: "SELECT id FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as { id: number } | undefined;
     if (!bk) return [];
     const r = await hadithDb.execute({
       sql: "SELECT DISTINCT bab_no, bab_title FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0 AND bab_title IS NOT NULL ORDER BY bab_no",
@@ -350,11 +350,11 @@ export async function getBookBab(bookRef: number, kitabNo: number): Promise<BabI
 // RINGAN: adakah syarah wujud utk كتاب ini + bil باب (tanpa teks besar) — utk SSR.
 export async function getSharahMeta(bookRef: number, kitabNo: number): Promise<{ book: SharahBook; nBab: number } | null> {
   try {
-    const bk = (await corpus.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
+    const bk = (await hadithDb.execute({ sql: "SELECT id, name, author, npages, book_ref FROM turath_book WHERE book_ref=? LIMIT 1", args: [bookRef] })).rows[0] as unknown as SharahBook | undefined;
     if (!bk) return null;
-    const r = await corpus.execute({ sql: "SELECT COUNT(DISTINCT bab_no) c FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kitabNo] });
+    const r = await hadithDb.execute({ sql: "SELECT COUNT(DISTINCT bab_no) c FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=? AND bab_no>0", args: [bk.id, kitabNo] });
     const nBab = Number(r.rows[0].c);
-    return nBab || (await corpus.execute({ sql: "SELECT COUNT(*) c FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=?", args: [bk.id, kitabNo] })).rows[0].c ? { book: bk, nBab } : null;
+    return nBab || (await hadithDb.execute({ sql: "SELECT COUNT(*) c FROM sharh_segment WHERE sharh_book_id=? AND kitab_no=?", args: [bk.id, kitabNo] })).rows[0].c ? { book: bk, nBab } : null;
   } catch { return null; }
 }
 
