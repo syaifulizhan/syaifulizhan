@@ -10,22 +10,30 @@ import { createClient, type Client } from "@libsql/client";
  */
 let _client: Client | undefined;
 
-function client(): Client {
-  if (!_client) {
-    const url = process.env.TURSO_DATABASE_URL || "file:./data/corpus.db";
-    _client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
+// Env Turso dari getCloudflareContext (KONSISTEN utk page SSR + API route). process.env
+// TURSO_* tak dijamin diisi utk route handler @opennextjs/cloudflare → dulu API route
+// syarah pulang kosong. getCloudflareContext().env sama macam binding D1 (hadithDb).
+async function client(): Promise<Client> {
+  if (_client) return _client;
+  let url = process.env.TURSO_DATABASE_URL;
+  let authToken = process.env.TURSO_AUTH_TOKEN;
+  if (!url) {
+    try {
+      const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+      const env = getCloudflareContext().env as unknown as { TURSO_DATABASE_URL?: string; TURSO_AUTH_TOKEN?: string };
+      url = env.TURSO_DATABASE_URL;
+      authToken = env.TURSO_AUTH_TOKEN;
+    } catch { /* bukan konteks Worker (cth skrip Node) */ }
   }
+  _client = createClient({ url: url || "file:./data/corpus.db", authToken });
   return _client;
 }
 
-// Proxy supaya `corpus.execute(...)` kekal berfungsi, tapi klien dicipta pada guna pertama.
-export const corpus = new Proxy({} as Client, {
-  get(_t, prop) {
-    const c = client();
-    const v = Reflect.get(c as object, prop);
-    return typeof v === "function" ? v.bind(c) : v;
-  },
-});
+// corpus.execute — dapatkan klien (env betul) pada setiap panggilan (dicache selepas pertama).
+export const corpus = {
+  execute: async (q: string | { sql: string; args?: unknown[] }) => (await client()).execute(q as never),
+  batch: async (stmts: unknown[], mode?: string) => (await client()).batch(stmts as never, mode as never),
+};
 
 /**
  * Klien HADIS — Cloudflare D1 (matn + terjemahan). Korpus dibahagi: D1 utk
