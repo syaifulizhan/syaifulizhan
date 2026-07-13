@@ -1,7 +1,7 @@
 # Keep-alive Supabase (dewan-izhan) — projek free-tier PAUSE selepas ~7 hari tiada
 # aktiviti. Cron ini buat satu query REST ringan 2× seminggu (Isnin & Khamis) supaya
 # projek kekal aktif → auth + moderasi cadangan tak terganggu.
-# Guna repo VARS sedia ada (NEXT_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY) — tiada secret baharu.
+# Guna SECRETS: SUPABASE_URL + SUPABASE_SECRET_KEY (required untuk pass RLS)
 name: Supabase keep-alive
 
 on:
@@ -14,19 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase REST (query ringan)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: |
-          URL="${{ vars.NEXT_PUBLIC_SUPABASE_URL }}"
-          KEY="${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}"
+          URL="${SUPABASE_URL}"
+          KEY="${SUPABASE_SECRET_KEY}"
           if [ -z "$URL" ] || [ -z "$KEY" ]; then
-            echo "::error::NEXT_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY tiada dlm repo vars"; exit 1
+            echo "::error::SUPABASE_URL / SUPABASE_SECRET_KEY tiada dlm secrets"; exit 1
           fi
           code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
             "$URL/rest/v1/correction_suggestions?select=id&limit=1" \
             -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
           echo "HTTP $code"
           head -c 300 /tmp/resp.txt || true
-          # 200/206 = aktif; 401/403 (RLS) pun kira aktiviti API → masih keep-alive.
+          # 200 = aktif & table respon.
           case "$code" in
-            2*|401|403) echo "✓ Supabase aktif (keep-alive berjaya)";;
+            200) echo "✓ Supabase aktif (keep-alive berjaya)";;
             *) echo "::error::Supabase balas $code — projek mungkin dah pause, semak dashboard"; exit 1;;
           esac
