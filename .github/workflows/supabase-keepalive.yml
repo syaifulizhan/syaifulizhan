@@ -1,35 +1,107 @@
 # Keep-alive Supabase (dewan-izhan) — projek free-tier PAUSE selepas ~7 hari tiada
-# aktiviti. Cron ini buat satu query REST ringan 2× seminggu (Isnin & Khamis) supaya
-# projek kekal aktif → auth + moderasi cadangan tak terganggu.
+# aktiviti. Cron ini ping REST + Auth 2× sehari (jurang ~12 jam) supaya walaupun
+# GitHub lewat/skip beberapa jadual, projek tak sempat cecah 7 hari senyap.
 # Guna SECRETS: SUPABASE_URL + SUPABASE_SECRET_KEY (required untuk pass RLS)
 name: Supabase keep-alive
 
 on:
   schedule:
-    - cron: "17 3 * * 1,4"   # Isnin & Khamis 03:17 UTC (jurang <7 hari)
+    - cron: "23 1 * * *"    # 01:23 UTC = 09:23 MYT
+    - cron: "23 13 * * *"   # 13:23 UTC = 21:23 MYT
   workflow_dispatch:
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST (query ringan)
+      - name: Ping Supabase (REST + Auth)
+        id: ping
+        shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: |
-          URL="${SUPABASE_URL}"
+          set +e
+          URL="${SUPABASE_URL%/}"
           KEY="${SUPABASE_SECRET_KEY}"
           if [ -z "$URL" ] || [ -z "$KEY" ]; then
-            echo "::error::SUPABASE_URL / SUPABASE_SECRET_KEY tiada dlm secrets"; exit 1
+            echo "::error::SUPABASE_URL / SUPABASE_SECRET_KEY tiada dlm secrets"
+            echo "reason=secrets hilang" >> "$GITHUB_OUTPUT"
+            exit 1
           fi
-          code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
-            "$URL/rest/v1/correction_suggestions?select=id&limit=1" \
-            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          echo "HTTP $code"
-          head -c 300 /tmp/resp.txt || true
-          # 200 = aktif & table respon.
-          case "$code" in
-            200) echo "✓ Supabase aktif (keep-alive berjaya)";;
-            *) echo "::error::Supabase balas $code — projek mungkin dah pause, semak dashboard"; exit 1;;
-          esac
+
+          # Cuba 3× dgn backoff — elak gagal sebab hiccup rangkaian sekejap.
+          reason=""
+          for attempt in 1 2 3; do
+            code=$(curl -s -m 25 -o /tmp/resp.txt -w '%{http_code}' \
+              "$URL/rest/v1/correction_suggestions?select=id&limit=1" \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+            cexit=$?
+
+            if [ "$cexit" -ne 0 ]; then
+              # 6 = DNS tak resolve → tanda paling kuat projek dah PAUSE.
+              case "$cexit" in
+                6) reason="DNS tak resolve (curl 6) — projek besar kemungkinan PAUSE" ;;
+                7) reason="sambungan ditolak (curl 7)" ;;
+                28) reason="timeout (curl 28)" ;;
+                *) reason="curl gagal exit $cexit" ;;
+              esac
+              echo "cubaan $attempt: $reason"
+            elif [ "$code" = "200" ]; then
+              echo "✓ REST 200 — Supabase aktif"
+              # Ping kedua: Auth (GoTrue) supaya bukan PostgREST je yg tersentuh.
+              acode=$(curl -s -m 25 -o /dev/null -w '%{http_code}' \
+                "$URL/auth/v1/health" -H "apikey: $KEY")
+              echo "auth/v1/health → HTTP ${acode:-n/a}"
+              exit 0
+            else
+              reason="REST balas HTTP $code"
+              echo "cubaan $attempt: $reason"
+              head -c 300 /tmp/resp.txt; echo
+            fi
+
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 15))
+          done
+
+          echo "::error::Keep-alive GAGAL — $reason"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Bangkitkan isu bila gagal
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ steps.ping.outputs.reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Satu isu terbuka sahaja — elak spam setiap 12 jam.
+          existing=$(gh issue list --label supabase-keepalive --state open \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Masih gagal ($REASON) — $RUN_URL"
+            exit 0
+          fi
+          gh label create supabase-keepalive --color B60205 \
+            --description "Keep-alive Supabase gagal" 2>/dev/null || true
+          cat > /tmp/body.md <<EOF
+          Sebab: ${REASON:-tidak diketahui}
+
+          Log: $RUN_URL
+
+          Kalau sebabnya DNS/curl 6 → projek dah PAUSE. Ping **tak boleh**
+          bangunkan projek yang dah pause; kena tekan **Restore** di Supabase
+          dashboard dulu, kemudian jalankan semula workflow ini.
+
+          Tutup isu ini bila projek dah aktif semula.
+          EOF
+          sed -i 's/^          //' /tmp/body.md
+          gh issue create --label supabase-keepalive \
+            --title "⚠️ Supabase keep-alive gagal" --body-file /tmp/body.md
