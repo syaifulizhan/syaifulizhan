@@ -9,18 +9,22 @@ on:
     - cron: "23 1 * * *"    # 01:23 UTC = 09:23 MYT
     - cron: "23 13 * * *"   # 13:23 UTC = 21:23 MYT
   workflow_dispatch:
+    inputs:
+      force_stamp:
+        description: "Paksa commit stamp walaupun repo belum sunyi 40 hari"
+        type: boolean
+        default: false
 
 concurrency:
   group: supabase-keepalive
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  issues: write
-
 jobs:
   ping:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Ping Supabase (REST + Auth)
         id: ping
@@ -105,3 +109,37 @@ jobs:
           sed -i 's/^          //' /tmp/body.md
           gh issue create --label supabase-keepalive \
             --title "⚠️ Supabase keep-alive gagal" --body-file /tmp/body.md
+
+  # GitHub auto-disable workflow berjadual dlm repo public selepas 60 hari repo
+  # tiada commit. Job ini commit satu stamp bila repo dah sunyi >40 hari — cukup
+  # untuk reset kiraan, tanpa mengotorkan sejarah dgn commit harian.
+  # Berasingan dari job `ping`: kena tetap jalan walaupun Supabase sedang pause.
+  stamp:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Commit stamp kalau repo dah lama sunyi
+        shell: bash
+        env:
+          FORCE: ${{ inputs.force_stamp }}
+        run: |
+          set -euo pipefail
+          age=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
+          echo "Commit terakhir: $age hari lepas (ambang: 40, force=${FORCE:-false})"
+          if [ "$age" -lt 40 ] && [ "${FORCE:-false}" != "true" ]; then
+            echo "Belum perlu stamp."
+            exit 0
+          fi
+
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/keepalive-stamp
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive-stamp
+          # [skip ci] — lapisan kedua; push guna GITHUB_TOKEN pun dah tak
+          # trigger workflow lain (deploy.yml), ini cuma jaring keselamatan.
+          git commit -m "chore(ci): stamp keep-alive — elak auto-disable cron [skip ci]"
+          git push || { git pull --rebase && git push; }
+          echo "✓ Stamp di-commit — kiraan 60 hari reset."
