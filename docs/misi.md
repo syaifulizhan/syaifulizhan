@@ -40,7 +40,22 @@
 - [ ] **A4. Buang D1 `dewan-hadis`** — kini TIDAK DIGUNAKAN oleh kod (kekal utuh
       sebagai sandaran kandungan). Tunggu beberapa kitaran deploy, kemudian
       buang binding `[[d1_databases]]` dari `wrangler.toml` + DROP DB.
-- [ ] **A5. Padam `probe-fromfile` di Turso** — DB ujian kosong; API Turso pulang
+- [ ] **A5b. ⚠️ INSIDEN TURSO 26 Ogos — `dewan-izhan-v2` tersangkut.** Beberapa
+      minit selepas migrasi berjaya & disahkan, SEMUA query ke v2 mula pulangkan
+      HTTP 400: `unable to acquire shared lock on node [...01a03d33-5801-7919-bfb2-
+      6117819d660c] (deletion must be in progress)`. Node itu = v2 sendiri.
+      **Tiada arahan padam pernah dikeluarkan ke atas v2** — hanya ke atas
+      `dewan-izhan` (berjaya) dan `probe-fromfile` (gagal 5×, `internal server
+      error`). Nampaknya kerja padam tersangkut di sebelah Turso mencemarkan
+      kunci node lain dalam kumpulan yang sama.
+      Bukti platform sihat: cipta DB baharu + query BERJAYA (`probe2-health`),
+      `turso group list` = Healthy. Jadi bukan isu akaun/kuota/token — token
+      baharu pun ditolak sama.
+      **Pemulihan:** bina semula sebagai `dewan-izhan-v3` dari fail yang sama
+      (0 writes). Data tak pernah hilang — `data/corpus.db` kekal sumber kebenaran.
+      **Pengajaran:** JANGAN padam DB lama sebaik migrasi; simpan sekurang-kurangnya
+      satu kitaran. Kalau `dewan-izhan` masih ada, pemulihan hanya tukar secret.
+- [ ] **A5. Padam `probe-fromfile` + `probe2-health` di Turso** — DB ujian kosong; API Turso pulang
       `internal server error` pada 5 cubaan (CLI + REST). Bug sebelah mereka;
       padam dari dashboard. Tiada kesan kuota (0 writes, 0 storan).
 
