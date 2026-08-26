@@ -36,18 +36,22 @@ export const corpus = {
 };
 
 /**
- * Klien HADIS — kini SAMA dengan `corpus` (Turso). Dahulu Cloudflare D1.
- *
- * Kenapa disatukan (26 Ogos 2026): D1 had 500MB dan SUDAH penuh (524MB) →
- * jadual terpaksa dipindah keluar sepotong-sepotong, dan belahan itu jadi punca
- * bug SENYAP. Contoh sebenar: `getSharahForKitab` baca turath_book dari Turso
- * tapi sharh_segment dari D1 — sedangkan sharh_segment sudah di-DROP dari D1
- * (92cb8b0) → query lempar → catch → syarah kosong di laman hidup. turath_page
- * + turath_heading pula hilang terus dari kedua-dua DB. Satu korpus, satu
- * sumber kebenaran, tiada lagi kelas pepijat ini. Turso muat 5GB (guna ~888MB).
- *
- * Dikekalkan sebagai nama berasingan supaya niat kekal terbaca di tempat
- * panggilan (kandungan bacaan lwn perawi/isnad) — dan supaya senang dipisah
- * semula kalau suatu hari perlu.
+ * Klien HADIS — Cloudflare D1 (matn + terjemahan). Korpus dibahagi: D1 utk
+ * kandungan bacaan (berubah kerap), Turso utk perawi/isnad (stabil). Binding "DB"
+ * (wrangler.toml) hanya wujud masa request di Worker → dicapai lazy.
  */
-export const hadithDb = corpus;
+type Row = Record<string, unknown>;
+interface D1Stmt { bind: (...a: unknown[]) => D1Stmt; all: () => Promise<{ results?: Row[] }> }
+interface D1DB { prepare: (sql: string) => D1Stmt }
+type ExecArg = string | { sql: string; args?: unknown[] };
+
+async function d1Execute(q: ExecArg): Promise<{ rows: Row[] }> {
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const env = getCloudflareContext().env as unknown as { DB: D1DB };
+  const sql = typeof q === "string" ? q : q.sql;
+  const args = (typeof q === "string" ? [] : q.args) ?? [];
+  const r = await env.DB.prepare(sql).bind(...args).all();
+  return { rows: r.results ?? [] };
+}
+
+export const hadithDb = { execute: d1Execute };
