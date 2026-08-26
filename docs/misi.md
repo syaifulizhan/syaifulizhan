@@ -9,20 +9,20 @@
 
 ## A. Infra & data (sedang jalan)
 
-- [x] ✅ **A1. Migrasi D1 → Turso — SELESAI 26 Ogos 2026.** `dewan-izhan-v2`
-      hidup, laman disahkan, **kos 0 rows_written**. Turso kini 1 DB sahaja
-      (`dewan-izhan` lama dipadam selepas disahkan subset tegas).
-- [x] ~~A1 (asal)~~ **Migrasi D1 → Turso** — satukan korpus dalam satu DB (kuota Turso baharu
-      direnew Ogos; D1 penuh 524/500MB). Cap tulisan peribadi **9.5M/10M**.
-      Kaedah: seed `--from-file` (upload fail, bukan INSERT baris) — elak ulangan
-      kesalahan lama (DROP+reinsert 1.4M×11 = 15.7M writes → akaun diblok).
-      **Disahkan empirik 26 Ogos: seed 50k baris + indeks → `rows_written` kekal 0.**
-      Audit D1 vs lokal (26 Ogos): `corpus.db` ialah **superset tegas** — `hadiths`,
-      `translations`, `books`, `hadith_bab` cap-jari sama tepat; `glossary` lokal +12;
-      `hadith_ruling` D1-sahaja **0** (lebihan 992 D1 = 1,000 pendua kerana D1 tiada
-      constraint UNIQUE, tolak 8 baris lokal-sahaja); `hadith_sanad_override` lebihan
-      D1 = baris ujian (`edited_by='test'`). Jadi seed terus dari `corpus.db`, tiada
-      gabungan diperlukan. Skrip: `build-unified-corpus.py` + `verify-unified.mjs`.
+- [x] ✅ **A1. Migrasi D1 → Turso — SELESAI 26 Ogos 2026.** Korpus kini SATU DB
+      (`dewan-izhan-v2`); `dewan-izhan` lama dipadam selepas disahkan subset tegas.
+      **Kos: 0 rows_written** untuk 2.1 juta baris / 888 MB.
+      Kaedah: `turso db create --from-file` = UPLOAD fail, bukan INSERT baris.
+      Disahkan empirik dahulu (probe 50k baris + indeks → usage kekal 0/10M) —
+      inilah yang mengelak ulangan kesalahan lama (DROP+reinsert 1.4M×11 = 15.7M
+      writes → akaun diblok). D1 penuh 524/500MB; Turso muat 5GB.
+      Audit sebelum seed: `corpus.db` ialah **superset tegas** D1 — `hadiths`,
+      `translations`, `books`, `hadith_bab` cap-jari sama tepat; `glossary` lokal
+      +12; `hadith_ruling` D1-sahaja **0** (lebihan 992 D1 sebenarnya 1,000 PENDUA
+      kerana D1 tiada constraint UNIQUE, tolak 8 baris lokal-sahaja);
+      `hadith_sanad_override` lebihan D1 = baris ujian (`edited_by='test'`).
+      Pengesahan selepas seed: 15 jadual padan pada kiraan DAN cap-jari nilai.
+      Alat: `build-unified-corpus.py` · `verify-unified.mjs`.
 - [x] ✅ **A2. Syarah kosong — PULIH 26 Ogos.** `/api/syarah?book=900003&kitab=1`
       dari `{"segs":[]}` (11 bait) → **367 KB**; Nawawi/Muslim 1.63 MB.
       Bukan data hilang: `sharh_segment` (9,277) selamat di Turso. Bugnya
@@ -30,13 +30,13 @@
       `sharh_segment` dari **`hadithDb` (D1)**, sedangkan commit `92cb8b0` sudah
       DROP jadual itu dari D1. Query lempar → `catch → return null` → `segs: []`.
       **Sembuh automatik bila A1 selesai** (satu DB, `hadithDb` = `corpus`).
-- [x] ✅ **A2b. `turath_page` + `turath_heading` PULIH** — kini hidup dalam v2.
-- [ ] ~~(asal)~~ `turath_page` (30,785) + `turath_heading` (2,532) HILANG dari live —
-      hanya wujud dalam `corpus.db` lokal; di-DROP dari D1 dan tak pernah masuk
-      Turso. Pembaca teks-penuh syarah (`getSharahPages`) mati senyap di laman
-      hidup. Juga sembuh oleh A1.
-- [ ] **A3. Rotate kunci** Supabase/Turso yang pernah terdedah dalam chat — belum
-      disahkan dibuat. (Warisan; buat sekali dengan A1 sebab secret CF akan dikemas.)
+- [x] ✅ **A2b. `turath_page` (30,785) + `turath_heading` (2,532) PULIH** — dahulu
+      hilang dari SEMUA DB hidup (di-DROP dari D1, tak pernah masuk Turso), jadi
+      pembaca teks-penuh syarah mati senyap. Kini hidup dalam v2.
+- [ ] **A3. Rotate kunci Supabase** — separuh selesai oleh A1: kredential **Turso
+      lama sudah mati** (DB `dewan-izhan` dipadam → semua tokennya batal), dan v2
+      guna token baharu yang tak pernah terdedah. **Yang berbaki: kunci Supabase**
+      (`SUPABASE_SECRET_KEY`, `DATABASE_URL`) yang pernah muncul dalam chat.
 - [ ] **A4. Buang D1 `dewan-hadis`** — kini TIDAK DIGUNAKAN oleh kod (kekal utuh
       sebagai sandaran kandungan). Tunggu beberapa kitaran deploy, kemudian
       buang binding `[[d1_databases]]` dari `wrangler.toml` + DROP DB.
@@ -62,7 +62,8 @@
 - [ ] **B6. Jurang Itqan** 114k → 102,783 (~11k) belum disiasat.
 - [ ] **B7. `hadith_narrators` yatim** 4,262 baris (id islam-db tak wujud) + ~5k tepi
       graf yatim → NULL-kan/padam.
-- [ ] **B8. 12 entri glosari lokal** belum sync D1 (`glossary-d1-sync.sh`).
+- [x] ✅ **B8. 12 entri glosari** — selesai oleh A1; laman kini papar 2,181
+      (dahulu D1 papar 2,169). `glossary-d1-sync.sh` sudah lapuk.
 
 ## C. Terjemahan
 
@@ -77,9 +78,10 @@
       sunna.alifta.gov.sa (Angular SPA — API belum dijumpai, CDP disekat).
 - [ ] **D2. Re-parse korpus dengan parser v3** (struktur tahwil) — delta rowid tak
       boleh guna kalau struktur berubah.
-- [ ] **D3. Sync pemautan ke Turso** — live masih data lama. Guna
-      `turso-delta-hn.mjs` (UPDATE baris berubah sahaja), BUKAN full-resync
-      (~265k–700k writes).
+- [x] ✅ **D3. Sync pemautan ke Turso** — selesai oleh A1: v2 diseed dari
+      `corpus.db` jadi pemautan terkini (166,923) kini hidup, dahulu 166,901.
+      Untuk sync AKAN DATANG: guna `turso-delta-hn.mjs` (UPDATE baris berubah
+      sahaja), BUKAN full-resync (~265k–700k writes).
 
 ## E. Keputusan pemilik (blocking — kerja tak boleh sambung tanpa ini)
 
@@ -100,8 +102,8 @@
 
 - [ ] **F0. Carian hadis guna FTS5** — kini `matn_search LIKE '%…%'`
       (`hadis.ts:126`: "D1 belum ada FTS5") = imbasan penuh 85,503 baris setiap
-      carian. `hadiths_fts` (85,503, selari) sudah wujud dalam `corpus.db` dan
-      akan hidup selepas A1 → tukar carian ke FTS5. Menang besar, kos rendah.
+      carian. `hadiths_fts` (85,503, selari) kini **sudah hidup** dalam v2
+      selepas A1 → tinggal tukar query ke FTS5. Menang besar, kos rendah.
 - [ ] **F1. Admin passkey** (fasa 2) — kini kata laluan + GitHub OAuth.
 - [ ] **F2. `grade` hanya 3,955 (4.6%)**, `takhrij` 0 → isi dari dorar/Itqan.
 
