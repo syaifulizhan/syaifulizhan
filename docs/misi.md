@@ -10,7 +10,7 @@
 ## A. Infra & data (sedang jalan)
 
 - [x] ✅ **A1. Migrasi D1 → Turso — SELESAI 26 Ogos 2026.** Korpus kini SATU DB
-      (`dewan-izhan-v2`); `dewan-izhan` lama dipadam selepas disahkan subset tegas.
+      (**`dewan-izhan-v3`**); lihat A5b — v2 tersangkut, dibina semula sebagai v3.
       **Kos: 0 rows_written** untuk 2.1 juta baris / 888 MB.
       Kaedah: `turso db create --from-file` = UPLOAD fail, bukan INSERT baris.
       Disahkan empirik dahulu (probe 50k baris + indeks → usage kekal 0/10M) —
@@ -29,12 +29,12 @@
       `src/lib/hadis.ts:277` — `turath_book` dibaca dari **Turso** tetapi
       `sharh_segment` dari **`hadithDb` (D1)**, sedangkan commit `92cb8b0` sudah
       DROP jadual itu dari D1. Query lempar → `catch → return null` → `segs: []`.
-      **Sembuh automatik bila A1 selesai** (satu DB, `hadithDb` = `corpus`).
+      **Sembuh oleh A1** (satu DB, `hadithDb` = `corpus`). Disahkan hidup di v3.
 - [x] ✅ **A2b. `turath_page` (30,785) + `turath_heading` (2,532) PULIH** — dahulu
       hilang dari SEMUA DB hidup (di-DROP dari D1, tak pernah masuk Turso), jadi
-      pembaca teks-penuh syarah mati senyap. Kini hidup dalam v2.
+      pembaca teks-penuh syarah mati senyap. Kini hidup dalam v3.
 - [ ] **A3. Rotate kunci Supabase** — separuh selesai oleh A1: kredential **Turso
-      lama sudah mati** (DB `dewan-izhan` dipadam → semua tokennya batal), dan v2
+      lama sudah mati** (DB `dewan-izhan` dipadam → semua tokennya batal), dan v3
       guna token baharu yang tak pernah terdedah. **Yang berbaki: kunci Supabase**
       (`SUPABASE_SECRET_KEY`, `DATABASE_URL`) yang pernah muncul dalam chat.
 - [ ] **A4. Buang D1 `dewan-hadis`** — kini TIDAK DIGUNAKAN oleh kod (kekal utuh
@@ -51,11 +51,16 @@
       Bukti platform sihat: cipta DB baharu + query BERJAYA (`probe2-health`),
       `turso group list` = Healthy. Jadi bukan isu akaun/kuota/token — token
       baharu pun ditolak sama.
-      **Pemulihan:** bina semula sebagai `dewan-izhan-v3` dari fail yang sama
-      (0 writes). Data tak pernah hilang — `data/corpus.db` kekal sumber kebenaran.
+      **PULIH ✅** — `dewan-izhan-v3` dibina semula dari fail yang sama (847 MB,
+      ~13 min di WiFi, **0 writes**), 15 jadual disahkan padan, laman hidup penuh.
+      Data tak pernah hilang — `data/corpus.db` kekal sumber kebenaran.
+      Salin sisi-pelayan `--from-db dewan-izhan-v2` DICUBA dahulu untuk elak muat
+      naik — ditolak (`internal server error`), v2 tercemar sepenuhnya.
       **Pengajaran:** JANGAN padam DB lama sebaik migrasi; simpan sekurang-kurangnya
       satu kitaran. Kalau `dewan-izhan` masih ada, pemulihan hanya tukar secret.
-- [ ] **A5. Padam `probe-fromfile` + `probe2-health` di Turso** — DB ujian kosong; API Turso pulang
+- [ ] **A5. Bersihkan DB Turso berlebihan** — kini ADA 4: `dewan-izhan-v3` (hidup,
+      KEKALKAN) · `dewan-izhan-v2` (tersangkut — biar dahulu, mungkin jadi rollback
+      kalau Turso lepaskan kunci) · `probe-fromfile` + `probe2-health` (ujian kosong) — DB ujian kosong; API Turso pulang
       `internal server error` pada 5 cubaan (CLI + REST). Bug sebelah mereka;
       padam dari dashboard. Tiada kesan kuota (0 writes, 0 storan).
 
@@ -95,6 +100,7 @@
       boleh guna kalau struktur berubah.
 - [x] ✅ **D3. Sync pemautan ke Turso** — selesai oleh A1: v2 diseed dari
       `corpus.db` jadi pemautan terkini (166,923) kini hidup, dahulu 166,901.
+      (v3 mewarisi sama — fail seed identik.)
       Untuk sync AKAN DATANG: guna `turso-delta-hn.mjs` (UPDATE baris berubah
       sahaja), BUKAN full-resync (~265k–700k writes).
 
