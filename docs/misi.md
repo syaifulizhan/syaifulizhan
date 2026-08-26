@@ -9,7 +9,10 @@
 
 ## A. Infra & data (sedang jalan)
 
-- [ ] **A1. Migrasi D1 → Turso** — satukan korpus dalam satu DB (kuota Turso baharu
+- [x] ✅ **A1. Migrasi D1 → Turso — SELESAI 26 Ogos 2026.** `dewan-izhan-v2`
+      hidup, laman disahkan, **kos 0 rows_written**. Turso kini 1 DB sahaja
+      (`dewan-izhan` lama dipadam selepas disahkan subset tegas).
+- [x] ~~A1 (asal)~~ **Migrasi D1 → Turso** — satukan korpus dalam satu DB (kuota Turso baharu
       direnew Ogos; D1 penuh 524/500MB). Cap tulisan peribadi **9.5M/10M**.
       Kaedah: seed `--from-file` (upload fail, bukan INSERT baris) — elak ulangan
       kesalahan lama (DROP+reinsert 1.4M×11 = 15.7M writes → akaun diblok).
@@ -20,20 +23,26 @@
       constraint UNIQUE, tolak 8 baris lokal-sahaja); `hadith_sanad_override` lebihan
       D1 = baris ujian (`edited_by='test'`). Jadi seed terus dari `corpus.db`, tiada
       gabungan diperlukan. Skrip: `build-unified-corpus.py` + `verify-unified.mjs`.
-- [ ] **A2. Syarah kosong di laman hidup — PUNCA DIJUMPAI (26 Ogos).**
+- [x] ✅ **A2. Syarah kosong — PULIH 26 Ogos.** `/api/syarah?book=900003&kitab=1`
+      dari `{"segs":[]}` (11 bait) → **367 KB**; Nawawi/Muslim 1.63 MB.
       Bukan data hilang: `sharh_segment` (9,277) selamat di Turso. Bugnya
       `src/lib/hadis.ts:277` — `turath_book` dibaca dari **Turso** tetapi
       `sharh_segment` dari **`hadithDb` (D1)**, sedangkan commit `92cb8b0` sudah
       DROP jadual itu dari D1. Query lempar → `catch → return null` → `segs: []`.
       **Sembuh automatik bila A1 selesai** (satu DB, `hadithDb` = `corpus`).
-- [ ] **A2b. `turath_page` (30,785) + `turath_heading` (2,532) HILANG dari live** —
+- [x] ✅ **A2b. `turath_page` + `turath_heading` PULIH** — kini hidup dalam v2.
+- [ ] ~~(asal)~~ `turath_page` (30,785) + `turath_heading` (2,532) HILANG dari live —
       hanya wujud dalam `corpus.db` lokal; di-DROP dari D1 dan tak pernah masuk
       Turso. Pembaca teks-penuh syarah (`getSharahPages`) mati senyap di laman
       hidup. Juga sembuh oleh A1.
 - [ ] **A3. Rotate kunci** Supabase/Turso yang pernah terdedah dalam chat — belum
       disahkan dibuat. (Warisan; buat sekali dengan A1 sebab secret CF akan dikemas.)
-- [ ] **A4. Buang D1 selepas A1 stabil** — kekalkan sebagai sandaran sekurang-kurangnya
-      satu kitaran deploy sebelum DROP.
+- [ ] **A4. Buang D1 `dewan-hadis`** — kini TIDAK DIGUNAKAN oleh kod (kekal utuh
+      sebagai sandaran kandungan). Tunggu beberapa kitaran deploy, kemudian
+      buang binding `[[d1_databases]]` dari `wrangler.toml` + DROP DB.
+- [ ] **A5. Padam `probe-fromfile` di Turso** — DB ujian kosong; API Turso pulang
+      `internal server error` pada 5 cubaan (CLI + REST). Bug sebelah mereka;
+      padam dari dashboard. Tiada kesan kuota (0 writes, 0 storan).
 
 ## B. Kelengkapan korpus (jurang terbesar)
 
