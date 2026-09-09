@@ -9,6 +9,10 @@ name: Deploy ke Cloudflare
 on:
   push:
     branches: [main]
+    # Log kuota ditulis setiap hari oleh kuota.yml — ia tidak mengubah apa-apa
+    # yang di-deploy, jadi jangan cetuskan deploy harian yang sia-sia.
+    paths-ignore:
+      - "docs/kuota-log.csv"
   workflow_dispatch:
 
 concurrency:
