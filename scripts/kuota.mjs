@@ -81,6 +81,28 @@ if (iCsv > -1 && process.argv[iCsv + 1]) {
   console.log(`\n  dicatat → ${fail}`);
 }
 
+/* ---- Supabase (correction_suggestions) --------------------------------
+ * syaifulizhan.my guna Supabase untuk satu perkara sahaja: cadangan pembetulan
+ * daripada pembaca. Hari ini 0 baris, jadi risikonya hampir sifar — tetapi ia
+ * dipantau supaya pertumbuhan kelihatan sebelum ia jadi masalah, bukan selepas.
+ * Had percuma Supabase: 500 MB pangkalan data.
+ */
+const sbUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const sbKey = process.env.SUPABASE_SECRET_KEY;
+if (sbUrl && sbKey) {
+  try {
+    const r = await fetch(`${sbUrl}/rest/v1/correction_suggestions?select=id`, {
+      headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}`, Prefer: "count=exact", Range: "0-0" },
+    });
+    const cr = r.headers.get("content-range") || "*/?";
+    console.log(`\nSupabase · correction_suggestions: ${cr.split("/")[1]} baris`);
+  } catch (e) {
+    console.log(`\nSupabase: tidak dapat disemak — ${e.message}`);
+  }
+} else {
+  console.log("\nSupabase: dilangkau (SUPABASE_URL / SUPABASE_SECRET_KEY tiada)");
+}
+
 if (tertinggi >= KRITIKAL) {
   console.error(`\nKRITIKAL: ${tertinggi.toFixed(0)}% kuota diguna. Pada pelan percuma, mencecah had menyekat SELURUH akaun.`);
   process.exit(1);

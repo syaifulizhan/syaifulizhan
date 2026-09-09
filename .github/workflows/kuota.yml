@@ -35,6 +35,8 @@ jobs:
         id: ukur
         env:
           TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: |
           set +e
           node scripts/kuota.mjs --csv docs/kuota-log.csv | tee /tmp/kuota.txt
