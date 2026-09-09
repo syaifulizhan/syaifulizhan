@@ -57,10 +57,13 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- docs/kuota-log.csv; then
+          # `git diff` TIDAK nampak fail yang belum dijejaki, jadi stage dahulu
+          # kemudian banding indeks. Versi pertama lapor "tiada perubahan" pada
+          # larian pertama dan langkah ini hijau sambil tidak berbuat apa-apa.
+          git add docs/kuota-log.csv
+          if git diff --cached --quiet; then
             echo "Tiada perubahan."; exit 0
           fi
-          git add docs/kuota-log.csv
           git commit -m "chore: bacaan kuota Turso $(date -u +%Y-%m-%d) [skip ci]"
           git pull --rebase --autostash -q origin main || true
           git push
