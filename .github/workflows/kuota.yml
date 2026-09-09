@@ -1,0 +1,72 @@
+name: Pantau kuota Turso
+
+# Pada 10 Sep 2026 akaun Turso disekat SEPENUHNYA — bacaan mencecah 627,991,252
+# daripada had 500,000,000 (126%). Tiada siapa perasan sehingga emel tiba.
+# Pada pelan percuma, mencecah mana-mana had menyekat seluruh akaun; ia tidak
+# diperlahankan. Workflow ini merekod bacaan setiap hari supaya trend kelihatan,
+# dan menjadi MERAH pada 90% — bukan pada 100%, kerana ketika itu sudah terlambat.
+#
+# Rahsia diperlukan: TURSO_API_TOKEN
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC = 10:00 pagi waktu Malaysia
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kuota
+  cancel-in-progress: false
+
+jobs:
+  ukur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Ukur kuota
+        id: ukur
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+        run: |
+          set +e
+          node scripts/kuota.mjs --csv docs/kuota-log.csv | tee /tmp/kuota.txt
+          echo "kod=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Ringkasan
+        if: always()
+        run: |
+          {
+            echo "## Kuota Turso"
+            echo '```'
+            cat /tmp/kuota.txt 2>/dev/null || echo "tiada output"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+      # Simpan bacaan supaya trend merentas bulan boleh dilihat. [skip ci] +
+      # paths-ignore dalam deploy.yml menghalang deploy harian yang sia-sia.
+      - name: Catat bacaan
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/kuota-log.csv; then
+            echo "Tiada perubahan."; exit 0
+          fi
+          git add docs/kuota-log.csv
+          git commit -m "chore: bacaan kuota Turso $(date -u +%Y-%m-%d) [skip ci]"
+          git pull --rebase --autostash -q origin main || true
+          git push
+
+      - name: Gagalkan larian jika kritikal
+        if: steps.ukur.outputs.kod != '0'
+        run: |
+          echo "Kuota kritikal — lihat ringkasan di atas."
+          exit 1
