@@ -120,17 +120,59 @@ export async function getIsnadFor(hadithIds: number[]): Promise<Map<number, Isna
   return map;
 }
 
+/**
+ * Carian hadis — FTS5 dahulu, LIKE hanya sebagai penampung.
+ *
+ * KENAPA: `LIKE '%…%'` mempunyai wildcard di hadapan, jadi SQLite TIDAK boleh
+ * guna indeks — ia mengimbas kesemua 85,503 baris `hadiths` setiap carian.
+ * `LIMIT` mengehadkan baris DIPULANGKAN, bukan baris DIBACA. Turso mengebil
+ * baris dibaca, jadi setiap carian jarang membakar kuota bulanan.
+ *
+ * Jadual `hadiths_fts` — fts5(matn_search, content='hadiths', content_rowid='id')
+ * — SUDAH WUJUD dan penuh (85,503 baris), cuma tidak pernah diguna. Komen lama
+ * di sini berbunyi "D1 belum ada FTS5 … diganti FTS kemudian"; sejak korpus
+ * berpindah ke Turso (Jul 2026) FTS5 memang tersedia.
+ *
+ * KENAPA MASIH ADA LIKE: FTS memadan token, LIKE memadan subrentetan. Untuk
+ * bahasa Arab, imbuhan bermakna FTS boleh terlepas padanan di dalam perkataan
+ * (diukur: 26%–100% liputan bergantung istilah). Jadi kita ambil FTS dahulu,
+ * dan hanya menampung dengan LIKE jika FTS tidak cukup mengisi `limit`.
+ * Kesannya: carian biasa langsung tidak mengimbas; kualiti hasil kekal sama.
+ */
 export async function searchHadith(q: string, limit = 30): Promise<(Hadith & { book: string | null })[]> {
   const norm = normalizeArabic(q);
   if (!norm) return [];
-  // D1 belum ada FTS5 → guna LIKE atas matn_search (dinormalisasi). Diganti FTS kemudian.
-  const r = await hadithDb.execute({
-    sql: `SELECT h.id, h.book_id, h.chapter_ar, h.number, h.matn_ar, h.grade, b.title_ar book
-            FROM hadiths h LEFT JOIN books b ON b.id = h.book_id
-           WHERE h.matn_search LIKE '%' || ? || '%' LIMIT ?`,
-    args: [norm, limit],
+
+  const SEL = `SELECT h.id, h.book_id, h.chapter_ar, h.number, h.matn_ar, h.grade, b.title_ar book
+                 FROM hadiths h LEFT JOIN books b ON b.id = h.book_id`;
+  const hasil: unknown[] = [];
+
+  // (1) FTS5 — carian indeks, beberapa milisaat, hampir tiada baris dibaca.
+  try {
+    const frasa = `"${norm.replace(/"/g, '""')}"*`; // petik + awalan
+    const r = await hadithDb.execute({
+      sql: `${SEL} JOIN hadiths_fts f ON f.rowid = h.id
+             WHERE hadiths_fts MATCH ? LIMIT ?`,
+      args: [frasa, limit],
+    });
+    hasil.push(...r.rows);
+  } catch {
+    // FTS tiada dalam persekitaran ini (cth DB lama) — jatuh terus ke LIKE.
+  }
+
+  if (hasil.length >= limit) return hasil as (Hadith & { book: string | null })[];
+
+  // (2) Penampung LIKE — hanya bila FTS tidak cukup. Di sinilah imbasan berlaku,
+  //     jadi ia sengaja dijadikan laluan jarang, bukan laluan lalai.
+  const ada = (hasil as { id: unknown }[]).map((r) => r.id);
+  const tapis = ada.length ? `AND h.id NOT IN (${ada.map(() => "?").join(",")})` : "";
+  const r2 = await hadithDb.execute({
+    sql: `${SEL} WHERE h.matn_search LIKE '%' || ? || '%' ${tapis} LIMIT ?`,
+    args: [norm, ...(ada as (string | number)[]), limit - hasil.length],
   });
-  return r.rows as unknown as (Hadith & { book: string | null })[];
+  hasil.push(...r2.rows);
+
+  return hasil as (Hadith & { book: string | null })[];
 }
 
 export interface Tr { ms: string | null; en: string | null; ms_verified: boolean; en_verified: boolean }
