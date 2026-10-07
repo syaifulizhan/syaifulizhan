@@ -48,7 +48,8 @@ export default function SyajaraGenerator() {
   }
 
   // jana contoh secara automatik pada muat (papar pohon cantik terus)
-  useEffect(() => { gen(EXAMPLE); /* eslint-disable-next-line */ }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => { gen(EXAMPLE); }, []);
 
   // AUTO-JANA berulang kali: tiap kali sanad baharu ditampal/ditaip (debounce),
   // tanpa perlu klik butang atau refresh
