@@ -37,9 +37,9 @@ export default function Nav() {
               <li><Link href="/perawi" onClick={close}>{T.navPerawi[lang]}</Link></li>
               <li><Link href="/hadis" onClick={close}>{T.navHadis[lang]}</Link></li>
               <li><Link href="/glosari" onClick={close}>{T.navGlosari[lang]}</Link></li>
-              <li><a href="/#ilmu" onClick={close}>{T.navIlmu[lang]}</a></li>
-              <li><a href="/#tentang" onClick={close}>{T.navTentang[lang]}</a></li>
-              <li><a href="/#khidmat" onClick={close}>{T.navKhidmat[lang]}</a></li>
+              <li><Link href="/#ilmu" onClick={close}>{T.navIlmu[lang]}</Link></li>
+              <li><Link href="/#tentang" onClick={close}>{T.navTentang[lang]}</Link></li>
+              <li><Link href="/#khidmat" onClick={close}>{T.navKhidmat[lang]}</Link></li>
             </ul>
           </nav>
 

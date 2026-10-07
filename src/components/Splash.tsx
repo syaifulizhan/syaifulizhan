@@ -10,6 +10,8 @@ export default function Splash() {
   useEffect(() => {
     if (sessionStorage.getItem("splashShown")) return;
     sessionStorage.setItem("splashShown", "1");
+    // sessionStorage hanya boleh dibaca selepas mount (pelayan render kosong).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase("show");
     const t1 = setTimeout(() => setPhase("hide"), 1700); // mula pudar
     const t2 = setTimeout(() => setPhase("idle"), 2400); // buang dari DOM
