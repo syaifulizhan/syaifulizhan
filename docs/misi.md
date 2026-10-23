@@ -136,6 +136,13 @@
   pemautan dalam `corpus.db`. **`corpus.db` kini sumber kebenaran, bukan jsonl.**
   Semak skrip sebelum guna.
 - Turso: `rows written` kira **baris + entri indeks + FTS**. 1 baris ≠ 1 write.
+- Turso: `rows read` kira baris yang **diimbas**, bukan dipulangkan. `LIMIT/OFFSET`,
+  `count(*)` dan `GROUP BY` ke atas satu kitab besar = puluhan ribu bacaan SETIAP
+  paparan. 22–23 Okt 2026: crawler merayap Musnad Ahmad → ~10 juta bacaan/jam
+  (82.8% had dalam 3 hari). Baiki: `hadiths.seq` + `book_chapter` + indeks
+  (`db/migrations/2026-10-23-bacaan-murah.sql`). **Selepas import hadis baharu
+  WAJIB `node scripts/segar-seq.mjs --turso`** — hadis tanpa seq tak muncul.
+  Ukur kos query baharu dengan Hrana `/v2/pipeline` (`rows_read`) sebelum deploy.
   Sentiasa jalan `node scripts/turso-usage-guard.mjs` sebelum menulis.
 - Chrome auto-translate BM AKTIF — jangan scrape HTML dorar via `get_page_text`
   (teks diterjemah!). Guna endpoint JSON.

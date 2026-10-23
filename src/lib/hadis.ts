@@ -8,16 +8,19 @@ export interface IsnadNode { narrator_id: number; chain_no: number; position: nu
 // Susunan kitab MUKTABAR (bukan ikut bilangan): al-Kutub al-Sittah dahulu ikut tertib
 // ulama (Bukhari→Muslim→Abu Dawud→Tirmidhi→Nasa'i→Ibn Majah), lalu Muwatta, Musnad
 // Ahmad, Darimi; selebihnya ikut bilangan hadis. id 900xxx = koleksi utama AhmedBaset.
+//
+// KOS BACAAN: bilangan hadis diambil dari `books.total_hadith` (prakira — lihat
+// db/migrations/2026-10-23-bacaan-murah.sql), BUKAN `count(h.id)` melalui JOIN.
+// JOIN itu membaca 88,327 baris setiap kali /hadis dibuka; kini ~942.
 export async function listBooks(limit = 300): Promise<Book[]> {
   const r = await hadithDb.execute({
-    sql: `SELECT b.id, b.title_ar, count(h.id) n
-            FROM books b LEFT JOIN hadiths h ON h.book_id = b.id
-           GROUP BY b.id
-           ORDER BY CASE b.id
+    sql: `SELECT id, title_ar, COALESCE(total_hadith, 0) n
+            FROM books
+           ORDER BY CASE id
              WHEN 900003 THEN 1 WHEN 900007 THEN 2 WHEN 900001 THEN 3 WHEN 900009 THEN 4
              WHEN 900008 THEN 5 WHEN 900005 THEN 6 WHEN 900006 THEN 7 WHEN 900002 THEN 8
-             WHEN 900004 THEN 9 ELSE 900 + (1000000 - count(h.id)) / 1000 END,
-             n DESC, b.id LIMIT ?`,
+             WHEN 900004 THEN 9 ELSE 900 + (1000000 - COALESCE(total_hadith, 0)) / 1000 END,
+             n DESC, id LIMIT ?`,
     args: [limit],
   });
   return r.rows as unknown as Book[];
@@ -28,72 +31,82 @@ export async function getBook(id: number): Promise<{ id: number; title_ar: strin
   return (r.rows[0] as unknown as { id: number; title_ar: string }) ?? null;
 }
 
+/*
+ * Muka kitab — KOS BACAAN.
+ *
+ * `hadiths.seq` = turutan hadis dalam kitab (ORDER BY chapter_ref, number, id),
+ * prakira oleh db/migrations/2026-10-23-bacaan-murah.sql dan berindeks
+ * (book_id, seq). Muka N ialah julat seq, jadi Turso membaca ~20 baris.
+ *
+ * Dahulu `ORDER BY chapter_ref, number LIMIT ? OFFSET ?` + `count(*)` + bab
+ * `GROUP BY` membaca ~105,000 baris SETIAP paparan Musnad Ahmad — crawler yang
+ * merayap muka-mukanya membakar ~10 juta bacaan sejam (Okt 2026).
+ *
+ * Carian dalam kitab (`?s=`) masih LIKE — imbas satu kitab sahaja, laluan jarang.
+ */
 export async function getBookHadiths(bookId: number, limit = 20, offset = 0, search = ""): Promise<Hadith[]> {
   const q = search.trim() ? normalizeArabic(search) : "";
-  const r = await hadithDb.execute({
-    sql: q
-      ? `SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths
-          WHERE book_id = ? AND matn_search LIKE ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`
-      : `SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths
-          WHERE book_id = ? ORDER BY chapter_ref, number LIMIT ? OFFSET ?`,
-    args: q ? [bookId, `%${q}%`, limit, offset] : [bookId, limit, offset],
-  });
+  const r = await hadithDb.execute(
+    q
+      ? {
+          sql: `SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths
+                 WHERE book_id = ? AND matn_search LIKE ? ORDER BY seq LIMIT ? OFFSET ?`,
+          args: [bookId, `%${q}%`, limit, offset],
+        }
+      : {
+          sql: `SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths
+                 WHERE book_id = ? AND seq > ? AND seq <= ? ORDER BY seq`,
+          args: [bookId, offset, offset + limit],
+        },
+  );
   return r.rows as unknown as Hadith[];
 }
 
 export async function getBookHadithCount(bookId: number, search = ""): Promise<number> {
   const q = search.trim() ? normalizeArabic(search) : "";
-  const r = await hadithDb.execute({
-    sql: q ? "SELECT count(*) c FROM hadiths WHERE book_id = ? AND matn_search LIKE ?" : "SELECT count(*) c FROM hadiths WHERE book_id = ?",
-    args: q ? [bookId, `%${q}%`] : [bookId],
-  });
-  return Number(r.rows[0].c);
+  const r = await hadithDb.execute(
+    q
+      ? { sql: "SELECT count(*) c FROM hadiths WHERE book_id = ? AND matn_search LIKE ?", args: [bookId, `%${q}%`] }
+      : { sql: "SELECT COALESCE(total_hadith, 0) c FROM books WHERE id = ?", args: [bookId] },
+  );
+  return Number(r.rows[0]?.c ?? 0);
 }
 
 // Table of Content: struktur كتاب asal kitab (kaedah paling tepat) — ikut chapter_ref.
+// Dari jadual prakira `book_chapter`, bukan GROUP BY ke atas semua hadis kitab.
 export interface Chapter { chapter_ref: number; chapter_ar: string; n: number }
 export async function getBookChapters(bookId: number): Promise<Chapter[]> {
   const r = await hadithDb.execute({
-    sql: `SELECT chapter_ref, chapter_ar, COUNT(*) n FROM hadiths
-           WHERE book_id = ? AND chapter_ar IS NOT NULL AND length(chapter_ar) > 0
-           GROUP BY chapter_ref, chapter_ar ORDER BY chapter_ref`,
+    sql: "SELECT chapter_ref, chapter_ar, n FROM book_chapter WHERE book_id = ? ORDER BY first_seq",
     args: [bookId],
   });
   return r.rows as unknown as Chapter[];
 }
 
+const seqToPage = (seq: number, perPage: number) => Math.floor((Math.max(seq, 1) - 1) / perPage) + 1;
+
 // Halaman (1-based) di mana satu كتاب bermula (utk navigasi ToC).
 export async function getChapterPage(bookId: number, chapterRef: number, perPage: number): Promise<number> {
   const r = await hadithDb.execute({
-    sql: "SELECT count(*) c FROM hadiths WHERE book_id = ? AND chapter_ref < ?",
+    sql: "SELECT min(first_seq) s FROM book_chapter WHERE book_id = ? AND chapter_ref >= ?",
     args: [bookId, chapterRef],
   });
-  return Math.floor(Number(r.rows[0].c) / perPage) + 1;
+  return seqToPage(Number(r.rows[0]?.s ?? 1), perPage);
 }
 
-/** Halaman (1-based) di mana hadith ini berada dlm kitab (ikut susunan chapter_ref, number). */
+/** Halaman (1-based) di mana hadith ini berada dlm kitab (ikut seq). */
 export async function getHadithPage(bookId: number, hadithId: number, perPage: number): Promise<number> {
-  const t = await hadithDb.execute({ sql: "SELECT chapter_ref, number FROM hadiths WHERE id = ?", args: [hadithId] });
-  const row = t.rows[0] as unknown as { chapter_ref: number; number: number } | undefined;
-  if (!row) return 1;
-  // COALESCE: kitab tanpa struktur كتاب (cth Musnad Ahmad, chapter_ref NULL) — NULL
-  // gagal perbandingan → dulu sentiasa muka 1. Selaras dgn ORDER BY getBookHadiths.
-  const cr = row.chapter_ref ?? -1;
-  const c = await hadithDb.execute({
-    sql: `SELECT count(*) n FROM hadiths WHERE book_id = ?
-            AND (COALESCE(chapter_ref,-1) < ? OR (COALESCE(chapter_ref,-1) = ? AND number < ?))`,
-    args: [bookId, cr, cr, row.number],
-  });
-  return Math.floor(Number(c.rows[0].n) / perPage) + 1;
+  const r = await hadithDb.execute({ sql: "SELECT seq FROM hadiths WHERE id = ? AND book_id = ?", args: [hadithId, bookId] });
+  return seqToPage(Number(r.rows[0]?.seq ?? 1), perPage);
 }
 
 export async function searchBooks(q: string, limit = 30): Promise<(Book & { title_en: string | null })[]> {
   if (!q.trim()) return [];
   const r = await hadithDb.execute({
-    sql: `SELECT b.id, b.title_ar, b.title_en, count(h.id) n
-            FROM books b LEFT JOIN hadiths h ON h.book_id = b.id
-           WHERE b.title_ar LIKE '%' || ? || '%' OR b.title_en LIKE '%' || ? || '%'
-           GROUP BY b.id ORDER BY n DESC LIMIT ?`,
+    sql: `SELECT id, title_ar, title_en, COALESCE(total_hadith, 0) n
+            FROM books
+           WHERE title_ar LIKE '%' || ? || '%' OR title_en LIKE '%' || ? || '%'
+           ORDER BY n DESC LIMIT ?`,
     args: [q.trim(), q.trim(), limit],
   });
   return r.rows as unknown as (Book & { title_en: string | null })[];
