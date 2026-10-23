@@ -68,10 +68,27 @@ export async function updateHadith(formData: FormData) {
   const id = Number(formData.get("id"));
   const matn_ar = s(formData, "matn_ar");
   if (!Number.isFinite(id) || !matn_ar) return;
+  const chapter_ar = orNull(s(formData, "chapter_ar"));
+  const before = (await hadithDb.execute({ sql: "SELECT book_id, chapter_ar FROM hadiths WHERE id=?", args: [id] }))
+    .rows[0] as unknown as { book_id: number; chapter_ar: string | null } | undefined;
   await hadithDb.execute({
     sql: "UPDATE hadiths SET matn_ar=?, matn_search=?, grade=?, chapter_ar=? WHERE id=?",
-    args: [matn_ar, normalizeArabic(matn_ar), orNull(s(formData, "grade")), orNull(s(formData, "chapter_ar")), id],
+    args: [matn_ar, normalizeArabic(matn_ar), orNull(s(formData, "grade")), chapter_ar, id],
   });
+  // book_chapter ialah ToC prakira (db/migrations/2026-10-23-bacaan-murah.sql) —
+  // tajuk bab berubah → bina semula bab kitab ini sahaja supaya ToC tidak lapuk.
+  if (before && before.chapter_ar !== chapter_ar) {
+    await hadithDb.batch([
+      { sql: "DELETE FROM book_chapter WHERE book_id=?", args: [before.book_id] },
+      {
+        sql: `INSERT INTO book_chapter (book_id, first_seq, chapter_ref, chapter_ar, n)
+              SELECT book_id, min(seq), chapter_ref, chapter_ar, count(*) FROM hadiths
+               WHERE book_id=? AND chapter_ar IS NOT NULL AND length(chapter_ar) > 0
+               GROUP BY book_id, chapter_ref, chapter_ar`,
+        args: [before.book_id],
+      },
+    ], "write");
+  }
   // Terjemahan BM/EN (jadual translations, entity_type='hadith')
   for (const lang of ["ms", "en"] as const) {
     const text = s(formData, `tr_${lang}`);

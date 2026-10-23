@@ -4,7 +4,7 @@
 # Pratonton tempatan: npm run cf:preview
 
 name = "dewan-izhan"
-main = ".open-next/worker.js"
+main = "worker.ts"  # bungkus .open-next/worker.js dengan cache tepi (lihat worker.ts)
 compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat"]
 

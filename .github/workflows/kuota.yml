@@ -10,7 +10,10 @@ name: Pantau kuota Turso
 
 on:
   schedule:
-    - cron: "0 2 * * *" # 02:00 UTC = 10:00 pagi waktu Malaysia
+    # Setiap 3 jam: letusan 23 Okt 2026 (~10 juta bacaan SEJAM) boleh menyekat
+    # akaun dalam masa kurang sehari — semakan harian terlalu jarang. Log CSV
+    # kekal satu baris sehari (kuota.mjs langkau jika tarikh sudah ada).
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 permissions:
