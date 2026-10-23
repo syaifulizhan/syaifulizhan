@@ -20,9 +20,9 @@
 -- syarah + 942 kitab) daripada had 10 juta. Tiada trigger pada `hadiths`, jadi
 -- UPDATE tidak menyentuh hadiths_fts.
 --
--- WAJIB jalan semula bahagian "SEGAR SEMULA" selepas sebarang import hadis baharu
--- (skrip: node scripts/segar-seq.mjs). Baris tanpa seq tidak akan muncul di
--- muka kitab.
+-- Bahagian "SEGAR SEMULA" mesti dijalankan semula selepas import hadis baharu —
+-- baris tanpa seq tidak muncul di muka kitab. Ini AUTOMATIK melalui
+-- scripts/segar-seq.mjs (cangkuk dalam skrip import/sync + kuota.yml 3-jam).
 
 ALTER TABLE hadiths ADD COLUMN seq INTEGER;
 

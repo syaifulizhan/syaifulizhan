@@ -140,8 +140,10 @@
   `count(*)` dan `GROUP BY` ke atas satu kitab besar = puluhan ribu bacaan SETIAP
   paparan. 22–23 Okt 2026: crawler merayap Musnad Ahmad → ~10 juta bacaan/jam
   (82.8% had dalam 3 hari). Baiki: `hadiths.seq` + `book_chapter` + indeks
-  (`db/migrations/2026-10-23-bacaan-murah.sql`). **Selepas import hadis baharu
-  WAJIB `node scripts/segar-seq.mjs --turso`** — hadis tanpa seq tak muncul.
+  (`db/migrations/2026-10-23-bacaan-murah.sql`). Hadis tanpa seq tak muncul di muka
+  kitab — `scripts/segar-seq.mjs` menyegarkannya SECARA AUTOMATIK: dipanggil di hujung
+  skrip import/sync, dan `kuota.yml` menyemak + membaiki produksi setiap 3 jam.
+  Skrip import BAHARU: tambah cangkuk yang sama di hujungnya.
   Ukur kos query baharu dengan Hrana `/v2/pipeline` (`rows_read`) sebelum deploy.
 - Pertahanan kuota berlapis (23 Okt 2026): (1) query murah di atas; (2) `worker.ts`
   cache tepi 6 jam — suntingan admin mungkin lewat ≤6 jam kelihatan; (3) crawler
