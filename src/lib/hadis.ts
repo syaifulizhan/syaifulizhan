@@ -149,7 +149,7 @@ export async function getIsnadFor(hadithIds: number[]): Promise<Map<number, Isna
  * KENAPA MASIH ADA LIKE: FTS memadan token, LIKE memadan subrentetan. Untuk
  * bahasa Arab, imbuhan bermakna FTS boleh terlepas padanan di dalam perkataan
  * (diukur: 26%–100% liputan bergantung istilah). Jadi kita ambil FTS dahulu,
- * dan hanya menampung dengan LIKE jika FTS tidak cukup mengisi `limit`.
+ * dan hanya menampung dengan LIKE jika FTS tiada hasil langsung.
  * Kesannya: carian biasa langsung tidak mengimbas; kualiti hasil kekal sama.
  */
 export async function searchHadith(q: string, limit = 30): Promise<(Hadith & { book: string | null })[]> {
@@ -173,15 +173,15 @@ export async function searchHadith(q: string, limit = 30): Promise<(Hadith & { b
     // FTS tiada dalam persekitaran ini (cth DB lama) — jatuh terus ke LIKE.
   }
 
-  if (hasil.length >= limit) return hasil as (Hadith & { book: string | null })[];
+  if (hasil.length > 0) return hasil as (Hadith & { book: string | null })[];
 
-  // (2) Penampung LIKE — hanya bila FTS tidak cukup. Di sinilah imbasan berlaku,
-  //     jadi ia sengaja dijadikan laluan jarang, bukan laluan lalai.
-  const ada = (hasil as { id: unknown }[]).map((r) => r.id);
-  const tapis = ada.length ? `AND h.id NOT IN (${ada.map(() => "?").join(",")})` : "";
+  // (2) Penampung LIKE — HANYA bila FTS langsung tiada hasil. Di sinilah imbasan
+  //     berlaku: 85,503 baris dibaca setiap kali (diukur, Okt 2026). Dahulu ia
+  //     juga dijalankan bila FTS memulangkan < limit — iaitu hampir setiap carian
+  //     yang spesifik — jadi setiap carian sebegitu membakar 85k bacaan.
   const r2 = await hadithDb.execute({
-    sql: `${SEL} WHERE h.matn_search LIKE '%' || ? || '%' ${tapis} LIMIT ?`,
-    args: [norm, ...(ada as (string | number)[]), limit - hasil.length],
+    sql: `${SEL} WHERE h.matn_search LIKE '%' || ? || '%' LIMIT ?`,
+    args: [norm, limit],
   });
   hasil.push(...r2.rows);
 

@@ -70,6 +70,42 @@ for (const [kunci, label, nilai, had] of ukur) {
   baris.push({ kunci, nilai, had, pct, unjur });
 }
 
+/* ---- Kadar bakar semasa ----------------------------------------------
+ * Unjuran linear dari awal kitaran TERLEWAT mengesan letusan: pada 23 Okt 2026
+ * bacaan 82.8% dengan unjuran 116% tetapi larian masih hijau, sedangkan kadar
+ * sebenar ~10 juta SEJAM akan menyekat akaun dalam ~8 jam. Jadi ukur kadar 3 jam
+ * terakhir dan tanya soalan yang betul: pada kadar INI, adakah had dicapai
+ * sebelum kitaran tamat?
+ */
+let bahaya = false;
+try {
+  const { databases } = await api(`/organizations/${slug}/databases`);
+  const dari = new Date(kini - 3 * 3600_000).toISOString();
+  let baca3j = 0;
+  for (const d of databases) {
+    const u = await api(`/organizations/${slug}/databases/${d.Name}/usage?from=${dari}&to=${kini.toISOString()}`);
+    baca3j += u.database?.usage?.rows_read ?? 0;
+  }
+  const sejam = baca3j / 3;
+  const jamBaki = Math.max((tamat - kini) / 3600_000, 0);
+  const rr = baris.find((b) => b.kunci === "rows_read");
+  if (rr) {
+    const akhir = rr.nilai + sejam * jamBaki;
+    const jamKeHad = sejam > 0 ? (rr.had - rr.nilai) / sejam : Infinity;
+    console.log(
+      `\n  Kadar bacaan 3 jam terakhir: ${Math.round(sejam).toLocaleString()}/jam` +
+      ` → akhir kitaran ~${((akhir / rr.had) * 100).toFixed(0)}%` +
+      (Number.isFinite(jamKeHad) ? ` · had dicapai dalam ~${jamKeHad.toFixed(0)} jam` : "")
+    );
+    if (akhir >= rr.had * KRITIKAL / 100) {
+      bahaya = true;
+      console.error(`\nBAHAYA: pada kadar semasa bacaan mencecah had SEBELUM kitaran tamat. Cari punca sekarang.`);
+    }
+  }
+} catch (e) {
+  console.log(`\n  Kadar semasa: tidak dapat diukur — ${e.message}`);
+}
+
 // Log CSV — satu baris sehari, supaya trend boleh dilihat merentas bulan.
 const iCsv = process.argv.indexOf("--csv");
 if (iCsv > -1 && process.argv[iCsv + 1]) {
@@ -77,7 +113,9 @@ if (iCsv > -1 && process.argv[iCsv + 1]) {
   const fail = process.argv[iCsv + 1];
   if (!existsSync(fail)) writeFileSync(fail, "tarikh,rows_read,rows_written,storage_bytes,pct_tertinggi\n");
   const r = Object.fromEntries(baris.map((b) => [b.kunci, b.nilai]));
-  appendFileSync(fail, `${kini.toISOString().slice(0, 10)},${r.rows_read ?? 0},${r.rows_written ?? 0},${r.storage ?? 0},${tertinggi.toFixed(1)}\n`);
+  // Larian setiap 3 jam, tetapi log kekal satu baris sehari.
+  const { readFileSync } = await import("node:fs");
+  if (!readFileSync(fail, "utf8").includes(`\n${kini.toISOString().slice(0, 10)},`)) appendFileSync(fail, `${kini.toISOString().slice(0, 10)},${r.rows_read ?? 0},${r.rows_written ?? 0},${r.storage ?? 0},${tertinggi.toFixed(1)}\n`);
   console.log(`\n  dicatat → ${fail}`);
 }
 
@@ -103,6 +141,7 @@ if (sbUrl && sbKey) {
   console.log("\nSupabase: dilangkau (SUPABASE_URL / SUPABASE_SECRET_KEY tiada)");
 }
 
+if (bahaya) process.exit(1);
 if (tertinggi >= KRITIKAL) {
   console.error(`\nKRITIKAL: ${tertinggi.toFixed(0)}% kuota diguna. Pada pelan percuma, mencecah had menyekat SELURUH akaun.`);
   process.exit(1);
