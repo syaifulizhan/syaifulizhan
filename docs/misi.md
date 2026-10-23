@@ -143,6 +143,11 @@
   (`db/migrations/2026-10-23-bacaan-murah.sql`). **Selepas import hadis baharu
   WAJIB `node scripts/segar-seq.mjs --turso`** — hadis tanpa seq tak muncul.
   Ukur kos query baharu dengan Hrana `/v2/pipeline` (`rows_read`) sebelum deploy.
+- Pertahanan kuota berlapis (23 Okt 2026): (1) query murah di atas; (2) `worker.ts`
+  cache tepi 6 jam — suntingan admin mungkin lewat ≤6 jam kelihatan; (3) crawler
+  alat SEO (punca: **SemrushBot**) disekat 403 + robots.txt — senarai dalam
+  `src/app/robots.ts` & `worker.ts` mesti selaras; (4) `kuota.yml` setiap 3 jam,
+  MERAH bila kadar 3 jam terakhir akan melepasi had sebelum kitaran tamat.
   Sentiasa jalan `node scripts/turso-usage-guard.mjs` sebelum menulis.
 - Chrome auto-translate BM AKTIF — jangan scrape HTML dorar via `get_page_text`
   (teks diterjemah!). Guna endpoint JSON.
