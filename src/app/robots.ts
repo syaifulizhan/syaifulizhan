@@ -15,9 +15,21 @@ import type { MetadataRoute } from "next";
  *
  * Kandungan sebenar — hadis, perawi, kitab, glosari — kekal terbuka.
  */
+/**
+ * Crawler alat SEO komersial — mereka mengumpul data untuk pelanggan mereka,
+ * bukan menghantar pembaca. 23 Okt 2026: SemrushBot merayap muka kitab/perawi
+ * semasa bacaan Turso melonjak ~10 juta sejam. Senarai yang SAMA disekat terus
+ * (403) dalam worker.ts untuk yang tidak menghormati robots.txt.
+ */
+export const SEO_BOTS = [
+  "SemrushBot", "AhrefsBot", "MJ12bot", "DotBot", "BLEXBot", "DataForSeoBot",
+  "PetalBot", "Barkrowler", "serpstatbot", "SeekportBot", "MegaIndex", "Bytespider",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
+      { userAgent: SEO_BOTS, disallow: "/" },
       {
         userAgent: "*",
         allow: "/",
