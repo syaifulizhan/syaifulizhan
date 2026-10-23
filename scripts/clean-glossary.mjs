@@ -9,7 +9,7 @@ import { normalizeArabic } from "./lib/arabic.mjs";
 const DIR = "data/kamus/ocr";
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, v] = a.replace(/^--/, "").split("="); return [k, v ?? true]; }));
 const PROVIDER = String(args.provider ?? "groq");
-const MODEL = String(args.model ?? (PROVIDER === "groq" ? "llama-3.3-70b-versatile" : "qwen2.5:14b"));
+const MODEL = String(args.model ?? (PROVIDER === "groq" ? "llama-3.3-70b-versatile" : "qwen3.5:9b"));
 const LIMIT = args.limit ? Number(args.limit) : 1e9;
 const DRY = !!args.dry;
 const CONC = Number(args.concurrency ?? (PROVIDER === "groq" ? 2 : 2));
@@ -68,7 +68,7 @@ async function call(messages) {
   }
   const res = await fetch("http://localhost:11434/api/chat", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, messages, stream: false, format: "json", options: { temperature: 0.1 } }),
+    body: JSON.stringify({ model: MODEL, messages, stream: false, think: false, format: "json", options: { temperature: 0.1 } }), // think:false — model berfikir (qwen3.x) melebihi had 300 s fetch
   });
   return (await res.json()).message?.content;
 }
@@ -107,3 +107,4 @@ const worker = async () => {
 await Promise.all(Array.from({ length: CONC }, worker));
 console.log(`\n✓ Siap: ${done} di-clean (ok ${ok}, flag-perlu-semak ${flagged}, ralat ${errs})`);
 db.close();
+if (errs) process.exitCode = 1;
