@@ -77,3 +77,8 @@ const w1 = await usage();
 console.log(`\n✓ hadith_narrators: local ${lTot} == remote ${rTot} ? ${lTot === rTot ? "YA" : "TIDAK ⚠️"}`);
 console.log(`✓ narrator_relations: local ${lRel} == remote ${rRel} ? ${lRel === rRel ? "YA" : "TIDAK ⚠️"}`);
 console.log(`✓ writes terpakai: ~${(w1 - w0).toLocaleString()} · usage kini ${w1.toLocaleString()}`);
+
+// Hadis baharu perlu seq/total_hadith/book_chapter (lihat scripts/segar-seq.mjs) —
+// tanpanya ia tidak muncul di muka kitab. Jalan automatik, bukan tugas manusia.
+const { execFileSync } = await import("node:child_process");
+execFileSync("node", ["scripts/segar-seq.mjs", "--turso", "--jika-perlu"], { stdio: "inherit" });

@@ -59,3 +59,8 @@ console.log(`\n✓ Siap: ${n} INSERT dimuat (${((Date.now() - t0) / 1000).toFixe
 const c = async (t) => (await db.execute(`SELECT count(*) n FROM ${t}`)).rows[0].n;
 console.log(`  narrators=${await c("narrators")} hadiths=${await c("hadiths")} relations=${await c("narrator_relations")} translations=${await c("translations")}`);
 db.close();
+
+// Hadis baharu perlu seq/total_hadith/book_chapter (lihat scripts/segar-seq.mjs) —
+// tanpanya ia tidak muncul di muka kitab. Jalan automatik, bukan tugas manusia.
+const { execFileSync } = await import("node:child_process");
+execFileSync("node", ["scripts/segar-seq.mjs", "--turso", "--jika-perlu"], { stdio: "inherit" });

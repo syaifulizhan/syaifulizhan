@@ -136,3 +136,8 @@ writeFileSync("scripts/_ahmad-newids.json", JSON.stringify({
 }));
 console.log("✓ LOKAL siap. Manifest: scripts/_ahmad-newids.json");
 db.close();
+
+// Hadis baharu perlu seq/total_hadith/book_chapter (lihat scripts/segar-seq.mjs) —
+// tanpanya ia tidak muncul di muka kitab. Jalan automatik, bukan tugas manusia.
+const { execFileSync } = await import("node:child_process");
+execFileSync("node", ["scripts/segar-seq.mjs", "--jika-perlu"], { stdio: "inherit" });
