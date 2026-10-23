@@ -54,8 +54,16 @@ function cacheable(req: Request): boolean {
   return true;
 }
 
+// Selaras dengan SEO_BOTS dalam src/app/robots.ts. Dibalas 403 di sini supaya
+// tidak sampai ke Next/Turso langsung; /robots.txt tetap dihidang supaya bot yang
+// sopan nampak arahan Disallow dan berhenti sendiri.
+const SEO_BOT_UA = /SemrushBot|AhrefsBot|MJ12bot|DotBot|BLEXBot|DataForSeoBot|PetalBot|Barkrowler|serpstatbot|SeekportBot|MegaIndex|Bytespider/i;
+
 const worker = {
   async fetch(req: Request, env: unknown, ctx: Ctx): Promise<Response> {
+    if (SEO_BOT_UA.test(req.headers.get("user-agent") ?? "") && new URL(req.url).pathname !== "/robots.txt") {
+      return new Response("Forbidden", { status: 403, headers: { "cache-control": "no-store" } });
+    }
     if (!cacheable(req)) return handler.fetch(req, env, ctx);
 
     const cache = (caches as unknown as { default: Cache }).default;
