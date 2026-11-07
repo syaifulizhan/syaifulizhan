@@ -226,17 +226,17 @@ function pagination(bookId, page, totalPages) {
 
 const SEARCH_PH = { bm: "Cari matan dalam kitab ini…", en: "Search matn in this book…", ar: "ابحث في متن هذا الكتاب…" };
 const TOC = { bm: "Isi Kandungan", en: "Table of Content", ar: "فهرس الكتاب" };
-const KITAB = { bm: "kitab", en: "books", ar: "كتابًا" };
+const EDITION = { bm: "Penomboran", en: "Numbering", ar: "الترقيم" };
 
 // Placeholder tidak boleh ada <span>: JS menetapkannya mengikut bahasa (data-ph-*).
-function bookNav(bookId, chapterCount, hasBab) {
+function bookNav(bookId, hasToc, hasBab) {
   return (
     `<div class="bnav"><form class="bnav-search" method="get" action="/x/kitab/${bookId}/">` +
     `<input name="s" placeholder="${esc(SEARCH_PH.bm)}" data-ph-bm="${esc(SEARCH_PH.bm)}" data-ph-en="${esc(SEARCH_PH.en)}" data-ph-ar="${esc(SEARCH_PH.ar)}" dir="rtl" class="ar">` +
     `<button class="btn solid" type="submit" aria-label="cari">⌕</button></form>` +
-    (chapterCount > 0
+    (hasToc
       ? `<div class="bnav-toc" data-toc="/kitab/${bookId}/toc.json" data-bab="${hasBab ? 1 : 0}" data-book="${bookId}">` +
-        `<button class="bnav-burger" aria-expanded="false"><span class="bnav-lines">☰</span> ${L(TOC)} <span class="bnav-cnt">${chapterCount} ${L(KITAB)}</span></button></div>`
+        `<button class="bnav-burger" aria-expanded="false"><span class="bnav-lines">☰</span> ${L(TOC)}</button></div>`
       : "") +
     `</div>`
   );
@@ -244,7 +244,7 @@ function bookNav(bookId, chapterCount, hasBab) {
 
 /**
  * Halaman kitab penuh.
- * d = { book:{id,title_ar}, total, page, totalPages, hadiths[], chapterCount, sharah:{book,nBab}|null, kitabNo,
+ * d = { book:{id,title_ar}, total, page, totalPages, hadiths[], hasToc, sharah:{book,nBab}|null, kitabNo,
  *       isnads:Map, overrides:Map, trs:Map, rulings:Map(id→{shown[],hiddenCount}), babs:Map }
  */
 export function kitabPage(d, cssHrefs, { legacyScript = false } = {}) {
@@ -271,12 +271,14 @@ export function kitabPage(d, cssHrefs, { legacyScript = false } = {}) {
       `<span class="shk-cnt">${L(OPEN)} · ${d.sharah.nBab} ${L(BAB)}</span></span><span class="shk-book ar">${esc(d.sharah.book.name)}</span></button></section>`
     : "";
 
+  // Label edisi nombor raqm (books.numbering_edition; null = tiada label/lajur belum wujud).
+  const edition = book.numbering_edition ? `<span class="pbadge pbadge-ed">${L(EDITION)}: <span class="ar">${esc(book.numbering_edition)}</span></span>` : "";
   const body =
     nav() +
     `<main class="pwrap"><div class="pcrumb"><a href="/hadis/">${L(T.navHadis)}</a><span>›</span><span class="ar">${esc(book.title_ar)}</span></div>` +
     `<header class="phead"><div class="pname ar">${esc(book.title_ar)}</div><div class="pbadges">` +
-    `<span class="pbadge">${count}${L(T.hadisCount)}</span><span class="pbadge">${L(T.pageLabel)} ${page} / ${totalPages}</span></div></header>` +
-    bookNav(book.id, d.chapterCount, !!d.sharah) + sharah +
+    `<span class="pbadge">${count}${L(T.hadisCount)}</span><span class="pbadge">${L(T.pageLabel)} ${page} / ${totalPages}</span>${edition}</div></header>` +
+    bookNav(book.id, !!d.hasToc, !!d.sharah) + sharah +
     `<div style="margin-top:24px">${items || `<p class="pempty">${L(T.kitabEmpty)}</p>`}</div>` +
     pagination(book.id, page, totalPages) + `</main>` + footer();
 

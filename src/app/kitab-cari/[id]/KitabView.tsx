@@ -18,9 +18,8 @@ import { T } from "@/lib/i18n";
 export const PER_PAGE = 20;
 
 /**
- * Halaman kitab SSR — LAPISAN SANDARAN. Halaman biasa (/kitab/<id>/, /kitab/<id>/<n>/) dihidang
- * sebagai aset statik oleh scripts/gen-kitab-static.mjs; komponen ini hanya melayan carian dalam
- * kitab (/x/kitab/<id>/?s=…) dan halaman yang tiada aset (cth STATIC_BOOK_LIMIT).
+ * Carian dalam kitab (SSR Next). Halaman kitab biasa (/kitab/<id>/, /kitab/<id>/<n>/) dihidang sebagai aset statik
+ * (scripts/gen-kitab-static.mjs) atau Worker (src/static/kitab-route.ts), BUKAN komponen ini.
  */
 export async function KitabView({ bid, requestedPage, search }: { bid: number; requestedPage: number; search: string }) {
   const book = await getBook(bid);

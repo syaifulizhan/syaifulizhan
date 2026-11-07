@@ -33,6 +33,7 @@ const BASE_DISALLOW = [
   "/admin",    // panel pentadbir
   "/api/",     // endpoint dalaman
   "/cari",     // muka carian — setiap query = pertanyaan DB baharu
+  "/kitab-cari/", // laluan SSR dalaman carian kitab (ditulis semula dari /x/kitab/)
   "/x/",       // lencongan & carian dalam kitab (Worker) — bukan kandungan
   "/*?s=",     // carian dalam kitab lama
   "/*?q=",     // sebarang carian melalui query string (cth /hadis?q=…)

@@ -131,7 +131,7 @@ Pemetaan (read-only): 895 kitab stub; **504 padan tajuk Shamela** (409 tepat, 95
 Prinsip: amanah > laju — teks diambil terus dari Shamela (tiada rekaan), label edisi/muhaqqiq, rintis satu kitab dahulu, sahkan sampel, baru skala. Anggar baris Turso (tulis/baca/storan) SEBELUM setiap import ([`feedback_turso_bacaan_build`]).
 
 - [ ] **H1. Rintis import satu kitab** (cth Sahih Ibn Khuzayma, id 345): pemisah hadis + raqm edisi + bab; semak sampel vs Shamela.
-- [ ] **H2. Muka kitab besar di luar had 19k aset** → penyaji kitab ringan dalam `worker.ts` (seperti perawi) + cache tepi.
+- [x] ✅ **H2. Muka kitab besar di luar had 19k aset** → belanjawan aset (`scripts/lib/static-budget.mjs`) + penyaji kitab Worker berkongsi templat/SQL dengan penjana (`src/static/kitab-route.ts`); laluan Next kitab dibuang. Lihat `docs/worker-cpu/README.md` §H2.
 - [ ] **H3. B4 pengarang** dari `master.db` (author + tahun wafat) untuk 399 padanan unik; edisi kabur → semak manual.
 - [ ] **H4. Skala import** kitab stub berperingkat (kitab hadis tulen dahulu; Tarikh Dimashq/Istidhkar bukan himpunan hadis tulen — tangguh).
 - [ ] **H5. Profil perawi (D1)** dari kitab rijal tempatan (Taqrib, Tahdhib al-Kamal, al-Kashif…) — padanan entiti wajib disemak.

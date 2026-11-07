@@ -70,7 +70,7 @@ export async function cachedResponse(o: { req: Request; url: URL; ctx: Ctx; vers
   } else {
     res = await o.build();
     const ttl = res.status === 200 ? o.ttl : res.status === 404 ? 3600 : 0;
-    if (ttl) o.ctx.waitUntil(cache.put(key, new Response(res.clone().body, { status: res.status, headers: { ...HTML_HEADERS, "cache-control": `public, max-age=${ttl}` } })));
+    if (ttl) o.ctx.waitUntil(cache.put(key, new Response(res.clone().body, { status: res.status, headers: { "content-type": res.headers.get("content-type") ?? HTML_HEADERS["content-type"], "cache-control": `public, max-age=${ttl}` } })));
     res.headers.set("x-diwan-cache", "MISS");
   }
   return o.req.method === "HEAD" ? new Response(null, res) : res;

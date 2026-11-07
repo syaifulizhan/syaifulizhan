@@ -35,15 +35,28 @@ jobs:
         run: node scripts/static-fingerprint.mjs
         env:
           TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
-      - name: Static assets cache
+      # Satu cache + kunci SENDIRI per penjana: pulih bebas; hanya penjana yang terlepas dijalankan.
+      - name: Static cache (kitab)
         uses: actions/cache@v4
         with:
-          path: .static-cache
-          key: static-${{ steps.static.outputs.fp }}
+          path: .static-cache/kitab
+          key: static-kitab-${{ steps.static.outputs.fp_kitab }}
+      - name: Static cache (perawi)
+        uses: actions/cache@v4
+        with:
+          path: .static-cache/perawi
+          key: static-perawi-${{ steps.static.outputs.fp_perawi }}
+      - name: Static cache (pages)
+        uses: actions/cache@v4
+        with:
+          path: .static-cache/pages
+          key: static-pages-${{ steps.static.outputs.fp_pages }}
       - name: Build (OpenNext)
         run: npm run cf:build
         env:
-          STATIC_FP: ${{ steps.static.outputs.fp }}
+          STATIC_FP_KITAB: ${{ steps.static.outputs.fp_kitab }}
+          STATIC_FP_PERAWI: ${{ steps.static.outputs.fp_perawi }}
+          STATIC_FP_PAGES: ${{ steps.static.outputs.fp_pages }}
           STATIC_CACHE_DIR: .static-cache
           # Penjana halaman kitab statik membaca korpus terus dari Turso (tiada data/corpus.db di CI).
           TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}

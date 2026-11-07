@@ -22,13 +22,14 @@ import { default as handler } from "./.open-next/worker.js";
 // Dijana oleh scripts/gen-kitab-static.mjs / gen-perawi-static.mjs: nama fail CSS Next yang berhash.
 import cssHrefs from "./.open-next/css-hrefs.json";
 import buildId from "./.open-next/build-id.json";
+import { KITAB_PATH, kitabResponse, tocResponse } from "./src/static/kitab-route";
 import { cachedResponse, loadPage, nameFilter, parsePage, unavailable, HTML_HEADERS, type Row, type Stmt } from "./src/static/paged-route";
 import { cariResultsPage, notFoundPage as staticNotFound, CARI, CARI_SQL, CARI_JENIS, kitabQuery } from "./src/static/pages.mjs";
 import { perawiPage, shell, nav, footer, L, PERAWI_SQL, THIQATAN_ALTS, EDGE_LIMIT, edgeList, perawiListPage, listSql, LIST_KIND, LIST_PER } from "./src/static/templates.mjs";
 
 const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-lewatnya selepas ini
 // Naikkan nilai ini pada deploy untuk membatalkan semua cache tepi (tiada laluan purge lain).
-const CACHE_VERSION = "3";
+const CACHE_VERSION = "4";
 const SESSION_COOKIE = "diz_sess";
 const BYPASS = [/^\/admin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/_next\//];
 const CACHEABLE_TYPE = /^(text\/html|text\/x-component|application\/json|image\/)/; // image/: icon.png/apple-icon.png route Next (~300 ms CPU)
@@ -166,11 +167,28 @@ const notFoundResponse = () =>
 
 // Laluan yang MASIH dilayan Next (selain aset dan laluan Worker di bawah). Selain senarai ini = 404 murah.
 const NEXT_ROUTES = [
-  /^\/(admin|api)(\/|$)/, /^\/_next\//, /^\/kitab\/\d{1,12}(\/\d{1,6})?\/?$/, /^\/silsilah\/?$/,
+  /^\/(admin|api)(\/|$)/, /^\/_next\//, /^\/kitab-cari\/\d{1,12}\/?$/, /^\/silsilah\/?$/,
   /^\/(robots\.txt|favicon\.ico|icon\.png|apple-icon\.png)$/,
 ];
 const WORKER_ROUTES = [/^\/x\//, /^\/perawi\/\d{1,12}\/?$/];
-const knownPath = (p: string) => NEXT_ROUTES.some((r) => r.test(p)) || WORKER_ROUTES.some((r) => r.test(p));
+// /kitab/<id>[/<n>]/ dan toc.json: Worker (aset statik dihidang dahulu bagi kitab dalam belanjawan). Tanpa slash akhir → lencongan 308 di bawah.
+const kitabPath = (p: string) => KITAB_PATH.exec(p.endsWith("/") || p.endsWith(".json") ? p : `${p}/`);
+const knownPath = (p: string) => NEXT_ROUTES.some((r) => r.test(p)) || WORKER_ROUTES.some((r) => r.test(p)) || kitabPath(p) !== null;
+
+const notFoundKitab = () => {
+  const body = nav() + `<main class="pwrap"><p class="pempty">${L({ bm: "Kitab tidak ditemui.", en: "Book not found.", ar: "الكتاب غير موجود." })}</p></main>` + footer();
+  const html = shell({ title: "404 | Dewan Izhan", description: "Kitab tidak ditemui", canonical: "/hadis/", cssHrefs, body, head: '<meta name="robots" content="noindex">' });
+  return new Response(html, { status: 404, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=300" } });
+};
+
+/** Kitab di luar belanjawan aset: templat + SQL sama seperti penjana statik; cache tepi mengikut path sahaja. */
+function kitabCached(req: Request, url: URL, id: number, page: number | "toc", env: TursoEnv, ctx: Ctx): Promise<Response> {
+  const query = (stmts: Stmt[]) => tursoQuery(env, stmts);
+  return cachedResponse({
+    req, url, ctx, version: CACHE_VERSION, ttl: TTL, parts: {},
+    build: () => (page === "toc" ? tocResponse({ id, query, notFound: notFoundKitab }) : kitabResponse({ id, page, query, cssHrefs, notFound: notFoundKitab })),
+  });
+}
 
 /** Hasil carian /x/cari/?jenis=&q=&p= — FTS (hadis, perawi) atau LIKE (kitab), 1–2 pusingan Turso, tanpa React. */
 async function cariResponse(jenis: keyof typeof CARI, q: string, match: string | null, page: number, env: TursoEnv): Promise<Response> {
@@ -311,6 +329,11 @@ const worker = {
       url.pathname += "/";
       return new Response(null, { status: 308, headers: { location: url.toString(), "cache-control": "public, max-age=3600" } });
     }
+    const km = readOnly && (url.pathname.endsWith("/") || url.pathname.endsWith(".json")) ? kitabPath(url.pathname) : null;
+    if (km) {
+      if (km[2] === "1") return redirect308(`/kitab/${km[1]}/`); // halaman 1 = /kitab/<id>/ (satu URL kanonik)
+      return kitabCached(req, url, Number(km[1]), km[3] ? "toc" : Number(km[2] ?? 1), env as TursoEnv, ctx);
+    }
     if (url.pathname === "/x/cari/" && readOnly) return cariCached(req, url, env as TursoEnv, ctx);
     const lm = url.pathname.match(/^\/x\/perawi\/(\d{1,12})\/senarai\/$/);
     if (lm && (req.method === "GET" || req.method === "HEAD")) return perawiListCached(req, url, Number(lm[1]), env as TursoEnv, ctx);
@@ -323,9 +346,10 @@ const worker = {
     if (url.pathname.startsWith("/x/") && (req.method === "GET" || req.method === "HEAD")) {
       const r = await legacyRedirect(url, env as TursoEnv);
       if (r) return r;
-      // Carian dalam kitab: /x/kitab/<id>/?s=… ditulis semula ke laluan SSR Next /kitab/<id>/.
+      // Carian dalam kitab: /x/kitab/<id>/?s=… ditulis semula ke laluan SSR Next /kitab-cari/<id>/ (tanpa s → halaman kitab).
       const k = url.pathname.match(/^\/x\/kitab\/(\d{1,12})\/$/);
-      if (k) req = new Request(new URL(`/kitab/${k[1]}/${url.search}`, url), req);
+      if (k && !url.searchParams.get("s")?.trim()) return redirect308(`/kitab/${Number(k[1])}/`);
+      if (k) req = new Request(new URL(`/kitab-cari/${k[1]}/${url.search}`, url), req);
       else return notFoundResponse();
     }
     if (!cacheable(req)) return handler.fetch(req, env, ctx);
