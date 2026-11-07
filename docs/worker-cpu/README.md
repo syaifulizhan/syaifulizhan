@@ -41,3 +41,13 @@ Rujuk commit `3862d8c` (deploy melalui `.github/workflows/deploy.yml`):
 CLOUDFLARE_ACCOUNT_ID=c215b16aa228f4d526bcfbacc4accace npx wrangler@4 tail dewan-izhan --format json
 ```
 Ambil medan `cpuTime` dan `outcome` (exceededCpu). Papan pemuka Workers & Pages memaparkan permintaan, ralat dan median CPU.
+
+## Keputusan 2026-11-07 — sasaran 50k manusia/hari (corak SKTD)
+Pemilik meluluskan pelaksanaan penuh. Matlamat: selamat, berkesan, kekal dengan misi asal ("ilmu yang boleh disemak", BM/EN/AR), dan percuma.
+- **Statik (aset, tanpa Worker):** halaman kitab `/kitab/<id>/<n>/` (~4.3k), 10k perawi teratas (ikut bilangan rujukan isnad), `/`, `/hadis/`, `/perawi/`, `/glosari/`, cangkerang `/cari/`, 404. Jumlah mesti ≤ 19k fail (build gagal jika lebih).
+- **Worker tanpa Next (templat ringan dalam `worker.ts`):** perawi lain (`/x/perawi/<id>`), `/api/*` (carian, bab, syarah), lencongan URL lama. **Admin** kekal Next SSR.
+- **Bahasa:** HTML yang sama untuk semua bahasa. Label BM/EN/AR dipancarkan sekali gus, dan CSS `html[data-lang]` memilih yang dipaparkan. Skrip kecil dalam `<head>` membaca cookie `lang`. Tiada prefix URL.
+- **Build:** `generateStaticParams` + `scripts/emit-static.mjs` menyalin HTML pra-render ke `.open-next/assets`. `run_worker_first` = `/api/*`, `/admin/*`, `/x/*`.
+- **Anggaran:** 200k paparan/hari → ~66k permintaan Worker (had 100k). CPU pengendali terus dijangka 2–6 ms.
+- **Fasa:** 1 kitab → 2 perawi → 3 carian/API. Setiap fasa disemak penyemak dan diukur dengan `wrangler tail`. Rollback: `wrangler rollback`.
+- Prefetch `next/link` dimatikan seluruh laman (`src/components/Link.tsx`, commit 1ebba8d).
