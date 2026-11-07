@@ -1,0 +1,149 @@
+{
+ "corpus_book": 345,
+ "shamela_book": 1446,
+ "shamela_title": "صحيح ابن خزيمة",
+ "edition_label": "تحقيق محمد مصطفى الأعظمي (مستنبط) — المكتب الإسلامي (مستنبط) — ترقيم الطبعة المطبوعة؛ نسخة الشاملة #1446 (الشاملة لا تذكر المحقق ولا الناشر ولا الطبعة)",
+ "pages": 5117,
+ "hadiths_parsed": 3068,
+ "hadiths_importable": 3067,
+ "last_raqm": 3079,
+ "gaps_count": 13,
+ "gaps": [
+  739,
+  1068,
+  2099,
+  2107,
+  2209,
+  2264,
+  2402,
+  2476,
+  2497,
+  2661,
+  2685,
+  2861,
+  2983
+ ],
+ "duplicate_raqm": [
+  1693
+ ],
+ "quarantined_empty": [
+  1068
+ ],
+ "source_anomalies": [
+  {
+   "raqm": 1068,
+   "note": "Shamela prints \"1068 -\" with an EMPTY text; its muhaqqiq note (\"1068 - قال الأعظمي…\") sits AFTER hadith 1069, not after 1068. Quarantined, not imported, counted as a gap.",
+   "note_in_notes_jsonl": 1
+  }
+ ],
+ "headings": {
+  "kitab": 7,
+  "bab": 2237
+ },
+ "muhaqqiq_notes": 1514,
+ "page_footnotes": 2,
+ "parser_anomalies": 34,
+ "stubs": {
+  "total": 7,
+  "matched_unique": 7,
+  "detail": [
+   {
+    "stub_id": 3331,
+    "stub_src_ref": "345:178559:1",
+    "matched": true,
+    "how": "prefix",
+    "candidates": [
+     1
+    ],
+    "raqm": 1
+   },
+   {
+    "stub_id": 3332,
+    "stub_src_ref": "345:179051:1",
+    "matched": true,
+    "how": "prefix",
+    "candidates": [
+     301
+    ],
+    "raqm": 301
+   },
+   {
+    "stub_id": 3333,
+    "stub_src_ref": "345:180519:1",
+    "matched": true,
+    "how": "overlap 0.87",
+    "candidates": [
+     1470
+    ],
+    "raqm": 1470
+   },
+   {
+    "stub_id": 3334,
+    "stub_src_ref": "345:180929:1",
+    "matched": true,
+    "how": "overlap 0.75",
+    "candidates": [
+     1720
+    ],
+    "raqm": 1720
+   },
+   {
+    "stub_id": 3335,
+    "stub_src_ref": "345:181199:1",
+    "matched": true,
+    "how": "prefix",
+    "candidates": [
+     1879
+    ],
+    "raqm": 1879
+   },
+   {
+    "stub_id": 3336,
+    "stub_src_ref": "345:181763:1",
+    "matched": true,
+    "how": "prefix",
+    "candidates": [
+     2244
+    ],
+    "raqm": 2244
+   },
+   {
+    "stub_id": 3337,
+    "stub_src_ref": "345:182149:1",
+    "matched": true,
+    "how": "prefix",
+    "candidates": [
+     2504
+    ],
+    "raqm": 2504
+   }
+  ],
+  "policy": "UPDATE in place keyed by old src_ref (ids + narrator links stay stable; links need re-linking since matn text changed). Merged islam-db stub(s): 345:179051:1 -> keeps first raqm, narrator links with position >= 7 dropped (they belong to the second hadith), second raqm inserted fresh. Old rows + removed links are in rollback.sql / rollback-backup.json."
+ },
+ "inserts": 3060,
+ "stub_updates_in_place": 7,
+ "payload_bytes": {
+  "matn_ar": 3587480,
+  "matn_search": 1983557
+ },
+ "apply": {
+  "hadiths_before": 85503,
+  "hadiths_after": 88563,
+  "book_chapter_rows": 2140,
+  "storage_delta_bytes": 10907648,
+  "fts_shadow_rows_delta": {
+   "data": 156,
+   "idx": 419,
+   "docsize": 3060
+  },
+  "est_turso_rows_written": {
+   "hadiths_inserts_row_plus_4_indexes": 15300,
+   "stub_updates": 35,
+   "seq_updates_row_plus_index_rewrite": 9201,
+   "fts_shadow_rows": 3635,
+   "book_chapter_rows": 2140,
+   "books_update": 3,
+   "total": 30314
+  }
+ }
+}
