@@ -21,6 +21,7 @@
 import { default as handler } from "./.open-next/worker.js";
 // Dijana oleh scripts/gen-kitab-static.mjs / gen-perawi-static.mjs: nama fail CSS Next yang berhash.
 import cssHrefs from "./.open-next/css-hrefs.json";
+import buildId from "./.open-next/build-id.json";
 import { cachedResponse, loadPage, nameFilter, parsePage, unavailable, HTML_HEADERS, type Row, type Stmt } from "./src/static/paged-route";
 import { cariResultsPage, notFoundPage as staticNotFound, CARI, CARI_SQL, CARI_JENIS, kitabQuery } from "./src/static/pages.mjs";
 import { perawiPage, shell, nav, footer, L, PERAWI_SQL, THIQATAN_ALTS, EDGE_LIMIT, edgeList, perawiListPage, listSql, LIST_KIND, LIST_PER } from "./src/static/templates.mjs";
@@ -262,6 +263,7 @@ async function cacheKey(req: Request): Promise<Request> {
   const url = new URL(req.url);
   const lang = cookie(req, "lang");
   url.searchParams.set("__cv", CACHE_VERSION);
+  url.searchParams.set("__b", buildId); // HTML Next merujuk chunk binaan semasa
   url.searchParams.set("__lang", lang === "en" || lang === "ar" ? lang : "bm");
   const vary = VARY.map((h) => `${h}=${req.headers.get(h) ?? ""}`).join("&");
   if (vary !== VARY.map((h) => `${h}=`).join("&")) {
