@@ -48,8 +48,16 @@ export default function SyajaraGenerator() {
   }
 
   // jana contoh secara automatik pada muat (papar pohon cantik terus)
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
-  useEffect(() => { gen(EXAMPLE); }, []);
+  /* eslint-disable react-hooks/set-state-in-effect -- jana sekali pada muat */
+  // Sanad dari kotak di muka utama (sessionStorage, atau ?t= bila tiada JS di sana) → jana terus.
+  useEffect(() => {
+    let t = "";
+    try { t = sessionStorage.getItem("syajarah") ?? ""; sessionStorage.removeItem("syajarah"); } catch {}
+    if (!t) t = new URLSearchParams(location.search).get("t") ?? "";
+    t = t.slice(0, 5000);
+    if (t.trim() && t !== EXAMPLE) { setDemo(false); setText(t); gen(t); } else gen(EXAMPLE);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // AUTO-JANA berulang kali: tiap kali sanad baharu ditampal/ditaip (debounce),
   // tanpa perlu klik butang atau refresh

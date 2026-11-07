@@ -225,6 +225,9 @@ const PILLARS = [["pillar1H4", "pillar1P"], ["pillar2H4", "pillar2P"], ["pillar3
 const SILSILAH = { bm: "Penjana Syajarat al-Isnad", en: "Isnad Tree Generator", ar: "مُوَلِّد شجرة الإسناد" };
 const SILSILAH_LEAD = { bm: "Tampal mana-mana sanad.", en: "Paste any sanad.", ar: "الصق أيَّ إسناد." };
 export const SILSILAH_HREF = "/silsilah/";
+const SYAJARAH_GEN = { bm: "Jana Syajarah", en: "Generate Tree", ar: "توليد الشجرة" };
+const SYAJARAH_EXAMPLE =
+  "حَدَّثَنَا الْحُمَيْدِيُّ عَبْدُ اللَّهِ بْنُ الزُّبَيْرِ قَالَ حَدَّثَنَا سُفْيَانُ قَالَ حَدَّثَنَا يَحْيَى بْنُ سَعِيدٍ الأَنْصَارِيُّ قَالَ أَخْبَرَنِي مُحَمَّدُ بْنُ إِبْرَاهِيمَ التَّيْمِيُّ أَنَّهُ سَمِعَ عَلْقَمَةَ بْنَ وَقَّاصٍ اللَّيْثِيَّ يَقُولُ سَمِعْتُ عُمَرَ بْنَ الْخَطَّابِ عَلَى الْمِنْبَرِ قَالَ سَمِعْتُ رَسُولَ اللَّهِ صلى الله عليه وسلم يَقُولُ إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ";
 
 const STAR_PATTERN =
   '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><pattern id="khatam" width="64" height="64" patternUnits="userSpaceOnUse">' +
@@ -243,7 +246,11 @@ export function homePage(cssHrefs) {
     `<a class="btn ghost" href="#ilmu">${L(T.heroCta2)}</a></div></div></div></section>` +
     `<section class="searchband"><div class="wrap searchband-in"><div class="eyebrow">${L(T.searchTitle)}</div><h2 class="searchband-h">${L(T.searchBandH)}</h2>${searchForm({ big: true })}</div></section>` +
     `<section class="sanad" id="silsilah"><div class="wrap sanad-in"><span class="eyebrow">۞ ${L(SILSILAH)}</span><p class="sanad-lead">${L(SILSILAH_LEAD)}</p>` +
-    `<div class="cta-row"><a class="btn" href="${SILSILAH_HREF}">${L(T.heroCta1)}</a></div></div></section>` +
+    // Penjana interaktif (React + server action) tinggal di /silsilah/. Di sini: kotak tampal sanad
+    // statik; JS kecil hantar teks melalui sessionStorage → /silsilah/ jana terus. Tanpa JS: pautan biasa.
+    `<form class="sy-input" action="${SILSILAH_HREF}" method="get" onsubmit="try{sessionStorage.setItem('syajarah',this.t.value)}catch(e){}">` +
+    `<textarea name="t" dir="rtl" class="sy-ta ar" rows="4" aria-label="${esc(SILSILAH.bm)}">${esc(SYAJARAH_EXAMPLE)}</textarea>` +
+    `<div class="sy-btns"><button class="btn" type="submit">${L(SYAJARAH_GEN)}</button></div></form></div></section>` +
     `<section class="ilmu" id="ilmu"><div class="wrap"><div class="sec-head"><span class="eyebrow">${L(T.ilmuEyebrow)}</span><h2>${L(T.ilmuH2)}</h2><p>${L(T.ilmuP)}</p></div><div class="cards">` +
     CARDS.map(([num, ar, h, p]) => `<div class="card"><div class="card-num">${num}</div><div class="card-ar">${ar}</div><h3>${L(T[h])}</h3><p>${L(T[p])}</p></div>`).join("") +
     `</div></div></section>` +
