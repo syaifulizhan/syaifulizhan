@@ -29,22 +29,29 @@ export const SEO_BOTS = [
   "meta-externalagent", "Google-Extended", "Diffbot", "ImagesiftBot", "omgili", "Timpibot",
 ];
 
+const BASE_DISALLOW = [
+  "/admin",    // panel pentadbir
+  "/api/",     // endpoint dalaman
+  "/cari",     // muka carian — setiap query = pertanyaan DB baharu
+  "/*?q=",     // sebarang carian melalui query string (cth /hadis?q=…)
+  "/*?h=",     // pintasan hadis lama (dialihkan ke ?page=N) — 85k URL unik
+  "/*?semua=", // senarai penuh guru/murid perawi — mahal CPU
+];
+
+/**
+ * Enjin carian utama boleh merayap /perawi/ (SEO kekal). Crawler lain disekat
+ * daripada /perawi/: 127k muka × ~220 ms CPU SSR melanggar had 10 ms Worker
+ * percuma (docs/worker-cpu/README.md, keputusan "C-separuh" 7 Nov 2026).
+ * Crawler memakai kumpulan paling khusus sahaja, jadi BASE_DISALLOW diulang.
+ */
+export const SEARCH_BOTS = ["Googlebot", "Bingbot"];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       { userAgent: SEO_BOTS, disallow: "/" },
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: [
-          "/admin",   // panel pentadbir
-          "/api/",    // endpoint dalaman
-          "/cari",    // muka carian — setiap query = pertanyaan DB baharu
-          "/*?q=",    // sebarang carian melalui query string (cth /hadis?q=…)
-          "/*?h=",    // pintasan hadis lama (dialihkan ke ?page=N) — 85k URL unik
-          "/*?semua=", // senarai penuh guru/murid perawi — mahal CPU
-        ],
-      },
+      { userAgent: SEARCH_BOTS, allow: "/", disallow: BASE_DISALLOW },
+      { userAgent: "*", allow: "/", disallow: [...BASE_DISALLOW, "/perawi/"] },
     ],
   };
 }

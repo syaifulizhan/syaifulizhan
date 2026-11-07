@@ -33,7 +33,8 @@ Rujuk commit `3862d8c` (deploy melalui `.github/workflows/deploy.yml`):
 ## Keputusan
 - Fasa 1 (sekarang): A + B. Murah dan tiada kesan SEO.
 - Fasa 2 (jika ralat masih > ~1%/hari): D untuk `/perawi/[id]` dan `/kitab/[id]`. Ini satu-satunya cara supaya CPU setiap permintaan hampir dengan 10 ms.
-- C hanya dibuat jika pemilik bersetuju mengorbankan SEO perawi.
+- C-separuh (dipilih pemilik 2026-11-07): robots membenarkan Googlebot + Bingbot sahaja di `/perawi/`; crawler lain Disallow. Jika crawler Apple (UA Safari) tidak patuh → peraturan WAF percuma ikut ASN pada `/perawi/`.
+- Ukuran selepas `db9fcc7`: kitab 308 median 13 ms, kitab 200 median 53 ms, perawi 200 median 220 ms.
 
 ## Cara ukur
 ```
