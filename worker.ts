@@ -21,11 +21,12 @@
 import { default as handler } from "./.open-next/worker.js";
 // Dijana oleh scripts/gen-kitab-static.mjs / gen-perawi-static.mjs: nama fail CSS Next yang berhash.
 import cssHrefs from "./.open-next/css-hrefs.json";
-import { perawiPage, shell, nav, footer, L, PERAWI_SQL, THIQATAN_ALTS, EDGE_LIMIT, EDGE_LIMIT_ALL, edgeList } from "./src/static/templates.mjs";
+import { cachedResponse, loadPage, nameFilter, parsePage, unavailable, HTML_HEADERS, type Row, type Stmt } from "./src/static/paged-route";
+import { perawiPage, shell, nav, footer, L, PERAWI_SQL, THIQATAN_ALTS, EDGE_LIMIT, edgeList, perawiListPage, listSql, LIST_KIND, LIST_PER } from "./src/static/templates.mjs";
 
 const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-lewatnya selepas ini
 // Naikkan nilai ini pada deploy untuk membatalkan semua cache tepi (tiada laluan purge lain).
-const CACHE_VERSION = "2";
+const CACHE_VERSION = "3";
 const SESSION_COOKIE = "diz_sess";
 const BYPASS = [/^\/admin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/_next\//];
 const CACHEABLE_TYPE = /^(text\/html|text\/x-component|application\/json|image\/)/; // image/: icon.png/apple-icon.png route Next (~300 ms CPU)
@@ -56,10 +57,9 @@ async function tursoRow(env: TursoEnv, sql: string, args: number[]): Promise<(st
 }
 
 type Cell = { type: string; value?: string };
-type Row = Record<string, string | number | null>;
 
 /** Beberapa SELECT dalam SATU permintaan pipeline Turso. Pulang tatasusunan baris-sebagai-objek per penyataan, atau null jika gagal. */
-async function tursoQuery(env: TursoEnv, stmts: { sql: string; args: number[] }[]): Promise<Row[][] | null> {
+async function tursoQuery(env: TursoEnv, stmts: Stmt[]): Promise<Row[][] | null> {
   const base = (env.TURSO_DATABASE_URL ?? "").replace(/^libsql:\/\//, "https://");
   if (!base.startsWith("https://")) return null;
   try {
@@ -68,7 +68,7 @@ async function tursoQuery(env: TursoEnv, stmts: { sql: string; args: number[] }[
       headers: { authorization: `Bearer ${env.TURSO_AUTH_TOKEN ?? ""}`, "content-type": "application/json" },
       body: JSON.stringify({
         requests: [
-          ...stmts.map((s) => ({ type: "execute", stmt: { sql: s.sql, args: s.args.map((v) => ({ type: "integer", value: String(v) })) } })),
+          ...stmts.map((s) => ({ type: "execute", stmt: { sql: s.sql, args: s.args.map((v) => (typeof v === "number" ? { type: "integer", value: String(v) } : { type: "text", value: v })) } })),
           { type: "close" },
         ],
       }),
@@ -92,20 +92,18 @@ async function tursoQuery(env: TursoEnv, stmts: { sql: string; args: number[] }[
   }
 }
 
-const HTML_HEADERS = { "content-type": "text/html; charset=utf-8" };
 
 /** /perawi/<id>/ dan /x/perawi/<id>/ — render templat ringan (tanpa Next/React), 1–2 query Turso. */
-async function perawiResponse(id: number, semua: boolean, env: TursoEnv): Promise<Response> {
-  const limit = semua ? EDGE_LIMIT_ALL : EDGE_LIMIT;
+async function perawiResponse(id: number, env: TursoEnv): Promise<Response> {
   const altIds = THIQATAN_ALTS[id as keyof typeof THIQATAN_ALTS] ?? [];
   const q = await tursoQuery(env, [
     { sql: PERAWI_SQL.narrator, args: [id] },
     { sql: PERAWI_SQL.grades, args: [id] },
-    { sql: PERAWI_SQL.teachers, args: [id, limit] },
-    { sql: PERAWI_SQL.students, args: [id, limit] },
+    { sql: PERAWI_SQL.teachers, args: [id, EDGE_LIMIT] },
+    { sql: PERAWI_SQL.students, args: [id, EDGE_LIMIT] },
     ...altIds.map((a) => ({ sql: PERAWI_SQL.narrator, args: [a] })),
   ]);
-  if (!q) return new Response("Service Unavailable", { status: 503, headers: { "cache-control": "no-store", "retry-after": "30" } });
+  if (!q) return unavailable();
   const n = q[0][0];
   if (!n) {
     const body = nav() + `<main class="pwrap"><p class="pempty">${L({ bm: "Perawi tidak ditemui.", en: "Narrator not found.", ar: "الراوي غير موجود." })}</p></main>` + footer();
@@ -113,34 +111,50 @@ async function perawiResponse(id: number, semua: boolean, env: TursoEnv): Promis
     return new Response(html, { status: 404, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=300" } });
   }
   const html = perawiPage({
-    n, grades: q[1], teachers: edgeList(q[2]), students: edgeList(q[3]), alts: q.slice(4).map((r) => r[0]).filter(Boolean), semua,
+    n, grades: q[1], teachers: edgeList(q[2]), students: edgeList(q[3]), alts: q.slice(4).map((r) => r[0]).filter(Boolean),
   }, cssHrefs);
   return new Response(html, { status: 200, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=3600" } });
 }
 
-/** Perawi bukan-teratas (tiada aset statik) jatuh ke sini. Cache tepi mengikut URL; bukan sesi/bahasa (HTML sama untuk semua bahasa). */
-async function perawiCached(req: Request, url: URL, id: number, env: TursoEnv, ctx: Ctx): Promise<Response> {
-  const cache = (caches as unknown as { default: Cache }).default;
-  // Kunci hanya path + semua: query rawak tidak boleh memintas cache (Turso + render).
-  const semua = url.searchParams.get("semua") === "1";
-  const k = new URL(url.pathname, url);
-  if (semua) k.searchParams.set("semua", "1");
-  k.searchParams.set("__cv", CACHE_VERSION);
-  const key = new Request(k.toString(), { method: "GET" });
-  let res = await cache.match(key);
-  if (res) {
-    res = new Response(res.body, res);
-    res.headers.set("x-diwan-cache", "HIT");
-  } else {
-    res = await perawiResponse(id, semua, env);
-    // 200 → TTL penuh; 404 → 1 jam (hadkan enumerasi id yang membakar Turso). 503 tidak dicache.
-    const ttl = res.status === 200 ? TTL : res.status === 404 ? 3600 : 0;
-    if (ttl) {
-      ctx.waitUntil(cache.put(key, new Response(res.clone().body, { status: res.status, headers: { ...HTML_HEADERS, "cache-control": `public, max-age=${ttl}` } })));
-    }
-    res.headers.set("x-diwan-cache", "MISS");
-  }
-  return req.method === "HEAD" ? new Response(null, res) : res;
+/** Perawi bukan-teratas (tiada aset statik) jatuh ke sini. Cache tepi mengikut path; bukan sesi/bahasa (HTML sama untuk semua bahasa). */
+const perawiCached = (req: Request, url: URL, id: number, env: TursoEnv, ctx: Ctx) =>
+  cachedResponse({ req, url, ctx, version: CACHE_VERSION, ttl: TTL, parts: {}, build: () => perawiResponse(id, env) });
+
+const notFoundPage = (id: number, canonical: string) => {
+  const body = nav() + `<main class="pwrap"><p class="pempty">${L({ bm: "Perawi tidak ditemui.", en: "Narrator not found.", ar: "الراوي غير موجود." })}</p></main>` + footer();
+  const html = shell({ title: "404 | Dewan Izhan", description: "Tidak ditemui", canonical, cssHrefs, body, head: '<meta name="robots" content="noindex">' });
+  return new Response(html, { status: 404, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=300" } });
+};
+
+/** /x/perawi/<id>/senarai/?jenis=murid|guru&p=N&q=nama — senarai penuh berhalaman (LIST_PER), penapis nama melalui narrators_fts. */
+async function perawiListResponse(id: number, jenis: keyof typeof LIST_KIND, page: number, q: { norm: string; match: string | null }, env: TursoEnv): Promise<Response> {
+  const sql = listSql(jenis, q.match !== null);
+  const extra = q.match !== null ? [q.match] : [];
+  const r = await loadPage({
+    query: (stmts) => tursoQuery(env, stmts),
+    head: { sql: PERAWI_SQL.head, args: [id] },
+    count: { sql: sql.count, args: [id, ...extra] },
+    rows: (offset, limit) => ({ sql: sql.rows, args: [id, ...extra, limit, offset] }),
+    per: LIST_PER,
+    page,
+  });
+  if (r.kind === "unavailable") return unavailable();
+  if (r.kind !== "ok") return notFoundPage(id, `/perawi/${id}/`);
+  const rows = edgeList(r.rows.map((x: Row) => ({ ...x, total: r.total }))).rows;
+  const html = perawiListPage({ n: r.head as Row, jenis, q: q.norm, rows, total: r.total, page }, cssHrefs);
+  return new Response(html, { status: 200, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=3600" } });
+}
+
+/** Sahkan jenis (senarai putih), p dan q sebelum cache/DB; tidak sah → 404 murah tanpa Turso. */
+function perawiListCached(req: Request, url: URL, id: number, env: TursoEnv, ctx: Ctx): Promise<Response> | Response {
+  const jenis = url.searchParams.get("jenis") ?? "murid";
+  const page = parsePage(url.searchParams.get("p"));
+  if (!Object.hasOwn(LIST_KIND, jenis) || page === null) return notFoundPage(id, `/perawi/${id}/`);
+  const q = nameFilter(url.searchParams.get("q"));
+  return cachedResponse({
+    req, url, ctx, version: CACHE_VERSION, ttl: TTL, parts: { jenis, p: page, q: q.norm },
+    build: () => perawiListResponse(id, jenis as keyof typeof LIST_KIND, page, q, env),
+  });
 }
 
 const pageUrl = (origin: string, book: number, seq: number, total: number) => {
@@ -227,7 +241,13 @@ const worker = {
       url.pathname += "/";
       return new Response(null, { status: 308, headers: { location: url.toString(), "cache-control": "public, max-age=3600" } });
     }
+    const lm = url.pathname.match(/^\/x\/perawi\/(\d{1,12})\/senarai\/$/);
+    if (lm && (req.method === "GET" || req.method === "HEAD")) return perawiListCached(req, url, Number(lm[1]), env as TursoEnv, ctx);
     const pm = url.pathname.match(/^\/(?:x\/)?perawi\/(\d{1,12})\/$/);
+    // Lama: ?semua=1 → senarai murid berhalaman.
+    if (pm && url.searchParams.has("semua") && (req.method === "GET" || req.method === "HEAD")) {
+      return redirect308(`/x/perawi/${pm[1]}/senarai/?jenis=murid`);
+    }
     if (pm && (req.method === "GET" || req.method === "HEAD")) return perawiCached(req, url, Number(pm[1]), env as TursoEnv, ctx);
     if (url.pathname.startsWith("/x/") && (req.method === "GET" || req.method === "HEAD")) {
       const r = await legacyRedirect(url, env as TursoEnv);

@@ -57,3 +57,18 @@ Pemilik meluluskan pelaksanaan penuh. Matlamat: selamat, berkesan, kekal dengan 
 - Templat `perawiPage` + `PERAWI_SQL` dalam `src/static/templates.mjs`, dipakai penjana dan `worker.ts`. Perawi lain (tiada aset) jatuh ke Worker: `/perawi/<id>/` dan `/x/perawi/<id>/[?semua=1]` → satu permintaan pipeline Turso (4 SELECT) + templat, cache tepi 7 hari. Ralat DB → 503 tanpa cache.
 - Cadangan pembetulan perawi: `entity_type=narrator` melalui `/api/suggest/` (`data-e`/`data-f` pada `.suggest`).
 - Semua pautan perawi ialah `<a href="/perawi/<id>/">` biasa.
+
+## Senarai berhalaman + penapis nama (2026-11-07)
+Had `EDGE_LIMIT_ALL` (1000) dan `?semua=1` dibuang: 56 perawi mempunyai >1000 relasi (maks 5,162) dan data mesti boleh disemak.
+- URL: `/x/perawi/<id>/senarai/?jenis=murid|guru&p=N&q=<nama>` — `LIST_PER`=250/halaman (had CPU), susunan tahun wafat, jumlah sebenar dipaparkan. `/x/perawi/<id>/?semua=1` → 308 ke senarai murid. Noindex (q → nofollow); `/x/` sudah disekat robots.
+- Pengesahan: `id` `\d{1,12}`; `jenis` senarai putih (`LIST_KIND`); `p` integer 1..ceil(total/LIST_PER), di luar julat → 404 (jumlah 0 membenarkan p=1); `q` dipotong 100 aksara.
+- Penapis: `nameFilter()` menormalkan dengan `normalizeArabic` (sama seperti carian perawi), buang semua selain huruf Arab, lalu `"tok"*` (frasa FTS berawalan) → `id IN (SELECT rowid FROM narrators_fts WHERE narrators_fts MATCH ?)`. Petikan/operator/HTML/SQL tidak boleh sampai ke MATCH. q tanpa huruf Arab = tiada penapis.
+- Cache tepi: kunci = path + jenis + p + q ternormal; 200 → 7 hari, 404 → 1 jam, 503 tidak dicache. Satu pipeline Turso (3 SELECT: kepala, COUNT, baris).
+- Pembantu boleh guna semula:
+  - `src/static/templates.mjs`: `pagedList({items, render, total, page, per, baseUrl, query, labels})`, `pager(page, totalPages, href)`, `filterForm({action, hidden, q, labels})` (borang GET tanpa JS); `perawiListPage` ialah contoh.
+  - `src/static/paged-route.ts`: `parsePage`, `nameFilter`, `loadPage({query, head, count, rows, per, page})` → `ok|notfound|range|unavailable`, `cachedResponse({req, url, ctx, version, ttl, parts, build})`, `unavailable()`. Senarai baharu (hadis, glosari) = tulis SQL `count`/`rows`, panggil `loadPage`, render dengan `pagedList`, bungkus dengan `cachedResponse`; contoh: `perawiListResponse` dalam `worker.ts`.
+- Risiko diketahui: setiap `q` unik ialah MISS (1 permintaan Turso, 3 SELECT); dihadkan oleh robots, bot 403 dan WAF.
+
+### Lapisan statik senarai (tanpa Turso/Worker)
+- `gen-perawi-static.mjs` menjana `perawi/<id>/senarai.json` ({t,s}: guru/murid sebagai `[id,nama,wafat]`, susunan SQL) untuk SEMUA perawi >100 guru ATAU murid (1,119 fail, maks 362 KB, purata 26.5 KB; jumlah aset 16,917 ≤ 19,000). Bilangan setiap senarai disahkan dengan COUNT; tidak sepadan = build gagal.
+- `public/static-senarai.js` (dimuat hanya pada halaman perawi yang terpotong; `.pgraph[data-senarai]`) menaik taraf pautan "Papar semua": muat JSON sekali, senarai 250/halaman + tapis nama dalam pelayar (salinan tepat `normalizeArabic`, awalan token = setara FTS `"tok"*`). Semua teks guna `textContent`. Tanpa JS, pautan `/x/perawi/<id>/senarai/` (Worker) kekal.

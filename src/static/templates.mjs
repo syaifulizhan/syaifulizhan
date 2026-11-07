@@ -30,7 +30,7 @@ const FONTS =
   "https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap";
 
 /** Cangkerang halaman penuh. `cssHrefs` = fail CSS Next yang dibina (dicari oleh penjana). */
-export function shell({ title, description, canonical, cssHrefs, body, head = "", script = "" }) {
+export function shell({ title, description, canonical, cssHrefs, body, head = "", script = "", scripts = "" }) {
   const css = cssHrefs.map((h) => `<link rel="stylesheet" href="${esc(h)}">`).join("");
   return (
     `<!DOCTYPE html><html lang="ms" dir="ltr" class="h-full antialiased"><head><meta charset="utf-8">` +
@@ -40,7 +40,7 @@ export function shell({ title, description, canonical, cssHrefs, body, head = ""
     `<meta property="og:image" content="/og.png"><link rel="icon" href="/favicon.ico">` +
     `<script>${LANG_SCRIPT}${script}</script>${css}<style>${LANG_CSS}</style>` +
     `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` +
-    `<link rel="stylesheet" href="${FONTS}">${head}</head><body>${body}<script src="/static-kitab.js" defer></script></body></html>`
+    `<link rel="stylesheet" href="${FONTS}">${head}</head><body>${body}<script src="/static-kitab.js" defer></script>${scripts}</body></html>`
   );
 }
 
@@ -304,11 +304,12 @@ export function kitabPage(d, cssHrefs, { legacyScript = false } = {}) {
 // ── Perawi ────────────────────────────────────────────────────────────
 // Had baris graf guru/murid; selaras EDGE_LIMIT dalam src/lib/narrators.ts.
 export const EDGE_LIMIT = 100;
-export const EDGE_LIMIT_ALL = 1000; // had CPU Worker 10 ms — senarai penuh lebih besar tidak berbaloi
+export const LIST_PER = 250;  // baris setiap halaman senarai penuh (/x/perawi/<id>/senarai/); had CPU Worker 10 ms
 
 // SQL dikongsi penjana statik dan Worker supaya keduanya memaparkan data yang sama.
 export const PERAWI_SQL = {
   narrator: "SELECT id, name_ar, shuhra, kunya, nisba, rutbah, profession, regions, mawla, death_year, death_place FROM narrators WHERE id = ?",
+  head: "SELECT id, name_ar, rutbah FROM narrators WHERE id = ?",
   grades: "SELECT scholar, verdict FROM narrator_grades WHERE narrator_id = ?",
   teachers: `SELECT n.id, n.name_ar, n.rutbah, n.death_year, COUNT(*) OVER () AS total
               FROM narrator_relations r JOIN narrators n ON n.id = r.teacher_id
@@ -318,6 +319,20 @@ export const PERAWI_SQL = {
              WHERE r.teacher_id = ? ORDER BY (n.death_year IS NULL), n.death_year, n.id LIMIT ?`,
 };
 
+// Senarai penuh guru/murid berhalaman. `jenis` ialah senarai putih (kunci dalam LIST_KIND) — nama lajur tidak
+// pernah datang daripada input pengguna. Penapis nama: id dalam narrators_fts (MATCH ... ) — sama seperti carian perawi.
+export const LIST_KIND = {
+  murid: { other: "student_id", self: "teacher_id", title: T.narrStudents },
+  guru: { other: "teacher_id", self: "student_id", title: T.narrTeachers },
+};
+const FTS_IN = "AND n.id IN (SELECT rowid FROM narrators_fts WHERE narrators_fts MATCH ?)";
+const listFrom = (k) => `FROM narrator_relations r JOIN narrators n ON n.id = r.${LIST_KIND[k].other} WHERE r.${LIST_KIND[k].self} = ?`;
+/** SQL senarai berhalaman; `filtered` menambah penapis nama (argumen: id, MATCH[, limit, offset]). */
+export const listSql = (kind, filtered) => ({
+  count: `SELECT COUNT(*) AS total ${listFrom(kind)} ${filtered ? FTS_IN : ""}`,
+  rows: `SELECT n.id, n.name_ar, n.rutbah, n.death_year ${listFrom(kind)} ${filtered ? FTS_IN : ""}
+          ORDER BY (n.death_year IS NULL), n.death_year, n.id LIMIT ? OFFSET ?`,
+});
 // Nod "ثقتان": rawi diambil dari kedua-duanya → papar dua calon sebenar (lihat src/app/perawi/[id]).
 export const THIQATAN_ALTS = { 9000001: [2000434, 3443] };
 
@@ -334,23 +349,27 @@ const person = (e) =>
   `<a href="${perawiHref(e.id)}" class="pn"><span class="dot"></span><span class="pn-nm ar">${esc(e.name_ar)}</span>` +
   `<span class="pn-meta">${esc(e.rutbah ?? "")}${e.death_year ? ` · ت ${esc(e.death_year)}` : ""}</span></a>`;
 
-const SEMUA = { bm: "Papar semua guru & murid", en: "Show all teachers & students", ar: "عرض جميع الشيوخ والتلاميذ" };
+const SEMUA = { bm: "Papar semua", en: "Show all", ar: "عرض الكل" };
+/** Data penuh guru/murid (JSON statik) untuk perawi >EDGE_LIMIT; dimuat oleh /static-senarai.js. */
+export const senaraiHref = (id) => `/perawi/${Number(id)}/senarai.json`;
+const listHref = (id, jenis) => `/x/perawi/${Number(id)}/senarai/?jenis=${jenis}`;
 const ALTS_HEAD = "كلاهما ثقة — اختر الراوي لقراءة ترجمته";
 
 /**
  * Halaman perawi penuh (padan src/app/perawi/[id]/page.tsx).
- * d = { n, grades[], teachers:{rows,total}, students:{rows,total}, alts[], semua:boolean }
+ * d = { n, grades[], teachers:{rows,total}, students:{rows,total}, alts[] }
  */
 export function perawiPage(d, cssHrefs) {
-  const { n, grades, teachers, students, alts, semua } = d;
+  const { n, grades, teachers, students, alts } = d;
   const info = [
     [T.infoKunya, n.kunya], [T.infoNisbah, n.nisba], [T.infoProfession, n.profession], [T.infoRegion, n.regions],
     [T.infoMawla, n.mawla], [T.infoDeath, n.death_year ? `${n.death_year} H` : null], [T.infoDeathPlace, n.death_place],
   ].filter(([, v]) => v);
   const truncated = teachers.total > teachers.rows.length || students.total > students.rows.length;
-  const col = (title, list, none) =>
+  const col = (title, list, none, jenis) =>
     `<div class="pcol"><h4>${L(title)} <span class="cnt">(${list.total})</span></h4><div class="pnodes">` +
-    (list.rows.length ? list.rows.map(person).join("") : `<div class="pempty">${L(none)}</div>`) + `</div></div>`;
+    (list.rows.length ? list.rows.map(person).join("") : `<div class="pempty">${L(none)}</div>`) + `</div>` +
+    (list.total > list.rows.length ? `<p class="pempty"><a href="${listHref(n.id, jenis)}" rel="nofollow" data-jenis="${jenis}">${L(SEMUA)} (${list.total})</a></p>` : "") + `</div>`;
 
   const body =
     nav() +
@@ -366,9 +385,8 @@ export function perawiPage(d, cssHrefs) {
     (grades.length
       ? `<div class="psec-t">${L(T.narrJarh)}</div><div class="pjarh">${grades.map((g) => `<div class="pjarh-row"><div class="sch ar">${esc(g.scholar ?? "—")}</div><div class="vd ar">${esc(g.verdict ?? "")}</div></div>`).join("")}</div>`
       : "") +
-    `<div class="psec-t">${L(T.narrGraph)}</div><div class="pgraph">` +
-    col(T.narrTeachers, teachers, T.narrNoTeachers) + col(T.narrStudents, students, T.narrNoStudents) + `</div>` +
-    (truncated && !semua ? `<p class="pempty"><a href="/x/perawi/${Number(n.id)}/?semua=1" rel="nofollow">${L(SEMUA)}</a></p>` : "") +
+    `<div class="psec-t">${L(T.narrGraph)}</div><div class="pgraph"${truncated ? ` data-senarai="${senaraiHref(n.id)}" data-per="${LIST_PER}"` : ""}>` +
+    col(T.narrTeachers, teachers, T.narrNoTeachers, "guru") + col(T.narrStudents, students, T.narrNoStudents, "murid") + `</div>` +
     suggestForm(n.id, "narrator", "name_ar", n.name_ar) +
     `</main>` + footer();
 
@@ -379,6 +397,98 @@ export function perawiPage(d, cssHrefs) {
     canonical: perawiHref(n.id),
     cssHrefs,
     body,
-    head: semua ? `<meta name="robots" content="noindex, nofollow">` : "",
+    scripts: truncated ? '<script src="/static-senarai.js" defer></script>' : "",
+  });
+}
+
+// ── Senarai berhalaman + penapis nama (boleh dipakai semula: hadis, glosari…) ──
+const withQuery = (baseUrl, query, p) => {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(query)) if (v !== "" && v != null) sp.set(k, String(v));
+  if (p > 1) sp.set("p", String(p));
+  const qs = sp.toString();
+  return qs ? `${baseUrl}?${qs}` : baseUrl;
+};
+
+/** Navigasi halaman: 1, …, sekitar semasa, …, akhir. `href(p)` memberi URL. */
+export function pager(page, totalPages, href) {
+  if (totalPages <= 1) return "";
+  const pages = [];
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2)) pages.push(p);
+    else if (pages[pages.length - 1] !== "…") pages.push("…");
+  }
+  return (
+    `<nav class="pgn" aria-label="Halaman">` +
+    (page > 1 ? `<a class="pgn-b" href="${esc(href(page - 1))}" rel="prev" aria-label="Sebelum">‹</a>` : "") +
+    pages.map((p) => (p === "…" ? `<span class="pgn-e">…</span>` : `<a class="pgn-b${p === page ? " active" : ""}" href="${esc(href(p))}">${p}</a>`)).join("") +
+    (page < totalPages ? `<a class="pgn-b" href="${esc(href(page + 1))}" rel="next" aria-label="Seterusnya">›</a>` : "") +
+    `</nav>`
+  );
+}
+
+const PL_SHOWING = { bm: "Memaparkan", en: "Showing", ar: "عرض" };
+const PL_OF = { bm: "daripada", en: "of", ar: "من" };
+const PL_NONE = { bm: "Tiada padanan.", en: "No matches.", ar: "لا توجد نتائج." };
+
+/**
+ * Senarai berhalaman generik. items = baris halaman ini; render(item) → HTML; total = jumlah SEBENAR (semua halaman).
+ * baseUrl tanpa query; query = param dikekalkan (cth {jenis, q}); halaman ialah ?p=N (p=1 tidak ditulis).
+ * labels (pilihan) = { none } trilingual bila kosong.
+ */
+export function pagedList({ items, render = String, total, page, per, baseUrl, query = {}, labels = {} }) {
+  const totalPages = Math.max(1, Math.ceil(total / per));
+  const from = total ? (page - 1) * per + 1 : 0;
+  const to = (page - 1) * per + items.length;
+  return (
+    `<p class="pempty">${L(PL_SHOWING)} ${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} ${L(PL_OF)} ${total.toLocaleString("en-US")}` +
+    (totalPages > 1 ? ` · ${page} / ${totalPages}` : "") + `</p>` +
+    `<div class="pnodes">${items.length ? items.map(render).join("") : `<div class="pempty">${L(labels.none ?? PL_NONE)}</div>`}</div>` +
+    pager(page, totalPages, (p) => withQuery(baseUrl, query, p))
+  );
+}
+
+const FILTER_PH = { bm: "Tapis mengikut nama…", en: "Filter by name…", ar: "تصفية بالاسم…" };
+const FILTER_CLEAR = { bm: "Padam penapis", en: "Clear filter", ar: "مسح التصفية" };
+
+/** Borang GET tanpa JS. hidden = param tersembunyi (cth {jenis}); q = nilai semasa; maxLen sama dengan had pelayan. */
+export function filterForm({ action, hidden = {}, q = "", maxLen = 100, labels = {} }) {
+  const ph = labels.placeholder ?? FILTER_PH;
+  return (
+    `<form class="bnav-search" method="get" action="${esc(action)}" role="search">` +
+    Object.entries(hidden).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join("") +
+    `<input name="q" value="${esc(q)}" maxlength="${maxLen}" placeholder="${esc(ph.bm)}" data-ph-bm="${esc(ph.bm)}" data-ph-en="${esc(ph.en)}" data-ph-ar="${esc(ph.ar)}" dir="rtl" class="ar" autocomplete="off">` +
+    `<button class="btn solid" type="submit" aria-label="cari">⌕</button></form>` +
+    (q ? `<p class="pempty"><a href="${esc(withQuery(action, hidden, 1))}" rel="nofollow">${L(labels.clear ?? FILTER_CLEAR)}</a></p>` : "")
+  );
+}
+
+/**
+ * Halaman senarai penuh guru/murid. d = { n:{id,name_ar,rutbah}, jenis, q, rows, total, page }.
+ * Noindex sentiasa (laluan /x/ disekat robots juga); q → nofollow.
+ */
+export function perawiListPage(d, cssHrefs) {
+  const { n, jenis, q, rows, total, page } = d;
+  const base = `/x/perawi/${Number(n.id)}/senarai/`;
+  const title = LIST_KIND[jenis].title;
+  const other = jenis === "murid" ? "guru" : "murid";
+  const body =
+    nav() +
+    `<main class="pwrap"><div class="pcrumb"><a href="/perawi/">${L(T.navPerawi)}</a><span>›</span>` +
+    `<a href="${perawiHref(n.id)}" class="ar">${esc(n.name_ar)}</a><span>›</span><span>${L(title)}</span></div>` +
+    `<header class="phead"><div class="pname ar">${esc(n.name_ar)}</div><div class="pbadges">` +
+    `<span class="pbadge">${L(title)} (${total.toLocaleString("en-US")})</span>` +
+    `<a class="pbadge" href="${listHref(n.id, other)}" rel="nofollow">${L(LIST_KIND[other].title)}</a></div></header>` +
+    filterForm({ action: base, hidden: { jenis }, q }) +
+    `<div style="margin-top:24px">` +
+    pagedList({ items: rows, render: person, total, page, per: LIST_PER, baseUrl: base, query: { jenis, q } }) +
+    `</div></main>` + footer();
+  return shell({
+    title: `${n.name_ar} — ${title.bm}${page > 1 ? ` (${page})` : ""} | Dewan Izhan`,
+    description: `${n.name_ar} — senarai ${title.bm.toLowerCase()}.`,
+    canonical: withQuery(base, { jenis }, page),
+    cssHrefs,
+    body,
+    head: `<meta name="robots" content="${q ? "noindex, nofollow" : "noindex, follow"}">`,
   });
 }

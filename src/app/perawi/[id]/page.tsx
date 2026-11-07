@@ -29,14 +29,10 @@ function Person({ e }: { e: Edge }) {
 
 export default async function PerawiPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ semua?: string }>;
 }) {
   const { id } = await params;
-  const { semua } = await searchParams;
-  const edgeLimit = semua === "1" ? 5000 : EDGE_LIMIT;
   const nid = Number(id);
   if (!Number.isInteger(nid)) notFound();
   const n = await getNarrator(nid);
@@ -44,13 +40,14 @@ export default async function PerawiPage({
 
   const [grades, teachersR, studentsR, lang] = await Promise.all([
     getGrades(nid),
-    getTeachers(nid, edgeLimit),
-    getStudents(nid, edgeLimit),
+    getTeachers(nid, EDGE_LIMIT),
+    getStudents(nid, EDGE_LIMIT),
     getServerLang(),
   ]);
   const teachers = teachersR.rows;
   const students = studentsR.rows;
-  const truncated = teachersR.total > teachers.length || studentsR.total > students.length;
+  const moreTeachers = teachersR.total > teachers.length;
+  const moreStudents = studentsR.total > students.length;
   const altIds = THIQATAN_ALTS[nid] ?? [];
   const alts = altIds.length ? (await Promise.all(altIds.map((a) => getNarrator(a)))).filter(Boolean) : [];
 
@@ -67,7 +64,6 @@ export default async function PerawiPage({
 
   return (
     <>
-      {semua === "1" && <meta name="robots" content="noindex, nofollow" />}
       <Nav />
       <main className="pwrap">
         <div className="pcrumb">
@@ -162,11 +158,19 @@ export default async function PerawiPage({
             </div>
           </div>
         </div>
-        {truncated && (
+        {(moreTeachers || moreStudents) && (
           <p className="pempty">
-            <a href={`/x/perawi/${n.id}/?semua=1`} rel="nofollow">
-              Papar semua guru &amp; murid
-            </a>
+            {moreTeachers && (
+              <a href={`/x/perawi/${n.id}/senarai/?jenis=guru`} rel="nofollow">
+                {T.narrTeachers[lang]} ({teachersR.total})
+              </a>
+            )}
+            {moreTeachers && moreStudents && " · "}
+            {moreStudents && (
+              <a href={`/x/perawi/${n.id}/senarai/?jenis=murid`} rel="nofollow">
+                {T.narrStudents[lang]} ({studentsR.total})
+              </a>
+            )}
           </p>
         )}
       </main>
