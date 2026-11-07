@@ -28,7 +28,7 @@ const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-le
 const CACHE_VERSION = "2";
 const SESSION_COOKIE = "diz_sess";
 const BYPASS = [/^\/admin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/_next\//];
-const CACHEABLE_TYPE = /^(text\/html|text\/x-component|application\/json)/;
+const CACHEABLE_TYPE = /^(text\/html|text\/x-component|application\/json|image\/)/; // image/: icon.png/apple-icon.png route Next (~300 ms CPU)
 // Pengepala yang mengubah respons Next untuk URL yang sama.
 const VARY = ["rsc", "next-router-prefetch", "next-router-segment-prefetch", "next-router-state-tree", "next-url"];
 
@@ -214,6 +214,11 @@ const worker = {
     const ua = req.headers.get("user-agent") ?? "";
     if ((SEO_BOT_UA.test(ua) || AI_BOT_UA.test(ua)) && url.pathname !== "/robots.txt") {
       return new Response("Forbidden", { status: 403, headers: { "cache-control": "no-store" } });
+    }
+    // Aset /_next/static yang wujud dihidang terus oleh pelayan aset. Yang sampai ke sini
+    // ialah chunk lama (halaman lapuk dalam cache pelayar) — 404 murah, bukan render Next (~190 ms CPU).
+    if (url.pathname.startsWith("/_next/static/")) {
+      return new Response("Not found", { status: 404, headers: { "cache-control": "public, max-age=600" } });
     }
     // next.config trailingSlash:true → Next jawab 308 ke "/path/"; jawab terus tanpa handler.fetch.
     // Hanya laluan tanpa titik (bukan fail), bukan /_next, /api; GET/HEAD sahaja.
