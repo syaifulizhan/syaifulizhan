@@ -106,7 +106,7 @@
 
 ## E. Keputusan pemilik (blocking — kerja tak boleh sambung tanpa ini)
 
-- [ ] **E1. Raqm al-hadis — pilih satu:**
+- [x] ✅ **E1. DIPUTUSKAN 2026-11-08: (A) per-sumber + label edisi jujur.** Import Shamela guna nombor edisi cetakan muhaqqiq; label edisi dipaparkan. Asal soalan:
       **(A)** kekal per-sumber + label edisi jujur ·
       **(B)** unifikasi al-Maknaz (mhashim ada semua 9 kitab seragam — perlu
       re-import/padan) · **(C)** unifikasi عبد الباقي untuk Sahihayn.
@@ -118,6 +118,24 @@
 - [ ] **E5. Mekanisme fetch dorar skala 85k** — pelayar-sahaja lokal / CF Worker /
       berfasa kitab utama dahulu. ⚠️ Wajib padan **rawi + kitab sumber + matn**
       serentak (lihat amaran keselamatan §8b) — jangan bulk sebelum sahih pada sampel.
+
+## G. Infra kos percuma (7–8 Nov 2026) — lihat `docs/worker-cpu/README.md`
+
+- [x] ✅ **G1.** Had CPU Worker percuma: kitab + top-10k perawi + muka utama jadi aset statik; perawi lain/carian/404 di `worker.ts` tanpa React.
+- [x] ✅ **G2.** Senarai penuh guru/murid (bersiri + tapis nama, tanpa Turso).
+- [x] ✅ **G3.** Bacaan Turso semasa deploy: cache ikut cap jari data (`scripts/static-fingerprint.mjs`).
+
+## H. Pelengkapan dari Maktabah Shamela lokal (dibuka 8 Nov 2026)
+
+Pemetaan (read-only): 895 kitab stub; **504 padan tajuk Shamela** (409 tepat, 95 kabur), semua sudah dimuat turun; 391 tiada padanan tajuk.
+Prinsip: amanah > laju — teks diambil terus dari Shamela (tiada rekaan), label edisi/muhaqqiq, rintis satu kitab dahulu, sahkan sampel, baru skala. Anggar baris Turso (tulis/baca/storan) SEBELUM setiap import ([`feedback_turso_bacaan_build`]).
+
+- [ ] **H1. Rintis import satu kitab** (cth Sahih Ibn Khuzayma, id 345): pemisah hadis + raqm edisi + bab; semak sampel vs Shamela.
+- [ ] **H2. Muka kitab besar di luar had 19k aset** → penyaji kitab ringan dalam `worker.ts` (seperti perawi) + cache tepi.
+- [ ] **H3. B4 pengarang** dari `master.db` (author + tahun wafat) untuk 399 padanan unik; edisi kabur → semak manual.
+- [ ] **H4. Skala import** kitab stub berperingkat (kitab hadis tulen dahulu; Tarikh Dimashq/Istidhkar bukan himpunan hadis tulen — tangguh).
+- [ ] **H5. Profil perawi (D1)** dari kitab rijal tempatan (Taqrib, Tahdhib al-Kamal, al-Kashif…) — padanan entiti wajib disemak.
+- [ ] **H6. Darjat (F2)** dari karya al-Albani & takhrij tempatan — padan rawi + kitab sumber + matn serentak (§8b).
 
 ## F. Ciri & keselamatan
 
