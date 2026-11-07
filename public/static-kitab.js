@@ -33,6 +33,7 @@
     var l = lang();
     [].forEach.call(doc.querySelectorAll(".lang-btn"), function (b) { b.classList.toggle("active", b.getAttribute("data-l") === l); });
     [].forEach.call(doc.querySelectorAll("[data-ph-bm]"), function (i) { i.placeholder = i.getAttribute("data-ph-" + l); });
+    [].forEach.call(doc.querySelectorAll("[data-tx-bm]"), function (o) { o.textContent = o.getAttribute("data-tx-" + l); });
     [].forEach.call(doc.querySelectorAll('.rul-toggle[aria-expanded="false"]'), function (b) { b.textContent = moreLabel(b); });
   }
   function setLang(l) {
@@ -42,6 +43,22 @@
     applyLang();
   }
   applyLang();
+
+  // Splash masuk (laman utama sahaja, sekali setiap sesi) — sama seperti komponen Splash lama.
+  try {
+    if (doc.body.hasAttribute("data-splash") && !sessionStorage.getItem("splashShown")) {
+      sessionStorage.setItem("splashShown", "1");
+      var sp = doc.createElement("div");
+      sp.className = "splash";
+      sp.setAttribute("aria-hidden", "true");
+      sp.innerHTML = '<div class="splash-in"><div class="splash-basmala ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>' +
+        '<img class="splash-logo" src="/logo-mark.png" alt=""><div class="splash-diwan ar">دِيوَان الإِذهَان</div>' +
+        '<div class="splash-person ar">مُحَمَّد سَيْف الإِذهَان</div></div>';
+      doc.body.appendChild(sp);
+      setTimeout(function () { sp.classList.add("out"); }, 1700);
+      setTimeout(function () { sp.remove(); }, 2400);
+    }
+  } catch (e) { /* sessionStorage disekat: lompat splash */ }
 
   // Teks butang yang berubah (Buka/Tutup/Memuat) — simpan HTML asal untuk dipulihkan.
   function setCnt(el, text) { if (el.__orig == null) el.__orig = el.innerHTML; el.textContent = text; }

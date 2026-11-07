@@ -22,7 +22,7 @@
     "glossary:build": "python3 scripts/build-glossary-vision.py --write",
     "glossary:d1": "bash scripts/glossary-d1-sync.sh",
     "glossary:resume": "bash scripts/glossary-resume.sh",
-    "cf:build": "opennextjs-cloudflare build && node scripts/gen-kitab-static.mjs && node scripts/gen-perawi-static.mjs && node scripts/check-asset-count.mjs",
+    "cf:build": "opennextjs-cloudflare build && node scripts/gen-kitab-static.mjs && node scripts/gen-perawi-static.mjs && node scripts/gen-pages-static.mjs && node scripts/check-asset-count.mjs",
     "cf:preview": "opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare deploy",
     "supabase:migrate": "node --env-file=.env.local scripts/migrate-supabase.mjs",

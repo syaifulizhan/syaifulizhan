@@ -22,6 +22,7 @@ import { default as handler } from "./.open-next/worker.js";
 // Dijana oleh scripts/gen-kitab-static.mjs / gen-perawi-static.mjs: nama fail CSS Next yang berhash.
 import cssHrefs from "./.open-next/css-hrefs.json";
 import { cachedResponse, loadPage, nameFilter, parsePage, unavailable, HTML_HEADERS, type Row, type Stmt } from "./src/static/paged-route";
+import { cariResultsPage, notFoundPage as staticNotFound, CARI, CARI_SQL, CARI_JENIS, kitabQuery } from "./src/static/pages.mjs";
 import { perawiPage, shell, nav, footer, L, PERAWI_SQL, THIQATAN_ALTS, EDGE_LIMIT, edgeList, perawiListPage, listSql, LIST_KIND, LIST_PER } from "./src/static/templates.mjs";
 
 const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-lewatnya selepas ini
@@ -157,6 +158,70 @@ function perawiListCached(req: Request, url: URL, id: number, env: TursoEnv, ctx
   });
 }
 
+let notFoundHtml: string | undefined;
+/** 404 murah (templat statik, tanpa Next): dipakai untuk laluan yang tiada dalam aset mahupun Worker. */
+const notFoundResponse = () =>
+  new Response(notFoundHtml ??= staticNotFound(cssHrefs), { status: 404, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=600" } });
+
+// Laluan yang MASIH dilayan Next (selain aset dan laluan Worker di bawah). Selain senarai ini = 404 murah.
+const NEXT_ROUTES = [
+  /^\/(admin|api)(\/|$)/, /^\/_next\//, /^\/kitab\/\d{1,12}(\/\d{1,6})?\/?$/, /^\/silsilah\/?$/,
+  /^\/(robots\.txt|favicon\.ico|icon\.png|apple-icon\.png)$/,
+];
+const WORKER_ROUTES = [/^\/x\//, /^\/perawi\/\d{1,12}\/?$/];
+const knownPath = (p: string) => NEXT_ROUTES.some((r) => r.test(p)) || WORKER_ROUTES.some((r) => r.test(p));
+
+/** Hasil carian /x/cari/?jenis=&q=&p= — FTS (hadis, perawi) atau LIKE (kitab), 1–2 pusingan Turso, tanpa React. */
+async function cariResponse(jenis: keyof typeof CARI, q: string, match: string | null, page: number, env: TursoEnv): Promise<Response> {
+  const { per, cap } = CARI[jenis];
+  const html = (rows: Row[], total: number) =>
+    new Response(cariResultsPage({ jenis, q, rows, total, page }, cssHrefs), { status: 200, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=3600" } });
+  if (match === null) return html([], 0); // tiada huruf Arab (hadis/perawi): tiada padanan, tanpa DB
+  const sql =
+    jenis === "hadis" ? { count: CARI_SQL.hadisCount(cap), rows: CARI_SQL.hadisRows, args: [match] }
+    : jenis === "perawi" ? { count: CARI_SQL.perawiCount(cap), rows: CARI_SQL.perawiRows, args: [match] }
+    : { count: CARI_SQL.kitabCount(cap), rows: CARI_SQL.kitabRows, args: [match, match] };
+  const r = await loadPage({
+    query: (stmts) => tursoQuery(env, stmts),
+    count: { sql: sql.count, args: sql.args },
+    rows: (offset, limit) => ({ sql: sql.rows, args: [...sql.args, limit, offset] }),
+    per, page,
+  });
+  if (r.kind === "unavailable") return unavailable();
+  if (r.kind !== "ok") return notFoundResponse();
+  if (jenis === "hadis" && r.total === 0 && page === 1) {
+    // Seperti carian lama: LIKE hanya bila FTS langsung tiada hasil.
+    const like = await tursoQuery(env, [{ sql: CARI_SQL.hadisLike, args: [q, per] }]);
+    if (!like) return unavailable();
+    return html(like[0], like[0].length);
+  }
+  return html(r.rows, r.total);
+}
+
+/** Sahkan jenis (senarai putih), p dan q sebelum cache/DB. q kosong → /cari/. */
+function cariCached(req: Request, url: URL, env: TursoEnv, ctx: Ctx): Promise<Response> | Response {
+  const jenis = url.searchParams.get("jenis") ?? "hadis";
+  const page = parsePage(url.searchParams.get("p"));
+  if (!CARI_JENIS.includes(jenis) || page === null) return notFoundResponse();
+  const raw = url.searchParams.get("q") ?? "";
+  const kind = jenis as keyof typeof CARI;
+  let q: string;
+  let match: string | null;
+  if (kind === "kitab") {
+    q = kitabQuery(raw).toLowerCase();
+    match = q || null;
+  } else {
+    const f = nameFilter(raw);
+    q = f.norm;
+    match = !f.match ? null : kind === "hadis" ? `"${f.norm}"*` : f.match;
+  }
+  if (!raw.trim()) return redirect308("/cari/");
+  return cachedResponse({
+    req, url, ctx, version: CACHE_VERSION, ttl: TTL, parts: { jenis, p: page, q },
+    build: () => cariResponse(kind, q, match, page, env),
+  });
+}
+
 const pageUrl = (origin: string, book: number, seq: number, total: number) => {
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
   const p = Math.min(pages, Math.floor((Math.max(seq, 1) - 1) / PER_PAGE) + 1);
@@ -234,6 +299,9 @@ const worker = {
     if (url.pathname.startsWith("/_next/static/")) {
       return new Response("Not found", { status: 404, headers: { "cache-control": "public, max-age=600" } });
     }
+    const readOnly = req.method === "GET" || req.method === "HEAD";
+    // Bukan aset, bukan laluan Worker, bukan laluan Next → 404 statik murah (dahulu render Next ~244 ms).
+    if (readOnly && !knownPath(url.pathname)) return notFoundResponse();
     // next.config trailingSlash:true → Next jawab 308 ke "/path/"; jawab terus tanpa handler.fetch.
     // Hanya laluan tanpa titik (bukan fail), bukan /_next, /api; GET/HEAD sahaja.
     if ((req.method === "GET" || req.method === "HEAD") && url.pathname !== "/" && !url.pathname.endsWith("/")
@@ -241,6 +309,7 @@ const worker = {
       url.pathname += "/";
       return new Response(null, { status: 308, headers: { location: url.toString(), "cache-control": "public, max-age=3600" } });
     }
+    if (url.pathname === "/x/cari/" && readOnly) return cariCached(req, url, env as TursoEnv, ctx);
     const lm = url.pathname.match(/^\/x\/perawi\/(\d{1,12})\/senarai\/$/);
     if (lm && (req.method === "GET" || req.method === "HEAD")) return perawiListCached(req, url, Number(lm[1]), env as TursoEnv, ctx);
     const pm = url.pathname.match(/^\/(?:x\/)?perawi\/(\d{1,12})\/$/);
@@ -255,6 +324,7 @@ const worker = {
       // Carian dalam kitab: /x/kitab/<id>/?s=… ditulis semula ke laluan SSR Next /kitab/<id>/.
       const k = url.pathname.match(/^\/x\/kitab\/(\d{1,12})\/$/);
       if (k) req = new Request(new URL(`/kitab/${k[1]}/${url.search}`, url), req);
+      else return notFoundResponse();
     }
     if (!cacheable(req)) return handler.fetch(req, env, ctx);
 

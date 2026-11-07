@@ -402,7 +402,7 @@ export function perawiPage(d, cssHrefs) {
 }
 
 // ── Senarai berhalaman + penapis nama (boleh dipakai semula: hadis, glosari…) ──
-const withQuery = (baseUrl, query, p) => {
+export const withQuery =(baseUrl, query, p) => {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(query)) if (v !== "" && v != null) sp.set(k, String(v));
   if (p > 1) sp.set("p", String(p));
