@@ -291,7 +291,7 @@ export function SanadTree({ nodes, marfu = false, lang = "bm" }: { nodes: SanadN
               </g>
             );
             return matched && !n.prophet ? (
-              <a key={n.key} href={`/perawi/${n.id}`}>{box}</a>
+              <a key={n.key} href={`/perawi/${n.id}/`}>{box}</a>
             ) : (
               <g key={n.key}>{box}</g>
             );

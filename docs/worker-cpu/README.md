@@ -51,3 +51,9 @@ Pemilik meluluskan pelaksanaan penuh. Matlamat: selamat, berkesan, kekal dengan 
 - **Anggaran:** 200k paparan/hari → ~66k permintaan Worker (had 100k). CPU pengendali terus dijangka 2–6 ms.
 - **Fasa:** 1 kitab → 2 perawi → 3 carian/API. Setiap fasa disemak penyemak dan diukur dengan `wrangler tail`. Rollback: `wrangler rollback`.
 - Prefetch `next/link` dimatikan seluruh laman (`src/components/Link.tsx`, commit 1ebba8d).
+
+## Fasa 2 — perawi (2026-11-07)
+- `scripts/gen-perawi-static.mjs` (selepas gen-kitab-static): 10,000 perawi teratas ikut rujukan isnad (JOIN narrators) → `.open-next/assets/perawi/<id>/index.html`. Gagal keras jika < 9,000 halaman (tanpa `STATIC_PERAWI_LIMIT`). Kod DB/cuba-semula dikongsi dalam `scripts/lib/static-common.mjs`; CSS berhash ditulis ke `.open-next/css-hrefs.json` untuk Worker.
+- Templat `perawiPage` + `PERAWI_SQL` dalam `src/static/templates.mjs`, dipakai penjana dan `worker.ts`. Perawi lain (tiada aset) jatuh ke Worker: `/perawi/<id>/` dan `/x/perawi/<id>/[?semua=1]` → satu permintaan pipeline Turso (4 SELECT) + templat, cache tepi 7 hari. Ralat DB → 503 tanpa cache.
+- Cadangan pembetulan perawi: `entity_type=narrator` melalui `/api/suggest/` (`data-e`/`data-f` pada `.suggest`).
+- Semua pautan perawi ialah `<a href="/perawi/<id>/">` biasa.

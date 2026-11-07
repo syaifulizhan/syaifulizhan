@@ -34,7 +34,7 @@ export default function Nav() {
         <div className="nav-right">
           <nav className={`nav-menu${open ? " open" : ""}`}>
             <ul>
-              <li><Link href="/perawi" onClick={close}>{T.navPerawi[lang]}</Link></li>
+              <li><Link href="/perawi/" onClick={close}>{T.navPerawi[lang]}</Link></li>
               <li><Link href="/hadis" onClick={close}>{T.navHadis[lang]}</Link></li>
               <li><Link href="/glosari" onClick={close}>{T.navGlosari[lang]}</Link></li>
               <li><Link href="/#ilmu" onClick={close}>{T.navIlmu[lang]}</Link></li>

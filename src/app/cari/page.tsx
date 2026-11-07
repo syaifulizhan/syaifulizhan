@@ -1,4 +1,3 @@
-import Link from "@/components/Link";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { SearchBox } from "@/components/SearchBox";
@@ -46,11 +45,11 @@ export default async function Cari({ searchParams }: { searchParams: Promise<{ q
         {t === "perawi" && (
           <div className="presults">
             {perawi.map((e) => (
-              <Link key={e.id} href={`/perawi/${e.id}`} className="pn">
+              <a key={e.id} href={`/perawi/${e.id}/`} className="pn">
                 <span className="dot" />
                 <span className="pn-nm ar">{e.name_ar}</span>
                 <span className="pn-meta">{e.rutbah ?? ""}</span>
-              </Link>
+              </a>
             ))}
           </div>
         )}

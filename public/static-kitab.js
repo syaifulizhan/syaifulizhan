@@ -181,8 +181,9 @@
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var art = box.closest("article"), fd = new FormData(form);
-      fd.set("entity_type", "hadith"); fd.set("entity_id", box.getAttribute("data-h")); fd.set("field", "matn");
-      fd.set("current_text", art.querySelector(".hmatn").textContent);
+      fd.set("entity_type", box.getAttribute("data-e") || "hadith"); fd.set("entity_id", box.getAttribute("data-h"));
+      fd.set("field", box.getAttribute("data-f") || "matn");
+      fd.set("current_text", art ? art.querySelector(".hmatn").textContent : box.getAttribute("data-cur") || "");
       fetch("/api/suggest/", { method: "POST", body: fd }).then(function (r) { return r.json(); }).then(function (d) {
         if (!d.ok) throw new Error();
         box.innerHTML = '<p class="suggest-done">✓ ' + esc(tr(S.sDone)) + "</p>";

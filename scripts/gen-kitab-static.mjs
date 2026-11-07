@@ -8,89 +8,15 @@
 // Tiada React/Next: baca korpus terus, pancar rentetan HTML (src/static/templates.mjs).
 // Sumber data: TURSO_DATABASE_URL (+TURSO_AUTH_TOKEN) bila ada, kalau tidak data/corpus.db
 // (sama seperti src/lib/db.ts). STATIC_BOOK_LIMIT=N → N kitab terbesar sahaja (ujian).
-import { createClient } from "@libsql/client";
-import { mkdirSync, writeFileSync, readdirSync, readFileSync, rmSync, existsSync } from "node:fs";
-import { join, relative } from "node:path";
+import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { normalizeArabic } from "../src/lib/arabic.ts";
 import { kitabPage, splitRulings, PER_PAGE } from "../src/static/templates.mjs";
 
-const ASSETS = ".open-next/assets";
+import { ASSETS, REMOTE, CONCURRENCY, rows, rowsSafe, group, cssHrefs, writeCssManifest, retryCount } from "./lib/static-common.mjs";
+
 const OUT = join(ASSETS, "kitab");
 const LIMIT = Number(process.env.STATIC_BOOK_LIMIT) || 0;
-
-/**
- * Sambungan DB. CI hanya ada TURSO_API_TOKEN (sama seperti kuota.yml/segar-seq.mjs):
- * token baca-sahaja 1 jam dijana di sini, jadi tiada rahsia DB tambahan di GitHub.
- * Di CI (env CI=true) tanpa sebarang kelayakan → gagal, jangan deploy laman kosong.
- */
-async function connect() {
-  const env = process.env;
-  if (env.TURSO_DATABASE_URL) return createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN });
-  if (env.TURSO_API_TOKEN) {
-    const org = env.TURSO_ORG || "syaifulizhan-thgzut";
-    const name = env.TURSO_DB || "dewan-izhan-v3";
-    const api = async (path, init = {}) => {
-      const r = await fetch(`https://api.turso.tech/v1/organizations/${org}/databases/${name}${path}`, {
-        ...init, headers: { Authorization: `Bearer ${env.TURSO_API_TOKEN}` },
-      });
-      if (!r.ok) throw new Error(`Turso API ${path}: HTTP ${r.status}`);
-      return r.json();
-    };
-    const { database } = await api("");
-    const { jwt } = await api("/auth/tokens?expiration=1h&authorization=read-only", { method: "POST" });
-    return createClient({ url: `libsql://${database.Hostname}`, authToken: jwt });
-  }
-  if (env.CI) throw new Error("gen-kitab-static: no Turso credentials in CI (set TURSO_API_TOKEN)");
-  return createClient({ url: "file:./data/corpus.db" });
-}
-const db = await connect();
-const REMOTE = !String(db.protocol ?? "").startsWith("file");
-const CONCURRENCY = REMOTE ? 4 : 8;
-
-/** Ralat sementara (aliran HTTP Turso/rangkaian) yang berbaloi dicuba semula. */
-const TRANSIENT = /SERVER_ERROR|HTTP status [45]\d\d|fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket|network|stream|timed? ?out/i;
-const BACKOFF_MS = [1000, 3000, 9000];
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let retries = 0;
-/** Satu execute dengan 3 cubaan semula (1s/3s/9s); selepas itu gagal keras. "no such table" tidak dicuba semula. */
-const rows = async (sql, args = []) => {
-  for (let attempt = 0; ; attempt++) {
-    try { return (await db.execute({ sql, args })).rows; }
-    catch (e) {
-      const msg = String(e?.message ?? e);
-      if (attempt >= BACKOFF_MS.length || /no such table/i.test(msg) || !TRANSIENT.test(msg)) throw e;
-      retries++;
-      console.warn(`cuba semula ${attempt + 1}/${BACKOFF_MS.length} (${msg.slice(0, 80)})`);
-      await sleep(BACKOFF_MS[attempt]);
-    }
-  }
-};
-/** Jadual pilihan (cth override sanad) mungkin tiada: HANYA "no such table" dikosongkan; ralat lain dilempar. */
-const rowsSafe = async (sql, args = []) => {
-  try { return await rows(sql, args); }
-  catch (e) { if (/no such table/i.test(String(e?.message ?? e))) return []; throw e; }
-};
-const group = (list, key) => {
-  const m = new Map();
-  for (const r of list) { const k = r[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
-  return m;
-};
-
-function cssHrefs() {
-  const root = join(ASSETS, "_next/static");
-  if (!existsSync(root)) throw new Error(`${root} tiada — jalankan opennextjs-cloudflare build dahulu`);
-  const found = [];
-  const walk = (dir) => {
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith(".css") && /\.hcard|\.pwrap/.test(readFileSync(p, "utf8"))) found.push("/" + relative(ASSETS, p));
-    }
-  };
-  walk(root);
-  if (!found.length) throw new Error("CSS Next (.hcard/.pwrap) tidak ditemui");
-  return found;
-}
 
 // Sahihayn sahaja boleh dipaut (lihat DORAR_LINKABLE dalam src/lib/hadis.ts).
 const LINKABLE = { "صحيح البخاري": 900003, "صحيح مسلم": 900007 };
@@ -205,6 +131,7 @@ const write = (rel, content) => {
 };
 
 const CSS = cssHrefs();
+writeCssManifest(CSS);
 rmSync(OUT, { recursive: true, force: true });
 
 const books = await rows(
@@ -235,5 +162,5 @@ for (const b of books) {
 
 console.log(JSON.stringify({
   books: books.length, pages, tocFiles, totalKB: Math.round(bytes / 1024), avgPageKB: +(bytes / pages / 1024).toFixed(1),
-  maxPageKB: +(maxBytes / 1024).toFixed(1), seconds: Math.round((Date.now() - t0) / 1000), retries, remote: REMOTE,
+  maxPageKB: +(maxBytes / 1024).toFixed(1), seconds: Math.round((Date.now() - t0) / 1000), retries: retryCount(), remote: REMOTE,
 }));

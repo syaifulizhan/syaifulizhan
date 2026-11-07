@@ -1,4 +1,3 @@
-import Link from "@/components/Link";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { searchNarrators, narratorCount } from "@/lib/narrators";
@@ -27,7 +26,7 @@ export default async function PerawiIndex({
           {total.toLocaleString("en-US")} {T.narrInCorpus[lang]}
         </p>
 
-        <form className="psearch" action="/perawi" method="get">
+        <form className="psearch" action="/perawi/" method="get">
           <input name="q" defaultValue={q} placeholder={T.perawiPlaceholder[lang]} />
           <button className="btn solid" type="submit">
             {T.searchBtn[lang]}
@@ -36,11 +35,11 @@ export default async function PerawiIndex({
 
         <div className="presults">
           {results.map((e) => (
-            <Link key={e.id} href={`/perawi/${e.id}`} className="pn">
+            <a key={e.id} href={`/perawi/${e.id}/`} className="pn">
               <span className="dot" />
               <span className="pn-nm ar">{e.name_ar}</span>
               <span className="pn-meta">{e.rutbah ?? ""}</span>
-            </Link>
+            </a>
           ))}
         </div>
 

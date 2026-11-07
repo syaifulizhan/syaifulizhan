@@ -201,8 +201,8 @@ function hadithSyarah(bookId, bab) {
   );
 }
 
-const suggestForm = (id) =>
-  `<div class="suggest" data-h="${esc(id)}"><button class="suggest-toggle" type="button">✎ ${L(T.suggestBtn)}</button></div>`;
+const suggestForm = (id, entity = "hadith", field = "matn", current = "") =>
+  `<div class="suggest" data-h="${esc(id)}" data-e="${entity}" data-f="${field}"${current ? ` data-cur="${esc(current)}"` : ""}><button class="suggest-toggle" type="button">✎ ${L(T.suggestBtn)}</button></div>`;
 
 /** URL halaman kitab statik. Halaman 1 = /kitab/<id>/. */
 export const pageHref = (bookId, p) => `/kitab/${bookId}/${p > 1 ? `${p}/` : ""}`;
@@ -298,5 +298,87 @@ export function kitabPage(d, cssHrefs, { legacyScript = false } = {}) {
     head:
       (page > 1 ? `<link rel="prev" href="${pageHref(book.id, page - 1)}">` : "") +
       (page < totalPages ? `<link rel="next" href="${pageHref(book.id, page + 1)}">` : ""),
+  });
+}
+
+// ── Perawi ────────────────────────────────────────────────────────────
+// Had baris graf guru/murid; selaras EDGE_LIMIT dalam src/lib/narrators.ts.
+export const EDGE_LIMIT = 100;
+export const EDGE_LIMIT_ALL = 1000; // had CPU Worker 10 ms — senarai penuh lebih besar tidak berbaloi
+
+// SQL dikongsi penjana statik dan Worker supaya keduanya memaparkan data yang sama.
+export const PERAWI_SQL = {
+  narrator: "SELECT id, name_ar, shuhra, kunya, nisba, rutbah, profession, regions, mawla, death_year, death_place FROM narrators WHERE id = ?",
+  grades: "SELECT scholar, verdict FROM narrator_grades WHERE narrator_id = ?",
+  teachers: `SELECT n.id, n.name_ar, n.rutbah, n.death_year, COUNT(*) OVER () AS total
+              FROM narrator_relations r JOIN narrators n ON n.id = r.teacher_id
+             WHERE r.student_id = ? ORDER BY (n.death_year IS NULL), n.death_year, n.id LIMIT ?`,
+  students: `SELECT n.id, n.name_ar, n.rutbah, n.death_year, COUNT(*) OVER () AS total
+              FROM narrator_relations r JOIN narrators n ON n.id = r.student_id
+             WHERE r.teacher_id = ? ORDER BY (n.death_year IS NULL), n.death_year, n.id LIMIT ?`,
+};
+
+// Nod "ثقتان": rawi diambil dari kedua-duanya → papar dua calon sebenar (lihat src/app/perawi/[id]).
+export const THIQATAN_ALTS = { 9000001: [2000434, 3443] };
+
+/** Baris graf → { rows, total } (total dari COUNT(*) OVER ()). */
+export const edgeList = (list) => ({
+  rows: list.map((x) => ({ id: Number(x.id), name_ar: x.name_ar, rutbah: x.rutbah ?? null, death_year: x.death_year == null ? null : Number(x.death_year) })),
+  total: list.length ? Number(list[0].total) : 0,
+});
+
+/** URL halaman perawi statik. */
+export const perawiHref = (id) => `/perawi/${Number(id)}/`;
+
+const person = (e) =>
+  `<a href="${perawiHref(e.id)}" class="pn"><span class="dot"></span><span class="pn-nm ar">${esc(e.name_ar)}</span>` +
+  `<span class="pn-meta">${esc(e.rutbah ?? "")}${e.death_year ? ` · ت ${esc(e.death_year)}` : ""}</span></a>`;
+
+const SEMUA = { bm: "Papar semua guru & murid", en: "Show all teachers & students", ar: "عرض جميع الشيوخ والتلاميذ" };
+const ALTS_HEAD = "كلاهما ثقة — اختر الراوي لقراءة ترجمته";
+
+/**
+ * Halaman perawi penuh (padan src/app/perawi/[id]/page.tsx).
+ * d = { n, grades[], teachers:{rows,total}, students:{rows,total}, alts[], semua:boolean }
+ */
+export function perawiPage(d, cssHrefs) {
+  const { n, grades, teachers, students, alts, semua } = d;
+  const info = [
+    [T.infoKunya, n.kunya], [T.infoNisbah, n.nisba], [T.infoProfession, n.profession], [T.infoRegion, n.regions],
+    [T.infoMawla, n.mawla], [T.infoDeath, n.death_year ? `${n.death_year} H` : null], [T.infoDeathPlace, n.death_place],
+  ].filter(([, v]) => v);
+  const truncated = teachers.total > teachers.rows.length || students.total > students.rows.length;
+  const col = (title, list, none) =>
+    `<div class="pcol"><h4>${L(title)} <span class="cnt">(${list.total})</span></h4><div class="pnodes">` +
+    (list.rows.length ? list.rows.map(person).join("") : `<div class="pempty">${L(none)}</div>`) + `</div></div>`;
+
+  const body =
+    nav() +
+    `<main class="pwrap"><div class="pcrumb"><a href="/perawi/">${L(T.navPerawi)}</a><span>›</span><span class="ar">${esc(n.name_ar)}</span></div>` +
+    `<header class="phead"><div class="pname ar">${esc(n.name_ar)}</div>` +
+    (n.shuhra ? `<div class="pshuhra ar">${esc(n.shuhra)}</div>` : "") +
+    `<div class="pbadges">${n.rutbah ? `<span class="pbadge rutbah"><span class="ar">${esc(n.rutbah)}</span></span>` : ""}` +
+    `<span class="pbadge">ID ${Number(n.id)}</span></div></header>` +
+    (alts.length ? `<div class="psec-t">${ALTS_HEAD}</div><div class="pnodes">${alts.map(person).join("")}</div>` : "") +
+    (info.length
+      ? `<div class="psec-t">${L(T.narrInfo)}</div><div class="pinfo">${info.map(([k, v]) => `<div><div class="k">${L(k)}</div><div class="v ar">${esc(v)}</div></div>`).join("")}</div>`
+      : "") +
+    (grades.length
+      ? `<div class="psec-t">${L(T.narrJarh)}</div><div class="pjarh">${grades.map((g) => `<div class="pjarh-row"><div class="sch ar">${esc(g.scholar ?? "—")}</div><div class="vd ar">${esc(g.verdict ?? "")}</div></div>`).join("")}</div>`
+      : "") +
+    `<div class="psec-t">${L(T.narrGraph)}</div><div class="pgraph">` +
+    col(T.narrTeachers, teachers, T.narrNoTeachers) + col(T.narrStudents, students, T.narrNoStudents) + `</div>` +
+    (truncated && !semua ? `<p class="pempty"><a href="/x/perawi/${Number(n.id)}/?semua=1" rel="nofollow">${L(SEMUA)}</a></p>` : "") +
+    suggestForm(n.id, "narrator", "name_ar", n.name_ar) +
+    `</main>` + footer();
+
+  const rut = n.rutbah ? ` (${n.rutbah})` : "";
+  return shell({
+    title: `${n.name_ar} | Dewan Izhan`,
+    description: `${n.name_ar}${rut} — maklumat perawi, Jarh wa Taʿdil, guru & murid. ${teachers.total} guru, ${students.total} murid.`,
+    canonical: perawiHref(n.id),
+    cssHrefs,
+    body,
+    head: semua ? `<meta name="robots" content="noindex, nofollow">` : "",
   });
 }

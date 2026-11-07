@@ -16,14 +16,14 @@ const THIQATAN_ALTS: Record<number, number[]> = {
 
 function Person({ e }: { e: Edge }) {
   return (
-    <Link href={`/perawi/${e.id}`} className="pn">
+    <a href={`/perawi/${e.id}/`} className="pn">
       <span className="dot" />
       <span className="pn-nm ar">{e.name_ar}</span>
       <span className="pn-meta">
         {e.rutbah ?? ""}
         {e.death_year ? ` · ت ${e.death_year}` : ""}
       </span>
-    </Link>
+    </a>
   );
 }
 
@@ -71,7 +71,7 @@ export default async function PerawiPage({
       <Nav />
       <main className="pwrap">
         <div className="pcrumb">
-          <Link href="/perawi">{T.navPerawi[lang]}</Link>
+          <Link href="/perawi/">{T.navPerawi[lang]}</Link>
           <span>›</span>
           <span className="ar">{n.name_ar}</span>
         </div>
@@ -94,14 +94,14 @@ export default async function PerawiPage({
             <div className="psec-t">كلاهما ثقة — اختر الراوي لقراءة ترجمته</div>
             <div className="pnodes">
               {alts.map((a) => (
-                <Link key={a!.id} href={`/perawi/${a!.id}`} className="pn">
+                <a key={a!.id} href={`/perawi/${a!.id}/`} className="pn">
                   <span className="dot" />
                   <span className="pn-nm ar">{a!.name_ar}</span>
                   <span className="pn-meta">
                     {a!.rutbah ?? ""}
                     {a!.death_year ? ` · ت ${a!.death_year}` : ""}
                   </span>
-                </Link>
+                </a>
               ))}
             </div>
           </>
@@ -164,9 +164,9 @@ export default async function PerawiPage({
         </div>
         {truncated && (
           <p className="pempty">
-            <Link href={`/perawi/${n.id}?semua=1`} rel="nofollow">
+            <a href={`/x/perawi/${n.id}/?semua=1`} rel="nofollow">
               Papar semua guru &amp; murid
-            </Link>
+            </a>
           </p>
         )}
       </main>

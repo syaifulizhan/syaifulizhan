@@ -1,4 +1,3 @@
-import Link from "@/components/Link";
 import { Fragment } from "react";
 import type { IsnadNode } from "@/lib/hadis";
 import { cleanName } from "@/lib/parse-isnad";
@@ -44,7 +43,7 @@ export function Isnad({ nodes, lang = "bm", marfu = true }: { nodes: IsnadNode[]
                           // Papar nama SEPERTI DALAM SANAD ASAL (raw_name, dibersih dari
                           // verba terlekat cth "عليا يخطب"→"عليا"); klik → biodata penuh.
                           // Hover papar nama penuh yang dikenal pasti.
-                          <Link href={`/perawi/${nd.narrator_id}`} className="hnode" title={nd.resolved}>{nd.raw_name ? cleanName(nd.raw_name) : nd.resolved}</Link>
+                          <a href={`/perawi/${nd.narrator_id}/`} className="hnode" title={nd.resolved}>{nd.raw_name ? cleanName(nd.raw_name) : nd.resolved}</a>
                         ) : (
                           <span className="hnode unl" title={T.isnadUnmatched[lang]}>
                             {nd.raw_name ? cleanName(nd.raw_name) : `#${nd.narrator_id}`}

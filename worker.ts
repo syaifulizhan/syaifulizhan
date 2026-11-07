@@ -19,6 +19,9 @@
  */
 // @ts-expect-error: dijana oleh `opennextjs-cloudflare build`
 import { default as handler } from "./.open-next/worker.js";
+// Dijana oleh scripts/gen-kitab-static.mjs / gen-perawi-static.mjs: nama fail CSS Next yang berhash.
+import cssHrefs from "./.open-next/css-hrefs.json";
+import { perawiPage, shell, nav, footer, L, PERAWI_SQL, THIQATAN_ALTS, EDGE_LIMIT, EDGE_LIMIT_ALL, edgeList } from "./src/static/templates.mjs";
 
 const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-lewatnya selepas ini
 // Naikkan nilai ini pada deploy untuk membatalkan semua cache tepi (tiada laluan purge lain).
@@ -50,6 +53,94 @@ async function tursoRow(env: TursoEnv, sql: string, args: number[]): Promise<(st
   } catch {
     return null;
   }
+}
+
+type Cell = { type: string; value?: string };
+type Row = Record<string, string | number | null>;
+
+/** Beberapa SELECT dalam SATU permintaan pipeline Turso. Pulang tatasusunan baris-sebagai-objek per penyataan, atau null jika gagal. */
+async function tursoQuery(env: TursoEnv, stmts: { sql: string; args: number[] }[]): Promise<Row[][] | null> {
+  const base = (env.TURSO_DATABASE_URL ?? "").replace(/^libsql:\/\//, "https://");
+  if (!base.startsWith("https://")) return null;
+  try {
+    const res = await fetch(`${base}/v2/pipeline`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.TURSO_AUTH_TOKEN ?? ""}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        requests: [
+          ...stmts.map((s) => ({ type: "execute", stmt: { sql: s.sql, args: s.args.map((v) => ({ type: "integer", value: String(v) })) } })),
+          { type: "close" },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { results?: { type?: string; response?: { result?: { cols?: { name: string }[]; rows?: Cell[][] } } }[] };
+    const out: Row[][] = [];
+    for (let i = 0; i < stmts.length; i++) {
+      const r = j.results?.[i];
+      if (r?.type !== "ok" || !r.response?.result) return null;
+      const cols = r.response.result.cols ?? [];
+      out.push((r.response.result.rows ?? []).map((cells) => {
+        const o: Row = {};
+        cells.forEach((c, k) => { o[cols[k].name] = c.type === "null" ? null : c.type === "integer" || c.type === "float" ? Number(c.value) : (c.value ?? null); });
+        return o;
+      }));
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+const HTML_HEADERS = { "content-type": "text/html; charset=utf-8" };
+
+/** /perawi/<id>/ dan /x/perawi/<id>/ — render templat ringan (tanpa Next/React), 1–2 query Turso. */
+async function perawiResponse(id: number, semua: boolean, env: TursoEnv): Promise<Response> {
+  const limit = semua ? EDGE_LIMIT_ALL : EDGE_LIMIT;
+  const altIds = THIQATAN_ALTS[id as keyof typeof THIQATAN_ALTS] ?? [];
+  const q = await tursoQuery(env, [
+    { sql: PERAWI_SQL.narrator, args: [id] },
+    { sql: PERAWI_SQL.grades, args: [id] },
+    { sql: PERAWI_SQL.teachers, args: [id, limit] },
+    { sql: PERAWI_SQL.students, args: [id, limit] },
+    ...altIds.map((a) => ({ sql: PERAWI_SQL.narrator, args: [a] })),
+  ]);
+  if (!q) return new Response("Service Unavailable", { status: 503, headers: { "cache-control": "no-store", "retry-after": "30" } });
+  const n = q[0][0];
+  if (!n) {
+    const body = nav() + `<main class="pwrap"><p class="pempty">${L({ bm: "Perawi tidak ditemui.", en: "Narrator not found.", ar: "الراوي غير موجود." })}</p></main>` + footer();
+    const html = shell({ title: "404 | Dewan Izhan", description: "Perawi tidak ditemui", canonical: `/perawi/${id}/`, cssHrefs, body, head: '<meta name="robots" content="noindex">' });
+    return new Response(html, { status: 404, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=300" } });
+  }
+  const html = perawiPage({
+    n, grades: q[1], teachers: edgeList(q[2]), students: edgeList(q[3]), alts: q.slice(4).map((r) => r[0]).filter(Boolean), semua,
+  }, cssHrefs);
+  return new Response(html, { status: 200, headers: { ...HTML_HEADERS, "cache-control": "public, max-age=3600" } });
+}
+
+/** Perawi bukan-teratas (tiada aset statik) jatuh ke sini. Cache tepi mengikut URL; bukan sesi/bahasa (HTML sama untuk semua bahasa). */
+async function perawiCached(req: Request, url: URL, id: number, env: TursoEnv, ctx: Ctx): Promise<Response> {
+  const cache = (caches as unknown as { default: Cache }).default;
+  // Kunci hanya path + semua: query rawak tidak boleh memintas cache (Turso + render).
+  const semua = url.searchParams.get("semua") === "1";
+  const k = new URL(url.pathname, url);
+  if (semua) k.searchParams.set("semua", "1");
+  k.searchParams.set("__cv", CACHE_VERSION);
+  const key = new Request(k.toString(), { method: "GET" });
+  let res = await cache.match(key);
+  if (res) {
+    res = new Response(res.body, res);
+    res.headers.set("x-diwan-cache", "HIT");
+  } else {
+    res = await perawiResponse(id, semua, env);
+    // 200 → TTL penuh; 404 → 1 jam (hadkan enumerasi id yang membakar Turso). 503 tidak dicache.
+    const ttl = res.status === 200 ? TTL : res.status === 404 ? 3600 : 0;
+    if (ttl) {
+      ctx.waitUntil(cache.put(key, new Response(res.clone().body, { status: res.status, headers: { ...HTML_HEADERS, "cache-control": `public, max-age=${ttl}` } })));
+    }
+    res.headers.set("x-diwan-cache", "MISS");
+  }
+  return req.method === "HEAD" ? new Response(null, res) : res;
 }
 
 const pageUrl = (origin: string, book: number, seq: number, total: number) => {
@@ -131,6 +222,8 @@ const worker = {
       url.pathname += "/";
       return new Response(null, { status: 308, headers: { location: url.toString(), "cache-control": "public, max-age=3600" } });
     }
+    const pm = url.pathname.match(/^\/(?:x\/)?perawi\/(\d{1,12})\/$/);
+    if (pm && (req.method === "GET" || req.method === "HEAD")) return perawiCached(req, url, Number(pm[1]), env as TursoEnv, ctx);
     if (url.pathname.startsWith("/x/") && (req.method === "GET" || req.method === "HEAD")) {
       const r = await legacyRedirect(url, env as TursoEnv);
       if (r) return r;
