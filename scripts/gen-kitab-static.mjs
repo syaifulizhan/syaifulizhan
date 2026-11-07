@@ -17,7 +17,6 @@ import { kitabPage, splitRulings, PER_PAGE } from "../src/static/templates.mjs";
 const ASSETS = ".open-next/assets";
 const OUT = join(ASSETS, "kitab");
 const LIMIT = Number(process.env.STATIC_BOOK_LIMIT) || 0;
-const CONCURRENCY = 8;
 
 /**
  * Sambungan DB. CI hanya ada TURSO_API_TOKEN (sama seperti kuota.yml/segar-seq.mjs):
@@ -45,13 +44,32 @@ async function connect() {
   return createClient({ url: "file:./data/corpus.db" });
 }
 const db = await connect();
-const rows = async (sql, args = []) => (await db.execute({ sql, args })).rows;
+const REMOTE = !String(db.protocol ?? "").startsWith("file");
+const CONCURRENCY = REMOTE ? 4 : 8;
+
+/** Ralat sementara (aliran HTTP Turso/rangkaian) yang berbaloi dicuba semula. */
+const TRANSIENT = /SERVER_ERROR|HTTP status [45]\d\d|fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket|network|stream|timed? ?out/i;
+const BACKOFF_MS = [1000, 3000, 9000];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let retries = 0;
+/** Satu execute dengan 3 cubaan semula (1s/3s/9s); selepas itu gagal keras. "no such table" tidak dicuba semula. */
+const rows = async (sql, args = []) => {
+  for (let attempt = 0; ; attempt++) {
+    try { return (await db.execute({ sql, args })).rows; }
+    catch (e) {
+      const msg = String(e?.message ?? e);
+      if (attempt >= BACKOFF_MS.length || /no such table/i.test(msg) || !TRANSIENT.test(msg)) throw e;
+      retries++;
+      console.warn(`cuba semula ${attempt + 1}/${BACKOFF_MS.length} (${msg.slice(0, 80)})`);
+      await sleep(BACKOFF_MS[attempt]);
+    }
+  }
+};
 /** Jadual pilihan (cth override sanad) mungkin tiada: HANYA "no such table" dikosongkan; ralat lain dilempar. */
 const rowsSafe = async (sql, args = []) => {
   try { return await rows(sql, args); }
   catch (e) { if (/no such table/i.test(String(e?.message ?? e))) return []; throw e; }
 };
-const ph = (n) => Array(n).fill("?").join(",");
 const group = (list, key) => {
   const m = new Map();
   for (const r of list) { const k = r[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
@@ -76,27 +94,27 @@ function cssHrefs() {
 
 // Sahihayn sahaja boleh dipaut (lihat DORAR_LINKABLE dalam src/lib/hadis.ts).
 const LINKABLE = { "صحيح البخاري": 900003, "صحيح مسلم": 900007 };
+let linkTargets = null; // "book:number" → id hadis, dimuat sekali (~14k baris) bukan per halaman
+const loadLinkTargets = async () => {
+  if (!linkTargets) {
+    const hr = await rows(`SELECT id, book_id, number FROM hadiths WHERE book_id IN (${Object.values(LINKABLE).join(",")})`);
+    linkTargets = new Map(hr.map((x) => [`${x.book_id}:${x.number}`, x.id]));
+  }
+  return linkTargets;
+};
 
-async function loadRulings(ids) {
+async function shapeRulings(list) {
   const out = new Map();
-  const list = await rowsSafe(
-    `SELECT hadith_id, rawi, muhaddith, source_book, ref, hukm, is_primary FROM hadith_ruling WHERE hadith_id IN (${ph(ids.length)}) ORDER BY is_primary DESC, ord`, ids);
-  const byH = group(list, "hadith_id");
-  const wanted = [];
-  for (const [id, arr] of byH) {
+  const tgt = await loadLinkTargets();
+  for (const [id, arr] of group(list, "hadith_id")) {
     const { shown, hidden } = splitRulings(arr.map((r) => ({ ...r })));
     out.set(id, { shown, hiddenCount: hidden.length });
     for (const r of shown) {
       const bid = LINKABLE[normalizeArabic(r.source_book)];
       const num = r.ref && /^\d+$/.test(String(r.ref).trim()) ? Number(String(r.ref).trim()) : null;
-      if (bid && num) wanted.push({ bid, num, r });
+      const target = bid && num ? tgt.get(`${bid}:${num}`) : null;
+      if (target) r.href = `/x/h/${target}/`;
     }
-  }
-  if (wanted.length) {
-    const keys = [...new Set(wanted.map((w) => `${w.bid}:${w.num}`))];
-    const hr = await rowsSafe(`SELECT id, book_id, number FROM hadiths WHERE (book_id, number) IN (VALUES ${keys.map(() => "(?,?)").join(",")})`, keys.flatMap((k) => k.split(":").map(Number)));
-    const tgt = new Map(hr.map((x) => [`${x.book_id}:${x.number}`, x.id]));
-    for (const w of wanted) { const id = tgt.get(`${w.bid}:${w.num}`); if (id) w.r.href = `/x/h/${id}/`; }
   }
   return out;
 }
@@ -121,30 +139,32 @@ async function sharahMeta(bookRef, kitabNo) {
   return meta;
 }
 
-async function buildPage(book, total, totalPages, page, chapterCount) {
-  const offset = (page - 1) * PER_PAGE;
-  const hadiths = await rows(
-    "SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths WHERE book_id=? AND seq>? AND seq<=? ORDER BY seq",
-    [book.id, offset, offset + PER_PAGE]);
-  const expected = Math.min(PER_PAGE, total - offset);
-  if (hadiths.length !== expected || hadiths.length === 0) {
-    throw new Error(`kitab ${book.id} halaman ${page}: ${hadiths.length} hadis, dijangka ${expected}`);
-  }
-  const ids = hadiths.map((h) => h.id);
-  const kitabNo = hadiths.find((h) => h.chapter_ref != null)?.chapter_ref ?? 0;
-  const inIds = ph(ids.length);
-  const [isn, trs, ovr, bab, rul, sharah] = ids.length
-    ? await Promise.all([
-        rowsSafe(`SELECT hn.hadith_id, hn.narrator_id, COALESCE(hn.chain_no,0) chain_no, hn.position, hn.raw_name, n.name_ar resolved
-                    FROM hadith_narrators hn LEFT JOIN narrators n ON n.id = hn.narrator_id
-                   WHERE hn.hadith_id IN (${inIds}) ORDER BY hn.hadith_id, chain_no, hn.position`, ids),
-        rowsSafe(`SELECT entity_id, lang, text, is_verified FROM translations WHERE entity_type='hadith' AND entity_id IN (${inIds}) AND lang IN ('ms','en')`, ids),
-        rowsSafe(`SELECT hadith_id, nodes_json FROM hadith_sanad_override WHERE hadith_id IN (${inIds})`, ids),
-        rowsSafe(`SELECT hadith_id, kitab_title, bab_no, bab_title FROM hadith_bab WHERE hadith_id IN (${inIds})`, ids),
-        loadRulings(ids),
-        kitabNo ? sharahMeta(book.id, kitabNo) : null,
-      ])
-    : [[], [], [], [], new Map(), null];
+// Satu "chunk" = CHUNK_PAGES halaman berturutan (500 hadis): enam query berjulat seq (JOIN pada hadiths,
+// tiada senarai IN panjang) menggantikan ~7 query PER HALAMAN. Selepas itu halaman dipotong dalam memori.
+const CHUNK_PAGES = 25;
+const seqJoin = "FROM hadiths h JOIN";
+const seqWhere = "WHERE h.book_id=? AND h.seq>? AND h.seq<=?";
+
+async function buildChunk(book, total, totalPages, chunk, chapterCount, emit) {
+  const firstPage = chunk * CHUNK_PAGES + 1;
+  const lastPage = Math.min(totalPages, firstPage + CHUNK_PAGES - 1);
+  const lo = (firstPage - 1) * PER_PAGE;
+  const hi = Math.min(total, lastPage * PER_PAGE);
+  const a = [book.id, lo, hi];
+  const [hadiths, isn, trs, ovr, bab, rul] = await Promise.all([
+    rows("SELECT id, book_id, chapter_ar, chapter_ref, number, matn_ar, grade FROM hadiths WHERE book_id=? AND seq>? AND seq<=? ORDER BY seq", a),
+    rowsSafe(`SELECT hn.hadith_id, hn.narrator_id, COALESCE(hn.chain_no,0) chain_no, hn.position, hn.raw_name, n.name_ar resolved
+                ${seqJoin} hadith_narrators hn ON hn.hadith_id = h.id LEFT JOIN narrators n ON n.id = hn.narrator_id
+               ${seqWhere} ORDER BY hn.hadith_id, chain_no, hn.position`, a),
+    rowsSafe(`SELECT t.entity_id, t.lang, t.text, t.is_verified ${seqJoin} translations t ON t.entity_id = h.id
+               ${seqWhere} AND t.entity_type='hadith' AND t.lang IN ('ms','en')`, a),
+    rowsSafe(`SELECT o.hadith_id, o.nodes_json ${seqJoin} hadith_sanad_override o ON o.hadith_id = h.id ${seqWhere}`, a),
+    rowsSafe(`SELECT b.hadith_id, b.kitab_title, b.bab_no, b.bab_title ${seqJoin} hadith_bab b ON b.hadith_id = h.id ${seqWhere}`, a),
+    rowsSafe(`SELECT r.hadith_id, r.rawi, r.muhaddith, r.source_book, r.ref, r.hukm, r.is_primary
+                ${seqJoin} hadith_ruling r ON r.hadith_id = h.id ${seqWhere} ORDER BY r.hadith_id, r.is_primary DESC, r.ord`, a),
+  ]);
+  const expectedChunk = hi - lo;
+  if (hadiths.length !== expectedChunk) throw new Error(`kitab ${book.id} chunk ${chunk}: ${hadiths.length} hadis, dijangka ${expectedChunk}`);
 
   const trMap = new Map();
   for (const r of trs) {
@@ -153,13 +173,28 @@ async function buildPage(book, total, totalPages, page, chapterCount) {
     trMap.set(r.entity_id, t);
   }
   const overrides = new Map();
-  for (const r of ovr) { { try { overrides.set(r.hadith_id, JSON.parse(r.nodes_json)); } catch (e) { throw new Error(`override sanad rosak untuk hadis ${r.hadith_id}: ${e.message}`); } } }
+  for (const r of ovr) {
+    try { overrides.set(r.hadith_id, JSON.parse(r.nodes_json)); }
+    catch (e) { throw new Error(`override sanad rosak untuk hadis ${r.hadith_id}: ${e.message}`); }
+  }
+  const isnads = group(isn, "hadith_id");
+  const rulings = await shapeRulings(rul);
+  const babs = new Map(bab.map((b) => [b.hadith_id, b]));
 
-  return kitabPage({
-    book, total, page, totalPages, hadiths, chapterCount, sharah, kitabNo,
-    isnads: group(isn, "hadith_id"), overrides, trs: trMap, rulings: rul,
-    babs: new Map(bab.map((b) => [b.hadith_id, b])),
-  }, CSS, { legacyScript: page === 1 });
+  for (let page = firstPage; page <= lastPage; page++) {
+    const offset = (page - 1) * PER_PAGE;
+    const pageHadiths = hadiths.slice(offset - lo, offset - lo + PER_PAGE);
+    const expected = Math.min(PER_PAGE, total - offset);
+    if (pageHadiths.length !== expected || pageHadiths.length === 0) {
+      throw new Error(`kitab ${book.id} halaman ${page}: ${pageHadiths.length} hadis, dijangka ${expected}`);
+    }
+    const kitabNo = pageHadiths.find((h) => h.chapter_ref != null)?.chapter_ref ?? 0;
+    const sharah = kitabNo ? await sharahMeta(book.id, kitabNo) : null;
+    emit(page, kitabPage({
+      book, total, page, totalPages, hadiths: pageHadiths, chapterCount, sharah, kitabNo,
+      isnads, overrides, trs: trMap, rulings, babs,
+    }, CSS, { legacyScript: page === 1 }));
+  }
 }
 
 const write = (rel, content) => {
@@ -188,17 +223,17 @@ for (const b of books) {
     bytes += write(`${book.id}/toc.json`, JSON.stringify(chapters.map((c) => [c.chapter_ref, c.chapter_ar, Number(c.n), Math.min(totalPages, Math.floor((Math.max(Number(c.first_seq), 1) - 1) / PER_PAGE) + 1)])));
     tocFiles++;
   }
-  const todo = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const chunks = Array.from({ length: Math.ceil(totalPages / CHUNK_PAGES) }, (_, i) => i);
+  const emit = (p, html) => {
+    const n = write(p === 1 ? `${book.id}/index.html` : `${book.id}/${p}/index.html`, html);
+    bytes += n; pages++; maxBytes = Math.max(maxBytes, n);
+  };
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
-    for (let p; (p = todo.shift()); ) {
-      const html = await buildPage(book, total, totalPages, p, chapters.length);
-      const n = write(p === 1 ? `${book.id}/index.html` : `${book.id}/${p}/index.html`, html);
-      bytes += n; pages++; maxBytes = Math.max(maxBytes, n);
-    }
+    for (let c; (c = chunks.shift()) !== undefined; ) await buildChunk(book, total, totalPages, c, chapters.length, emit);
   }));
 }
 
 console.log(JSON.stringify({
   books: books.length, pages, tocFiles, totalKB: Math.round(bytes / 1024), avgPageKB: +(bytes / pages / 1024).toFixed(1),
-  maxPageKB: +(maxBytes / 1024).toFixed(1), seconds: Math.round((Date.now() - t0) / 1000),
+  maxPageKB: +(maxBytes / 1024).toFixed(1), seconds: Math.round((Date.now() - t0) / 1000), retries, remote: REMOTE,
 }));
