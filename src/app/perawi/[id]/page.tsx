@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
-import { getNarrator, getGrades, getTeachers, getStudents, type Edge } from "@/lib/narrators";
+import { getNarrator, getGrades, getTeachers, getStudents, EDGE_LIMIT, type Edge } from "@/lib/narrators";
 import { getServerLang } from "@/lib/lang-server";
 import { T } from "@/lib/i18n";
 
@@ -27,19 +27,30 @@ function Person({ e }: { e: Edge }) {
   );
 }
 
-export default async function PerawiPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PerawiPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ semua?: string }>;
+}) {
   const { id } = await params;
+  const { semua } = await searchParams;
+  const edgeLimit = semua === "1" ? 5000 : EDGE_LIMIT;
   const nid = Number(id);
   if (!Number.isInteger(nid)) notFound();
   const n = await getNarrator(nid);
   if (!n) notFound();
 
-  const [grades, teachers, students, lang] = await Promise.all([
+  const [grades, teachersR, studentsR, lang] = await Promise.all([
     getGrades(nid),
-    getTeachers(nid),
-    getStudents(nid),
+    getTeachers(nid, edgeLimit),
+    getStudents(nid, edgeLimit),
     getServerLang(),
   ]);
+  const teachers = teachersR.rows;
+  const students = studentsR.rows;
+  const truncated = teachersR.total > teachers.length || studentsR.total > students.length;
   const altIds = THIQATAN_ALTS[nid] ?? [];
   const alts = altIds.length ? (await Promise.all(altIds.map((a) => getNarrator(a)))).filter(Boolean) : [];
 
@@ -56,6 +67,7 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
 
   return (
     <>
+      {semua === "1" && <meta name="robots" content="noindex, nofollow" />}
       <Nav />
       <main className="pwrap">
         <div className="pcrumb">
@@ -127,7 +139,7 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
         <div className="pgraph">
           <div className="pcol">
             <h4>
-              {T.narrTeachers[lang]} <span className="cnt">({teachers.length})</span>
+              {T.narrTeachers[lang]} <span className="cnt">({teachersR.total})</span>
             </h4>
             <div className="pnodes">
               {teachers.length ? (
@@ -139,7 +151,7 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
           </div>
           <div className="pcol">
             <h4>
-              {T.narrStudents[lang]} <span className="cnt">({students.length})</span>
+              {T.narrStudents[lang]} <span className="cnt">({studentsR.total})</span>
             </h4>
             <div className="pnodes">
               {students.length ? (
@@ -150,6 +162,13 @@ export default async function PerawiPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
         </div>
+        {truncated && (
+          <p className="pempty">
+            <Link href={`/perawi/${n.id}?semua=1`} rel="nofollow">
+              Papar semua guru &amp; murid
+            </Link>
+          </p>
+        )}
       </main>
       <Footer />
     </>

@@ -24,6 +24,9 @@ import type { MetadataRoute } from "next";
 export const SEO_BOTS = [
   "SemrushBot", "AhrefsBot", "MJ12bot", "DotBot", "BLEXBot", "DataForSeoBot",
   "PetalBot", "Barkrowler", "serpstatbot", "SeekportBot", "MegaIndex", "Bytespider",
+  // Crawler AI/scraper — disekat 403 dalam worker.ts (AI_BOT_UA)
+  "ElevenlabsCrawler", "GPTBot", "ClaudeBot", "anthropic-ai", "CCBot", "PerplexityBot", "Amazonbot",
+  "meta-externalagent", "Google-Extended", "Diffbot", "ImagesiftBot", "omgili", "Timpibot",
 ];
 
 export default function robots(): MetadataRoute.Robots {
@@ -38,6 +41,7 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",    // endpoint dalaman
           "/cari",    // muka carian — setiap query = pertanyaan DB baharu
           "/*?q=",    // sebarang carian melalui query string (cth /hadis?q=…)
+          "/*?semua=", // senarai penuh guru/murid perawi — mahal CPU
         ],
       },
     ],

@@ -58,11 +58,22 @@ function cacheable(req: Request): boolean {
 // tidak sampai ke Next/Turso langsung; /robots.txt tetap dihidang supaya bot yang
 // sopan nampak arahan Disallow dan berhenti sendiri.
 const SEO_BOT_UA = /SemrushBot|AhrefsBot|MJ12bot|DotBot|BLEXBot|DataForSeoBot|PetalBot|Barkrowler|serpstatbot|SeekportBot|MegaIndex|Bytespider/i;
+// Crawler AI/scraper: URL unik (/perawi/<id>/) tidak pernah kena cache tepi, tiap satu bakar CPU Worker.
+const AI_BOT_UA = /ElevenlabsCrawler|GPTBot|ClaudeBot|anthropic-ai|CCBot|PerplexityBot|Amazonbot|meta-externalagent|Google-Extended|Diffbot|ImagesiftBot|omgili|Timpibot/i;
 
 const worker = {
   async fetch(req: Request, env: unknown, ctx: Ctx): Promise<Response> {
-    if (SEO_BOT_UA.test(req.headers.get("user-agent") ?? "") && new URL(req.url).pathname !== "/robots.txt") {
+    const url = new URL(req.url);
+    const ua = req.headers.get("user-agent") ?? "";
+    if ((SEO_BOT_UA.test(ua) || AI_BOT_UA.test(ua)) && url.pathname !== "/robots.txt") {
       return new Response("Forbidden", { status: 403, headers: { "cache-control": "no-store" } });
+    }
+    // next.config trailingSlash:true → Next jawab 308 ke "/path/"; jawab terus tanpa handler.fetch.
+    // Hanya laluan tanpa titik (bukan fail), bukan /_next, /api; GET/HEAD sahaja.
+    if ((req.method === "GET" || req.method === "HEAD") && url.pathname !== "/" && !url.pathname.endsWith("/")
+      && !url.pathname.includes(".") && !/^\/(_next|api)(\/|$)/.test(url.pathname)) {
+      url.pathname += "/";
+      return new Response(null, { status: 308, headers: { location: url.toString(), "cache-control": "public, max-age=3600" } });
     }
     if (!cacheable(req)) return handler.fetch(req, env, ctx);
 
