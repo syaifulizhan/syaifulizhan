@@ -1,0 +1,95 @@
+name: Import delta
+
+# Applies a Shamela importer delta bundle (scripts/shamela/import-book.mjs) to production Turso.
+# Production is reachable only from here (TURSO_API_TOKEN mints a 1 h DB token inside the script).
+# Always run mode=dry-run first. Bundle is a release asset made by scripts/shamela/pack-delta.sh.
+# Required secret: TURSO_API_TOKEN
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset:
+        description: "Release asset name, e.g. delta-345-ibn-khuzayma.tar.gz"
+        required: true
+        type: string
+      release_tag:
+        description: "Release tag holding the asset"
+        required: true
+        default: import-deltas
+        type: string
+      mode:
+        description: "dry-run = preflight only (read-only token); apply; rollback = run rollback.sql"
+        required: true
+        default: dry-run
+        type: choice
+        options: [dry-run, apply, rollback]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: turso-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ASSET: ${{ inputs.asset }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download and extract bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$ASSET" =~ ^[A-Za-z0-9._-]+\.tar\.gz$ ]] || { echo "bad asset name"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/dl" "$RUNNER_TEMP/bundle"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$ASSET" --dir "$RUNNER_TEMP/dl" --clobber
+          tar -xzf "$RUNNER_TEMP/dl/$ASSET" -C "$RUNNER_TEMP/bundle"
+          ls -la "$RUNNER_TEMP/bundle"
+
+      - name: Run importer
+        id: run
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+        run: |
+          set +e
+          case "$MODE" in
+            dry-run)  flags="--dry-run" ;;
+            apply)    flags="--apply" ;;
+            rollback) flags="--rollback" ;;
+          esac
+          node scripts/shamela/apply-delta-remote.mjs "$RUNNER_TEMP/bundle" $flags 2>&1 | tee "$RUNNER_TEMP/import.log"
+          echo "code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Import delta: ${MODE} (${ASSET})"
+            echo '```'
+            tail -n 80 "$RUNNER_TEMP/import.log" 2>/dev/null || echo "no output"
+            echo '```'
+            if [[ "$MODE" == "apply" && "${{ steps.run.outputs.code }}" == "0" ]]; then
+              echo "**Next:** bump \`scripts/static-data-version.txt\` and push so static pages regenerate (in-place stub edits do not change max(rowid))."
+            fi
+            if [[ "${{ steps.run.outputs.code }}" != "0" ]]; then
+              echo "**Failed.** If rows were written, re-run with mode=rollback (rollback.sql is idempotent) after reading the log."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if the importer failed
+        if: steps.run.outputs.code != '0'
+        run: exit 1
