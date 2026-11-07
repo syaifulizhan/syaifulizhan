@@ -29,9 +29,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Cap jari murah (~13 baca baris Turso): aset statik dijana semula HANYA bila data/penjana berubah.
+      - name: Static fingerprint
+        id: static
+        run: node scripts/static-fingerprint.mjs
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+      - name: Static assets cache
+        uses: actions/cache@v4
+        with:
+          path: .static-cache
+          key: static-${{ steps.static.outputs.fp }}
       - name: Build (OpenNext)
         run: npm run cf:build
         env:
+          STATIC_FP: ${{ steps.static.outputs.fp }}
+          STATIC_CACHE_DIR: .static-cache
           # Penjana halaman kitab statik membaca korpus terus dari Turso (tiada data/corpus.db di CI).
           TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}

@@ -5,6 +5,7 @@ import { readdirSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 export const ASSETS = ".open-next/assets";
+export const STABLE_CSS = "/static-site.css";
 
 /**
  * Sambungan DB. CI hanya ada TURSO_API_TOKEN (sama seperti kuota.yml/segar-seq.mjs):
@@ -78,7 +79,13 @@ export function cssHrefs() {
   };
   walk(root);
   if (!found.length) throw new Error("CSS Next (.hcard/.pwrap) tidak ditemui");
-  return found;
+  // Laluan STABIL: nama fail Next berhash berubah pada deploy kod-sahaja dan akan menyahsahkan cache aset statik.
+  // Gabung (tertib) ke satu fail tetap; halaman statik & worker merujuk ini sahaja.
+  const css = found.sort().map((h) => readFileSync(join(ASSETS, h), "utf8")).join("\n");
+  const badUrl = [...css.matchAll(/url\(\s*(['"]?)([^)'"]*)/g)].some((m) => !/^(data:|https?:|\/)/.test(m[2]));
+  if (badUrl || /@import/.test(css)) throw new Error("CSS Next mengandungi url()/@import relatif — laluan stabil tidak selamat");
+  writeFileSync(join(ASSETS, STABLE_CSS.slice(1)), css);
+  return [STABLE_CSS];
 }
 
 

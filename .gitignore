@@ -54,3 +54,4 @@ scripts/_*
 # CSV/clone sumber besar (dimuat semula bila perlu)
 data/mhashim-ahmad.csv
 data/hadith-json/
+.static-cache/
