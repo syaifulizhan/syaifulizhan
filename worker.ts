@@ -20,7 +20,9 @@
 // @ts-expect-error: dijana oleh `opennextjs-cloudflare build`
 import { default as handler } from "./.open-next/worker.js";
 
-const TTL = 6 * 60 * 60; // 6 jam — suntingan admin kelihatan selewat-lewatnya selepas ini
+const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-lewatnya selepas ini
+// Naikkan nilai ini pada deploy untuk membatalkan semua cache tepi (tiada laluan purge lain).
+const CACHE_VERSION = "1";
 const SESSION_COOKIE = "diz_sess";
 const BYPASS = [/^\/admin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/_next\//];
 const CACHEABLE_TYPE = /^(text\/html|text\/x-component|application\/json)/;
@@ -37,6 +39,7 @@ function cookie(req: Request, name: string): string | undefined {
 async function cacheKey(req: Request): Promise<Request> {
   const url = new URL(req.url);
   const lang = cookie(req, "lang");
+  url.searchParams.set("__cv", CACHE_VERSION);
   url.searchParams.set("__lang", lang === "en" || lang === "ar" ? lang : "bm");
   const vary = VARY.map((h) => `${h}=${req.headers.get(h) ?? ""}`).join("&");
   if (vary !== VARY.map((h) => `${h}=`).join("&")) {

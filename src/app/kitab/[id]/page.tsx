@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import type { Metadata } from "next";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { Isnad } from "@/components/Isnad";
@@ -18,6 +19,18 @@ import { T } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 const PER_PAGE = 20;
+
+/** URL kanonik: /kitab/<id>[?page=N]. ?h=/?ch=/?s= tidak pernah kanonik (elak URL tak terhingga). */
+export async function generateMetadata({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string; h?: string; s?: string; ch?: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { page, h, s, ch } = await searchParams;
+  const p = Number(page) || 1;
+  const plain = !(s ?? "").trim() && !Number(h) && !Number(ch);
+  return { alternates: { canonical: plain && p > 1 ? `/kitab/${id}/?page=${p}` : `/kitab/${id}/` } };
+}
 
 export default async function KitabPage({
   params,
@@ -39,11 +52,14 @@ export default async function KitabPage({
   // ?h=<hadithId> → lompat ke halaman hadis; ?ch=<كتاب> → lompat ke halaman كتاب itu.
   const targetHadith = Number(hStr) || 0;
   const targetChapter = Number(chStr) || 0;
-  const wantPage = search ? (Number(pageStr) || 1)
-    : targetHadith ? await getHadithPage(bid, targetHadith, PER_PAGE)
-    : targetChapter ? await getChapterPage(bid, targetChapter, PER_PAGE)
-    : (Number(pageStr) || 1);
-  const page = Math.min(Math.max(1, wantPage), totalPages);
+  // ?h=/?ch= ialah pintasan lama: alih kekal ke URL kanonik ?page=N (bilangan URL unik = bilangan halaman).
+  // Penyemak tidak render SSR penuh; pelayar mengekalkan #h-<id> merentas alihan.
+  if (!search && (targetHadith || targetChapter)) {
+    const p = targetHadith ? await getHadithPage(bid, targetHadith, PER_PAGE) : await getChapterPage(bid, targetChapter, PER_PAGE);
+    const cp = Math.min(Math.max(1, p), totalPages);
+    permanentRedirect(cp > 1 ? `/kitab/${bid}/?page=${cp}` : `/kitab/${bid}/`);
+  }
+  const page = Math.min(Math.max(1, Number(pageStr) || 1), totalPages);
 
   const [hadiths, chapters] = await Promise.all([
     getBookHadiths(bid, PER_PAGE, (page - 1) * PER_PAGE, search),

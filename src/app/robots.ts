@@ -41,6 +41,7 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",    // endpoint dalaman
           "/cari",    // muka carian — setiap query = pertanyaan DB baharu
           "/*?q=",    // sebarang carian melalui query string (cth /hadis?q=…)
+          "/*?h=",    // pintasan hadis lama (dialihkan ke ?page=N) — 85k URL unik
           "/*?semua=", // senarai penuh guru/murid perawi — mahal CPU
         ],
       },
