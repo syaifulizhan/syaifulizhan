@@ -135,7 +135,7 @@ Prinsip: amanah > laju — teks diambil terus dari Shamela (tiada rekaan), label
 - [ ] **H3. B4 pengarang** dari `master.db` (author + tahun wafat) untuk 399 padanan unik; edisi kabur → semak manual.
 - [ ] **H4. Skala import** kitab stub berperingkat (kitab hadis tulen dahulu; Tarikh Dimashq/Istidhkar bukan himpunan hadis tulen — tangguh).
 - [ ] **H5. Profil perawi (D1)** dari kitab rijal tempatan (Taqrib, Tahdhib al-Kamal, al-Kashif…) — padanan entiti wajib disemak.
-- [ ] **H6. Darjat (F2) — PELBAGAI ulama, bukan al-Albani sahaja** (arahan pemilik 8 Nov). Setiap hukm dinisbah kepada penilainya + kitab + edisi, dipapar bersebelahan tanpa tarjih (neutral). Sumber tempatan sasaran:
+- [ ] **H6. Darjat (F2) — DORAR DIUTAMAKAN** (arahan pemilik 8 Nov): `hadith_ruling` (source='dorar') sudah meliputi 75,732/85,503 hadis (88.6%), 1.12 juta hukm daripada ramai ulama (al-Arna'ut, al-Albani, al-Bukhari, Muslim, Abu Hatim, Ibn Hibban, al-Daraqutni, Ahmad Shakir, Ibn Hajar, al-Haythami…). Keutamaan: (1) dorar dahulu — lengkapkan 9,771 hadis tanpa hukm + semua hadis import Shamela baharu melalui API JSON dorar (E5); (2) sumber Shamela di bawah HANYA untuk jurang yang dorar tiada, dilabel `source='shamela:<kitab>'`, dipapar selepas dorar. PELBAGAI ulama, bukan al-Albani sahaja. Setiap hukm dinisbah kepada penilainya + kitab + edisi, dipapar bersebelahan tanpa tarjih (neutral). Sumber tempatan sasaran:
       - Mutaqaddimun/pertengahan: al-Hakim & al-Dhahabi (Talkhis al-Mustadrak), al-Mundhiri (al-Targhib), al-Nawawi (al-Khulasa/al-Majmu'), al-Zayla'i (Nasb al-Raya), Ibn al-Mulaqqin (al-Badr al-Munir), al-'Iraqi (al-Mughni 'an Haml al-Asfar), al-Haythami (Majma' al-Zawa'id), Ibn Hajar (Talkhis al-Habir, Fath al-Bari, Mukhtasar Zawa'id), al-Busiri (Misbah al-Zujaja, Ithaf al-Khiyara), al-Suyuti (al-Jami' al-Saghir).
       - Mu'asirin: al-Albani (55 judul), Shu'ayb al-Arna'ut (tahqiq Musnad Ahmad, Sahih Ibn Hibban, Sunan), Ahmad Shakir (Musnad), Husayn Salim Asad (Musnad Abi Ya'la, Sunan al-Darimi), Muqbil al-Wadi'i (al-Sahih al-Musnad).
       - Wajib: padan rawi + kitab sumber + matn serentak (§8b); hukm dari NOTA KAKI muhaqqiq dinisbah kepada muhaqqiq, bukan pengarang; rintis satu sumber + sampel disemak sebelum skala.
@@ -147,7 +147,7 @@ Prinsip: amanah > laju — teks diambil terus dari Shamela (tiada rekaan), label
       carian. `hadiths_fts` (85,503, selari) kini **sudah hidup** dalam v2
       selepas A1 → tinggal tukar query ke FTS5. Menang besar, kos rendah.
 - [ ] **F1. Admin passkey** (fasa 2) — kini kata laluan + GitHub OAuth.
-- [ ] **F2. `grade` hanya 3,955 (4.6%)**, `takhrij` 0 → isi dari dorar/Itqan.
+- [ ] **F2. (lihat H6 — data dorar sudah 88.6% dalam `hadith_ruling`; kolum `hadiths.grade` lama hanya 2,581)** asal: `grade` hanya 3,955 (4.6%), `takhrij` 0 → isi dari dorar/Itqan.
 
 ---
 
