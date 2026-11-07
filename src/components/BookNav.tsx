@@ -9,12 +9,12 @@ const KITAB: Record<Lang, string> = { bm: "kitab", en: "books", ar: "كتابً�
 const CLEAR: Record<Lang, string> = { bm: "Kosongkan", en: "Clear", ar: "مسح" };
 
 // Satu كتاب dlm ToC: nama (link lompat) + toggle باب (kembang → muat باب dari struktur penulis).
-function KitabRow({ c, basePath, bookRef, hasBab }: { c: Chapter; basePath: string; bookRef: number; hasBab: boolean }) {
+function KitabRow({ c, bookRef, hasBab }: { c: Chapter; bookRef: number; hasBab: boolean }) {
   const [open, setOpen] = useState(false);
   const [bab, setBab] = useState<BabItem[] | null>(null);
   async function toggle() {
     if (!open && bab === null) {
-      try { const r = await fetch(`/api/bab?book=${bookRef}&kitab=${c.chapter_ref}`); setBab((await r.json()).bab ?? []); }
+      try { const r = await fetch(`/api/bab/?book=${bookRef}&kitab=${c.chapter_ref}`); setBab((await r.json()).bab ?? []); }
       catch { setBab([]); }
     }
     setOpen((v) => !v);
@@ -25,7 +25,7 @@ function KitabRow({ c, basePath, bookRef, hasBab }: { c: Chapter; basePath: stri
         {hasBab ? (
           <button className="bnav-kexp" onClick={toggle} aria-expanded={open} aria-label="باب">{open ? "▾" : "▸"}</button>
         ) : <span className="bnav-kexp bnav-kexp-x" />}
-        <a className="bnav-klink" href={`${basePath}?ch=${c.chapter_ref}`}>
+        <a className="bnav-klink" href={`/x/ch/${bookRef}/${c.chapter_ref}/`}>
           <span className="bnav-ktb ar">{c.chapter_ar}</span>
           <span className="bnav-n">{c.n}</span>
         </a>
@@ -34,7 +34,7 @@ function KitabRow({ c, basePath, bookRef, hasBab }: { c: Chapter; basePath: stri
         <ol className="bnav-bab">
           {bab.map((b) => (
             <li key={b.bab_no}>
-              <a className="ar" href={`${basePath}?ch=${c.chapter_ref}`}>{b.bab_title}</a>
+              <a className="ar" href={`/x/ch/${bookRef}/${c.chapter_ref}/`}>{b.bab_title}</a>
             </li>
           ))}
         </ol>
@@ -51,10 +51,10 @@ export function BookNav({ chapters, basePath, currentSearch, lang, bookRef, hasB
   const [open, setOpen] = useState(false);
   return (
     <div className="bnav">
-      <form className="bnav-search" method="get" action={basePath}>
+      <form className="bnav-search" method="get" action={`/x/kitab/${bookRef}/`}>
         <input name="s" defaultValue={currentSearch} placeholder={SEARCH_PH[lang]} dir="rtl" className="ar" />
         <button className="btn solid" type="submit" aria-label="cari">⌕</button>
-        {currentSearch && <a className="bnav-clear" href={basePath}>{CLEAR[lang]}</a>}
+        {currentSearch && <a className="bnav-clear" href={`${basePath}/`}>{CLEAR[lang]}</a>}
       </form>
       {chapters.length > 0 && (
         <div className="bnav-toc">
@@ -64,7 +64,7 @@ export function BookNav({ chapters, basePath, currentSearch, lang, bookRef, hasB
           {open && (
             <ol className="bnav-list">
               {chapters.map((c) => (
-                <KitabRow key={c.chapter_ref} c={c} basePath={basePath} bookRef={bookRef} hasBab={hasBab} />
+                <KitabRow key={c.chapter_ref} c={c} bookRef={bookRef} hasBab={hasBab} />
               ))}
             </ol>
           )}

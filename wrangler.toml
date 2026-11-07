@@ -13,6 +13,9 @@ workers_dev = true  # kekalkan URL .workers.dev hidup
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+# Laluan ini dijalankan Worker DAHULU; selebihnya (cth /kitab/<id>/<n>/) dihidang terus dari aset statik
+# tanpa mengira Worker. POST (server action) ke laluan beraset tidak digunakan: cadangan guna /api/suggest.
+run_worker_first = ["/api/*", "/admin/*", "/x/*", "/_next/data/*"]
 
 # NOTA: custom domain syaifulizhan.my SUDAH attached ke worker ini di Cloudflare
 # (kekal di akaun CF, bebas dari deploy). SENGAJA tak letak di sini supaya deploy

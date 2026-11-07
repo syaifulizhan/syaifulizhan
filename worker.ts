@@ -22,12 +22,64 @@ import { default as handler } from "./.open-next/worker.js";
 
 const TTL = 7 * 24 * 60 * 60; // 7 hari — suntingan admin kelihatan selewat-lewatnya selepas ini
 // Naikkan nilai ini pada deploy untuk membatalkan semua cache tepi (tiada laluan purge lain).
-const CACHE_VERSION = "1";
+const CACHE_VERSION = "2";
 const SESSION_COOKIE = "diz_sess";
 const BYPASS = [/^\/admin(\/|$)/, /^\/api\/auth(\/|$)/, /^\/_next\//];
 const CACHEABLE_TYPE = /^(text\/html|text\/x-component|application\/json)/;
 // Pengepala yang mengubah respons Next untuk URL yang sama.
 const VARY = ["rsc", "next-router-prefetch", "next-router-segment-prefetch", "next-router-state-tree", "next-url"];
+
+interface TursoEnv { TURSO_DATABASE_URL?: string; TURSO_AUTH_TOKEN?: string }
+
+const PER_PAGE = 20; // selaras PER_PAGE dalam src/static/templates.mjs
+
+/** Satu SELECT ke Turso melalui HTTP pipeline (tanpa klien libsql/React). Pulang baris pertama atau null. */
+async function tursoRow(env: TursoEnv, sql: string, args: number[]): Promise<(string | null)[] | null> {
+  const base = (env.TURSO_DATABASE_URL ?? "").replace(/^libsql:\/\//, "https://");
+  if (!base.startsWith("https://")) return null;
+  try {
+    const res = await fetch(`${base}/v2/pipeline`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.TURSO_AUTH_TOKEN ?? ""}`, "content-type": "application/json" },
+      body: JSON.stringify({ requests: [{ type: "execute", stmt: { sql, args: args.map((v) => ({ type: "integer", value: String(v) })) } }, { type: "close" }] }),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { results?: { response?: { result?: { rows?: { value?: string }[][] } } }[] };
+    const row = j.results?.[0]?.response?.result?.rows?.[0];
+    return row ? row.map((c) => c?.value ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+const pageUrl = (origin: string, book: number, seq: number, total: number) => {
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const p = Math.min(pages, Math.floor((Math.max(seq, 1) - 1) / PER_PAGE) + 1);
+  return `${origin}/kitab/${book}/${p > 1 ? `${p}/` : ""}`;
+};
+
+const redirect308 = (location: string) =>
+  new Response(null, { status: 308, headers: { location, "cache-control": "public, max-age=86400" } });
+
+/**
+ * Lencongan URL lama tanpa React: /x/h/<hadithId>/ (dahulu /kitab/<b>?h=) dan
+ * /x/ch/<bookId>/<chapterRef>/ (dahulu ?ch=). Satu query kecil -> halaman statik -> 308.
+ * Serpihan #h-<id> dikekalkan oleh pelayar merentas alihan.
+ */
+async function legacyRedirect(url: URL, env: TursoEnv): Promise<Response | null> {
+  const h = url.pathname.match(/^\/x\/h\/(\d{1,12})\/?$/);
+  if (h) {
+    const row = await tursoRow(env, "SELECT h.book_id, h.seq, COALESCE(b.total_hadith, 0) FROM hadiths h JOIN books b ON b.id = h.book_id WHERE h.id = ?", [Number(h[1])]);
+    return redirect308(row ? pageUrl(url.origin, Number(row[0]), Number(row[1]), Number(row[2])) : `${url.origin}/hadis/`);
+  }
+  const c = url.pathname.match(/^\/x\/ch\/(\d{1,12})\/(\d{1,12})\/?$/);
+  if (c) {
+    const bid = Number(c[1]);
+    const row = await tursoRow(env, "SELECT (SELECT min(first_seq) FROM book_chapter WHERE book_id = ? AND chapter_ref >= ?), (SELECT COALESCE(total_hadith, 0) FROM books WHERE id = ?)", [bid, Number(c[2]), bid]);
+    return redirect308(pageUrl(url.origin, bid, Number(row?.[0] ?? 1), Number(row?.[1] ?? 0)));
+  }
+  return null;
+}
 
 interface Ctx { waitUntil(p: Promise<unknown>): void; passThroughOnException?(): void }
 
@@ -65,7 +117,8 @@ const SEO_BOT_UA = /SemrushBot|AhrefsBot|MJ12bot|DotBot|BLEXBot|DataForSeoBot|Pe
 const AI_BOT_UA = /ElevenlabsCrawler|GPTBot|ClaudeBot|anthropic-ai|CCBot|PerplexityBot|Amazonbot|meta-externalagent|Google-Extended|Diffbot|ImagesiftBot|omgili|Timpibot/i;
 
 const worker = {
-  async fetch(req: Request, env: unknown, ctx: Ctx): Promise<Response> {
+  async fetch(request: Request, env: unknown, ctx: Ctx): Promise<Response> {
+    let req = request;
     const url = new URL(req.url);
     const ua = req.headers.get("user-agent") ?? "";
     if ((SEO_BOT_UA.test(ua) || AI_BOT_UA.test(ua)) && url.pathname !== "/robots.txt") {
@@ -77,6 +130,13 @@ const worker = {
       && !url.pathname.includes(".") && !/^\/(_next|api)(\/|$)/.test(url.pathname)) {
       url.pathname += "/";
       return new Response(null, { status: 308, headers: { location: url.toString(), "cache-control": "public, max-age=3600" } });
+    }
+    if (url.pathname.startsWith("/x/") && (req.method === "GET" || req.method === "HEAD")) {
+      const r = await legacyRedirect(url, env as TursoEnv);
+      if (r) return r;
+      // Carian dalam kitab: /x/kitab/<id>/?s=… ditulis semula ke laluan SSR Next /kitab/<id>/.
+      const k = url.pathname.match(/^\/x\/kitab\/(\d{1,12})\/$/);
+      if (k) req = new Request(new URL(`/kitab/${k[1]}/${url.search}`, url), req);
     }
     if (!cacheable(req)) return handler.fetch(req, env, ctx);
 

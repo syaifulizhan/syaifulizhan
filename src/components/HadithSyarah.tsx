@@ -22,7 +22,7 @@ export function HadithSyarah({ bookRef, kitabTitle, babTitle, lang }: {
     if (!open && text === null) {
       setBusy(true);
       try {
-        const r = await fetch(`/api/hadith-syarah?book=${bookRef}&kt=${encodeURIComponent(kitabTitle)}&bab=${encodeURIComponent(babTitle)}`);
+        const r = await fetch(`/api/hadith-syarah/?book=${bookRef}&kt=${encodeURIComponent(kitabTitle)}&bab=${encodeURIComponent(babTitle)}`);
         setText((await r.json()).text ?? "");
       } catch { setText(""); }
       setBusy(false);

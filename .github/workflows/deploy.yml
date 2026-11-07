@@ -30,8 +30,10 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Build (OpenNext)
-        run: npx opennextjs-cloudflare build
+        run: npm run cf:build
         env:
+          # Penjana halaman kitab statik membaca korpus terus dari Turso (tiada data/corpus.db di CI).
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       - name: Deploy (wrangler)

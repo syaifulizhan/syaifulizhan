@@ -35,7 +35,7 @@ export function SharahKitab({ book, kitabNo, bookRef, nBab, lang }: {
     if (!open && segs === null) {
       setBusy(true);
       try {
-        const r = await fetch(`/api/syarah?book=${bookRef}&kitab=${kitabNo}`);
+        const r = await fetch(`/api/syarah/?book=${bookRef}&kitab=${kitabNo}`);
         const d = await r.json();
         setSegs(d.segs ?? []);
       } catch { setSegs([]); }

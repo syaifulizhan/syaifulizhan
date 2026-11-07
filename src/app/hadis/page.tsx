@@ -1,4 +1,3 @@
-import Link from "@/components/Link";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { listBooks, searchHadith, hadithCount } from "@/lib/hadis";
@@ -41,7 +40,7 @@ export default async function HadisPage({
           <>
             <div className="psec-t">{T.searchResults[lang]} “{q}” ({results.length})</div>
             {results.map((r) => (
-              <Link href={`/kitab/${r.book_id}`} key={r.id} className="hcard" style={{ display: "block" }}>
+              <a href={`/kitab/${r.book_id}/`} key={r.id} className="hcard" style={{ display: "block" }}>
                 {r.book && (
                   <div className="hchap ar">
                     {r.book}
@@ -51,7 +50,7 @@ export default async function HadisPage({
                 <div className="hmatn ar" style={{ fontSize: "1.25rem", marginBottom: 0 }}>
                   {r.matn_ar}
                 </div>
-              </Link>
+              </a>
             ))}
             {!results.length && <p className="pempty">{T.searchNone[lang]}</p>}
           </>
@@ -60,10 +59,10 @@ export default async function HadisPage({
             <div className="psec-t">{T.searchKitab[lang]}</div>
             <div className="hbooks">
               {books.map((b) => (
-                <Link href={`/kitab/${b.id}`} key={b.id} className="hbook">
+                <a href={`/kitab/${b.id}/`} key={b.id} className="hbook">
                   <span className="t ar">{b.title_ar}</span>
                   <span className="n">{b.n} {T.hadisCount[lang]}</span>
-                </Link>
+                </a>
               ))}
             </div>
           </>

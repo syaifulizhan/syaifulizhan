@@ -1,9 +1,14 @@
 import Link from "@/components/Link";
 
 // Pagination bernombor (1 … 4 5 [6] 7 8 … 50) — estetik, sepadan tema.
-export function Pagination({ page, totalPages, basePath, extraQuery = "" }: { page: number; totalPages: number; basePath: string; extraQuery?: string }) {
+export function Pagination({ page, totalPages, basePath, extraQuery = "", hrefFor }: {
+  page: number; totalPages: number; basePath: string; extraQuery?: string;
+  /** Jika ada: pautan <a> biasa (halaman statik/Worker), bukan next/link. */
+  hrefFor?: (p: number) => string;
+}) {
   if (totalPages <= 1) return null;
-  const href = (p: number) => `${basePath}?${extraQuery ? extraQuery + "&" : ""}page=${p}`;
+  const href = hrefFor ?? ((p: number) => `${basePath}?${extraQuery ? extraQuery + "&" : ""}page=${p}`);
+  const Anchor = hrefFor ? "a" : Link;
 
   const pages: (number | "…")[] = [];
   const win = 2;
@@ -14,17 +19,17 @@ export function Pagination({ page, totalPages, basePath, extraQuery = "" }: { pa
 
   return (
     <nav className="pgn" aria-label="Halaman">
-      {page > 1 && <Link className="pgn-b" href={href(page - 1)} aria-label="Sebelum">‹</Link>}
+      {page > 1 && <Anchor className="pgn-b" href={href(page - 1)} aria-label="Sebelum">‹</Anchor>}
       {pages.map((p, i) =>
         p === "…" ? (
           <span key={`e${i}`} className="pgn-e">…</span>
         ) : (
-          <Link key={p} className={`pgn-b${p === page ? " active" : ""}`} href={href(p)}>
+          <Anchor key={p} className={`pgn-b${p === page ? " active" : ""}`} href={href(p)}>
             {p}
-          </Link>
+          </Anchor>
         )
       )}
-      {page < totalPages && <Link className="pgn-b" href={href(page + 1)} aria-label="Seterusnya">›</Link>}
+      {page < totalPages && <Anchor className="pgn-b" href={href(page + 1)} aria-label="Seterusnya">›</Anchor>}
     </nav>
   );
 }

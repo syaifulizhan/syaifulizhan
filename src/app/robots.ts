@@ -33,6 +33,8 @@ const BASE_DISALLOW = [
   "/admin",    // panel pentadbir
   "/api/",     // endpoint dalaman
   "/cari",     // muka carian — setiap query = pertanyaan DB baharu
+  "/x/",       // lencongan & carian dalam kitab (Worker) — bukan kandungan
+  "/*?s=",     // carian dalam kitab lama
   "/*?q=",     // sebarang carian melalui query string (cth /hadis?q=…)
   "/*?h=",     // pintasan hadis lama (dialihkan ke ?page=N) — 85k URL unik
   "/*?semua=", // senarai penuh guru/murid perawi — mahal CPU

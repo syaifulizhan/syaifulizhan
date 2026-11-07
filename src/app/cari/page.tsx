@@ -37,10 +37,10 @@ export default async function Cari({ searchParams }: { searchParams: Promise<{ q
 
         {t === "hadis" &&
           hadis.map((r) => (
-            <Link href={`/kitab/${r.book_id}?h=${r.id}#h-${r.id}`} key={r.id} className="hcard" style={{ display: "block" }}>
+            <a href={`/x/h/${r.id}/#h-${r.id}`} key={r.id} className="hcard" style={{ display: "block" }}>
               {r.book && <div className="hchap ar">{r.book}{r.chapter_ar ? ` — ${r.chapter_ar}` : ""}</div>}
               <div className="hmatn ar" style={{ fontSize: "1.25rem", marginBottom: 0 }}>{r.matn_ar}</div>
-            </Link>
+            </a>
           ))}
 
         {t === "perawi" && (
@@ -58,10 +58,10 @@ export default async function Cari({ searchParams }: { searchParams: Promise<{ q
         {t === "kitab" && (
           <div className="hbooks">
             {kitab.map((b) => (
-              <Link href={`/kitab/${b.id}`} key={b.id} className="hbook">
+              <a href={`/kitab/${b.id}/`} key={b.id} className="hbook">
                 <span className="t ar">{b.title_ar}</span>
                 <span className="n">{b.n} {T.hadisCount[lang]}</span>
-              </Link>
+              </a>
             ))}
           </div>
         )}
