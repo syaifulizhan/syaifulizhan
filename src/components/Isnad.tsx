@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Fragment } from "react";
 import type { IsnadNode } from "@/lib/hadis";
 import { cleanName } from "@/lib/parse-isnad";

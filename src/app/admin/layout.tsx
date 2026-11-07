@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { verifySession, SESSION_COOKIE } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

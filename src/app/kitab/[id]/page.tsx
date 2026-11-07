@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Nav from "@/components/layout/Nav";

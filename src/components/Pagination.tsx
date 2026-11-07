@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 
 // Pagination bernombor (1 … 4 5 [6] 7 8 … 50) — estetik, sepadan tema.
 export function Pagination({ page, totalPages, basePath, extraQuery = "" }: { page: number; totalPages: number; basePath: string; extraQuery?: string }) {
